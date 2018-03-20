@@ -15,7 +15,7 @@ Right now the configurator is backed by S3 and fetched at runtime. Since our ear
 The ideal way to redeploy would be to use the k8s-v2 provider. Then we can easily apply versioned config changes. The only difficulty is interacting with lighthouse to determine if there are any running Orca tasks and scaling down old server-groups.
 
 ### Redis
-The user should be able to specify their own Redis cluster. If not we will run Redis with 1-2 read-slaves and redis-sentinel. As outlined [here](http://jeffmendoza.github.io/kubernetes/v1.1/examples/redis/README.html).
+The user should be able to specify their own Redis cluster. If not we will run Redis with 1-2 read-slaves and redis-sentinel. As outlined [here](https://github.com/kubernetes/examples/blob/master/staging/storage/redis/README.md).
 
 
 ### Security
