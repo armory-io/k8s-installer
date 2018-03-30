@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: deck
+  namespace: ${NAMESPACE}
+  labels:
+    app: deck
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: deck
+  template:
+    metadata:
+      labels:
+        app: deck
+    spec:
+      containers:
+      - name: deck
+        image: docker.io/armory/deck-armory:${deck_armory_version}
+        envFrom:
+        - configMapRef:
+            name: init-env
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        ports:
+        - containerPort: 9000
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 9000
+          initialDelaySeconds: 60
+          periodSeconds: 3
+        volumeMounts:
+          - name: podinfo
+            mountPath: /etc/podinfo
+            readOnly: false
+    volumes:
+      - name: podinfo
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
+            - path: "annotations"
+              fieldRef:
+                fieldPath: metadata.annotations

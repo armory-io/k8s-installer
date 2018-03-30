@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: redis
+  namespace: ${NAMESPACE}
+spec:
+  replicas: 1
+  selector:
+    matchLables:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis
+        resources:
+          requests:
+            memory: "1024M"
+            cpu: "1000m"
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+          - name: podinfo
+            mountPath: /etc/podinfo
+            readOnly: false
+    volumes:
+      - name: podinfo
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
+            - path: "annotations"
+              fieldRef:
+                fieldPath: metadata.annotations

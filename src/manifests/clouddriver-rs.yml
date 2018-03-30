@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: clouddriver
+  namespace: ${NAMESPACE}
+  labels:
+    app: clouddriver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clouddriver
+  template:
+    metadata:
+      labels:
+        app: clouddriver
+    spec:
+      containers:
+      - name: clouddriver
+        image: docker.io/armory/spinnaker-clouddriver-slim:${clouddriver_version}
+        envFrom:
+        - configMapRef:
+            name: init-env
+        resources:
+          requests:
+            cpu: 500m
+            memory: 256Mi
+        ports:
+        - containerPort: 7002
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 7002
+          initialDelaySeconds: 60
+          periodSeconds: 3

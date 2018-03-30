@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: front50
+  namespace: ${NAMESPACE}
+  labels:
+    app: front50
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: front50
+  template:
+    metadata:
+      labels:
+        app: front50
+    spec:
+      containers:
+      - name: front50
+        image: docker.io/armory/spinnaker-front50-slim:${front50_version}
+        envFrom:
+        - configMapRef:
+            name: init-env
+        env:
+        - name: JAVA_OPTS
+          value: -javaagent:/opt/echo/lib/jamm-0.2.5.jar
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+        ports:
+        - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 3
+        volumeMounts:
+          - name: podinfo
+            mountPath: /etc/podinfo
+            readOnly: false
+    volumes:
+      - name: podinfo
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
+            - path: "annotations"
+              fieldRef:
+                fieldPath: metadata.annotations

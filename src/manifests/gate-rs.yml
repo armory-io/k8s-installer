@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: gate
+  namespace: ${NAMESPACE}
+  labels:
+    app: gate
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gate
+  template:
+    metadata:
+      labels:
+        app: gate
+    spec:
+      containers:
+      - name: gate
+        image: docker.io/armory/gate-armory:${gate_armory_version}
+        envFrom:
+        - configMapRef:
+            name: init-env
+        env:
+        - name: GATE_PORT_MAPPING
+          value: -8084:8084
+        - name: GATE_API_PORT_MAPPING
+          value: -8085:8085
+        resources:
+          requests:
+            cpu: 500m
+            memory: 256Mi
+        ports:
+        - containerPort: 8084
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8084
+          initialDelaySeconds: 60
+          periodSeconds: 3
+        volumeMounts:
+          - name: podinfo
+            mountPath: /etc/podinfo
+            readOnly: false
+    volumes:
+      - name: podinfo
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
+            - path: "annotations"
+              fieldRef:
+                fieldPath: metadata.annotations

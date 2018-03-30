@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: igor
+  namespace: ${NAMESPACE}
+  labels:
+    app: igor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: igor
+  template:
+    metadata:
+      labels:
+        app: igor
+    spec:
+      containers:
+      - name: igor
+        image: docker.io/armory/spinnaker-igor-slim:${igor_version}
+        envFrom:
+        - configMapRef:
+            name: init-env
+        env:
+        - name: IGOR_PORT_MAPPING
+          value: -8088:8088
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - containerPort: 8088
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8088
+          initialDelaySeconds: 60
+          periodSeconds: 3
+        volumeMounts:
+          - name: podinfo
+            mountPath: /etc/podinfo
+            readOnly: false
+    volumes:
+      - name: podinfo
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
+            - path: "annotations"
+              fieldRef:
+                fieldPath: metadata.annotations

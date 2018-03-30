@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: lighthouse
+  namespace: ${NAMESPACE}
+  labels:
+    app: lighthouse
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lighthouse
+  template:
+    metadata:
+      labels:
+        app: lighthouse
+    spec:
+      containers:
+      - name: lighthouse
+        image: docker.io/armory/lighthouse:${lighthouse_version}
+        envFrom:
+        - configMapRef:
+            name: init-env
+        env:
+        - name: LIGHTHOUSE_PORT_MAPPING
+          value: -5000:5000
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - containerPort: 5000
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 5000
+          initialDelaySeconds: 60
+          periodSeconds: 3
+        volumeMounts:
+          - name: podinfo
+            mountPath: /etc/podinfo
+            readOnly: false
+    volumes:
+      - name: podinfo
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
+            - path: "annotations"
+              fieldRef:
+                fieldPath: metadata.annotations

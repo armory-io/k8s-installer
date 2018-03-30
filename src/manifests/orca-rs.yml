@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: orca
+  namespace: ${NAMESPACE}
+  labels:
+    app: orca
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orca
+  template:
+    metadata:
+      labels:
+        app: orca
+    spec:
+      containers:
+      - name: orca
+        image: docker.io/armory/spinnaker-orca-slim:${orca_version}
+        envFrom:
+        - configMapRef:
+            name: init-env
+        resources:
+          requests:
+            cpu: 500m
+            memory: 256Mi
+        ports:
+        - containerPort: 8083
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8083
+          initialDelaySeconds: 60
+          periodSeconds: 3
+        volumeMounts:
+          - name: podinfo
+            mountPath: /etc/podinfo
+            readOnly: false
+    volumes:
+      - name: podinfo
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
+            - path: "annotations"
+              fieldRef:
+                fieldPath: metadata.annotations

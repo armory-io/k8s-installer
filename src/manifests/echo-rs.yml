@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: echo
+  namespace: ${NAMESPACE}
+  labels:
+    app: echo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: echo
+  template:
+    metadata:
+      labels:
+        app: echo
+    spec:
+      containers:
+      - name: echo
+        image: docker.io/armory/echo-armory:${echo_armory_version}
+        envFrom:
+        - configMapRef:
+            name: init-env
+        env:
+        - name: JAVA_OPTS
+          value: -javaagent:/opt/echo/lib/jamm-0.2.5.jar
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - containerPort: 8089
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8089
+          initialDelaySeconds: 60
+          periodSeconds: 3
+        volumeMounts:
+          - name: podinfo
+            mountPath: /etc/podinfo
+            readOnly: false
+    volumes:
+      - name: podinfo
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
+            - path: "annotations"
+              fieldRef:
+                fieldPath: metadata.annotations

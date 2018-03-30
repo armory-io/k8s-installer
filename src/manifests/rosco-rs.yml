@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: rosco
+  namespace: ${NAMESPACE}
+  labels:
+    app: rosco
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rosco
+  template:
+    metadata:
+      labels:
+        app: rosco
+    spec:
+      containers:
+      - name: rosco
+        image: docker.io/armory/spinnaker-rosco-slim:${rosco_version}
+        envFrom:
+        - configMapRef:
+            name: init-env
+        env:
+        - name: ROSCO_PORT_MAPPING
+          value: -8087:8087
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+        ports:
+        - containerPort: 8087
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8087
+          initialDelaySeconds: 60
+          periodSeconds: 3
+        volumeMounts:
+          - name: podinfo
+            mountPath: /etc/podinfo
+            readOnly: false
+    volumes:
+      - name: podinfo
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
+            - path: "annotations"
+              fieldRef:
+                fieldPath: metadata.annotations
