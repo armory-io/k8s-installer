@@ -1,9 +1,17 @@
-#!/bin/bash
+#!/bin/bash -xe
+cd "$(dirname "$0")"
 
 # curl -v \
 #  --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
 #  -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
 #  https://kubernetes/
+
+source version.manifest
+
+export TMP_DIR=$(mktemp --directory)
+export NAMESPACE=armory
+export BUILD_DIR=$TMP_DIR/build
+mkdir -p "$BUILD_DIR"
 
 function describe_installer() {
   echo "
@@ -83,6 +91,8 @@ function prompt_user() {
 }
 
 function make_s3_bucket() {
+  echo "Creating S3 bucket to store configuration and persist data."
+  export ARMORY_S3_PREFIX=front50
   if [ -z "${ARMORY_S3_BUCKET}" ]; then
     export ARMORY_S3_BUCKET=armory-installer-$(date +%s)
     aws --profile "${AWS_PROFILE}" s3 mb "s3://${ARMORY_S3_BUCKET}" --region us-west-1
@@ -91,23 +101,35 @@ function make_s3_bucket() {
   fi
 }
 
-
 function create_k8s_namespace() {
   kubectl ${KUBECTL_OPTIONS} create namespace armory
 }
 
-function create_k8s_aws_credentials() {
-
+function create_k8s_gate_load_balancer() {
+  echo "Creating load balancer."
+  # TODO: envsubst is non-standard
+  envsubst < manifests/gate-svc.yml > build/gate-svc.yml
+  # Wait for IP
+  local IP=$(kubectl --kubeconfig=/Users/Andrew/.config/gcloud/kubeconfig get services | grep kiosk | awk '{ print $4 }')
+  while [ "$IP" == "<none>" ]; do
+    echo -n "Waiting for load balancer to receive an IP..."
+    sleep 15
+    local IP=$(kubectl --kubeconfig=/Users/Andrew/.config/gcloud/kubeconfig get services | grep kiosk | awk '{ print $4 }')
+    echo -n "."
+  done
+  echo "Found IP $IP"
+  export DEFAULT_DNS_NAME=$IP
 }
 
-function create_k8s_gate_load_balancer() {
-
+function create_k8s_svcs_and_rs() {
+  echo "TODO"
 }
 
 function create_k8s_resources() {
   create_k8s_namespace
+  create_k8s_gate_load_balancer
+  create_k8s_svcs_and_rs
 }
-
 
 function set_aws_vars() {
   role_arn=$(aws configure get ${AWS_PROFILE}.role_arn)
@@ -133,11 +155,9 @@ aws_access_key_id=${AWS_ACCESS_KEY_ID}
 aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
 EOF
 )
-
 }
 
 function main() {
-  export TMP_DIR=$(mktemp --directory)
   describe_installer
   check_prereqs
   prompt_user
