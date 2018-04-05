@@ -8,10 +8,12 @@ cd "$(dirname "$0")"
 
 source version.manifest
 
-export TMP_DIR=$(mktemp --directory)
+export TMP_DIR=$(mktemp -d)
 export NAMESPACE=armory
-export BUILD_DIR=$TMP_DIR/build
+# export BUILD_DIR=$TMP_DIR/build/
+export BUILD_DIR=build/
 mkdir -p "$BUILD_DIR"
+export KUBECTL_OPTIONS="--namespace=${NAMESPACE}"
 
 function describe_installer() {
   echo "
@@ -94,7 +96,7 @@ function make_s3_bucket() {
   echo "Creating S3 bucket to store configuration and persist data."
   export ARMORY_S3_PREFIX=front50
   if [ -z "${ARMORY_S3_BUCKET}" ]; then
-    export ARMORY_S3_BUCKET=armory-installer-$(date +%s)
+    export ARMORY_S3_BUCKET=$(awk '{ print tolower($0) }' <<< armory-$(uuidgen))
     aws --profile "${AWS_PROFILE}" s3 mb "s3://${ARMORY_S3_BUCKET}" --region us-west-1
   else
     echo "Using S3 bucket - ${ARMORY_S3_BUCKET}"
@@ -106,33 +108,63 @@ function create_k8s_namespace() {
 }
 
 function create_k8s_gate_load_balancer() {
-  echo "Creating load balancer."
+  echo "Creating load balancer for the API Gateway."
   # TODO: envsubst is non-standard
-  envsubst < manifests/gate-svc.yml > build/gate-svc.yml
+  envsubst < manifests/gate-svc.yml > ${BUILD_DIR}/gate-svc.yml
   # Wait for IP
-  local IP=$(kubectl --kubeconfig=/Users/Andrew/.config/gcloud/kubeconfig get services | grep kiosk | awk '{ print $4 }')
-  while [ "$IP" == "<none>" ]; do
-    echo -n "Waiting for load balancer to receive an IP..."
+  kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/gate-svc.yml
+  local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep gate | awk '{ print $4 }')
+  echo -n "Waiting for load balancer to receive an IP..."
+  while [ "$IP" == "<pending>" ] || [ -z "$IP" ]; do
     sleep 15
-    local IP=$(kubectl --kubeconfig=/Users/Andrew/.config/gcloud/kubeconfig get services | grep kiosk | awk '{ print $4 }')
+    local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep gate | awk '{ print $4 }')
     echo -n "."
   done
   echo "Found IP $IP"
-  export DEFAULT_DNS_NAME=$IP
+  export GATE_IP=$IP
+}
+
+function create_k8s_deck_load_balancer() {
+  echo "Creating load balancer for the Web UI."
+  # TODO: envsubst is non-standard
+  envsubst < manifests/deck-svc.yml > ${BUILD_DIR}/deck-svc.yml
+  # Wait for IP
+  kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/deck-svc.yml
+  local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep deck | awk '{ print $4 }')
+  echo -n "Waiting for load balancer to receive an IP..."
+  while [ "$IP" == "<pending>" ] || [ -z "$IP" ]; do
+    sleep 15
+    local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep deck | awk '{ print $4 }')
+    echo -n "."
+  done
+  echo "Found IP $IP"
+  export DECK_IP=$IP
 }
 
 function create_k8s_svcs_and_rs() {
-  echo "TODO"
+  for filename in manifests/*.yml; do
+    envsubst < "$filename" > "$BUILD_DIR/$(basename $filename)"
+  done
+  for filename in build/*.yml; do
+    kubectl ${KUBECTL_OPTIONS} apply -f "$filename"
+  done
+}
+
+function create_k8s_default_config() {
+  kubectl ${KUBECTL_OPTIONS} delete configmap default-config || true
+  kubectl ${KUBECTL_OPTIONS} create configmap default-config --from-file=$(pwd)/config/default
 }
 
 function create_k8s_resources() {
   create_k8s_namespace
   create_k8s_gate_load_balancer
+  create_k8s_deck_load_balancer
+  create_k8s_default_config
   create_k8s_svcs_and_rs
 }
 
 function set_aws_vars() {
-  role_arn=$(aws configure get ${AWS_PROFILE}.role_arn)
+  role_arn=$(aws configure get ${AWS_PROFILE}.role_arn || true)
   if [[ "${role_arn}" == "" ]]; then
     export AWS_ACCESS_KEY_ID=$(aws configure get ${AWS_PROFILE}.aws_access_key_id)
     export AWS_SECRET_ACCESS_KEY=$(aws configure get ${AWS_PROFILE}.aws_secret_access_key)
@@ -148,7 +180,7 @@ function set_aws_vars() {
 }
 
 function encode_credentials() {
-  set_aws_varsencode_credentials
+  set_aws_vars
   export B64CREDENTIALS=$(base64 <<EOF
 [default]
 aws_access_key_id=${AWS_ACCESS_KEY_ID}

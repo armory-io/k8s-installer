@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+apiVersion: extensions/v1beta1
 kind: ReplicaSet
 metadata:
   name: lighthouse
@@ -18,29 +18,38 @@ spec:
       containers:
       - name: lighthouse
         image: docker.io/armory/lighthouse:${lighthouse_version}
+        command: ["bash", "-c"]
+        args: ["chmod 755 /opt/spinnaker/config/default/fetch.sh && /opt/spinnaker/config/default/fetch.sh && /home/armory/run_lighthouse.sh"]
         envFrom:
         - configMapRef:
             name: init-env
         env:
         - name: LIGHTHOUSE_PORT_MAPPING
           value: -5000:5000
+        - name: LOG_LEVEL
+          value: DEBUG
         resources:
           requests:
             cpu: 100m
             memory: 100Mi
         ports:
         - containerPort: 5000
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 5000
-          initialDelaySeconds: 60
-          periodSeconds: 3
         volumeMounts:
-          - name: podinfo
-            mountPath: /etc/podinfo
-            readOnly: false
-    volumes:
+        - name: podinfo
+          mountPath: /etc/podinfo
+          readOnly: false
+        - name: default-config
+          mountPath: /opt/spinnaker/config/default
+          readOnly: false
+        - name: aws-s3-credentials
+          mountPath: /root/.aws
+      volumes:
+      - name: aws-s3-credentials
+        secret:
+          secretName: aws-s3-credentials
+      - name: default-config
+        configMap:
+          name: default-config
       - name: podinfo
         downwardAPI:
           items:

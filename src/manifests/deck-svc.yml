@@ -8,5 +8,6 @@ spec:
     app: deck
   ports:
   - protocol: TCP
-    port: 9000
+    port: 80
     targetPort: 9000
+  type: LoadBalancer

@@ -1,12 +1,14 @@
-apiVersion: apps/v1
+apiVersion: extensions/v1beta1
 kind: ReplicaSet
 metadata:
   name: redis
   namespace: ${NAMESPACE}
+  labels:
+    app: redis
 spec:
   replicas: 1
   selector:
-    matchLables:
+    matchLabels:
       app: redis
   template:
     metadata:
@@ -18,15 +20,20 @@ spec:
         image: redis
         resources:
           requests:
-            memory: "1024M"
-            cpu: "1000m"
+            memory: 1024Mi
+            cpu: 1000m
         ports:
         - containerPort: 6379
         volumeMounts:
-          - name: podinfo
-            mountPath: /etc/podinfo
-            readOnly: false
-    volumes:
+        - name: podinfo
+          mountPath: /etc/podinfo
+          readOnly: false
+        - name: default-config
+          mountPath: /opt/spinnaker/config
+      volumes:
+      - name: default-config
+        configMap:
+          name: default-config
       - name: podinfo
         downwardAPI:
           items:

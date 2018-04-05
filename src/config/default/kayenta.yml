@@ -1,0 +1,85 @@
+kayenta:
+  atlas:
+    enabled: false
+#    stageTimeoutMinutes: 3
+#    maxBackoffPeriodSeconds: 30
+#    accounts:
+#      - name:
+#        endpoint:
+#          baseUrl: http://localhost:7101
+#        namespace:
+#        supportedTypes:
+#          - METRICS_STORE
+
+  google:
+    enabled: false
+#    accounts:
+#      - name: cloud-armory
+#        project: cloud-armory
+#        jsonPath: /Users/paul/.armory/cache/gcp.json
+#        bucket: paul-kayenta-test-bucket-1
+#        rootFolder: kayenta
+#        supportedTypes:
+#          - METRICS_STORE
+#          - OBJECT_STORE
+#          - CONFIGURATION_STORE
+
+  aws:
+    enabled: false
+#    accounts:
+#      - name:
+#        bucket:
+#        rootFolder: kayenta
+#        supportedTypes:
+#          - OBJECT_STORE
+#          - CONFIGURATION_STORE
+
+  gcs:
+    enabled: false
+
+  s3:
+    enabled: false
+
+  stackdriver:
+    enabled: false
+
+  memory:
+    enabled: false
+
+  configbin:
+    enabled: false
+
+management.security.enabled: false
+
+queue:
+  redis:
+    enabled: true
+    queueName: kayenta.orca.task.queue
+    deadLetterQueueName: kayenta.orca.task.deadLetterQueue
+    ackTimeoutSeconds: 600
+
+executionLog.redis.enabled: true
+
+spectator:
+  applicationName: ${spring.application.name}
+  webEndpoint:
+    enabled: true
+
+swagger:
+  enabled: true
+  title: Kayenta API
+  description:
+  contact:
+  patterns:
+    - /admin.*
+    - /canary.*
+    - /canaryConfig.*
+    - /canaryJudgeResult.*
+    - /credentials.*
+    - /fetch.*
+    - /health
+    - /judges.*
+    - /metadata.*
+    - /metricSetList.*
+    - /metricSetPairList.*
+    - /pipeline.*

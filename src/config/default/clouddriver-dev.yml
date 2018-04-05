@@ -1,0 +1,7 @@
+#
+# Limit cloud provider polling as to not hit rate limits.
+#
+
+serviceLimits:
+  defaults:
+    rateLimit: 2

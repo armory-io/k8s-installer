@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+apiVersion: extensions/v1beta1
 kind: ReplicaSet
 metadata:
   name: echo
@@ -32,15 +32,20 @@ spec:
         - containerPort: 8089
         livenessProbe:
           httpGet:
-            path: /
+            path: /health
             port: 8089
           initialDelaySeconds: 60
           periodSeconds: 3
         volumeMounts:
-          - name: podinfo
-            mountPath: /etc/podinfo
-            readOnly: false
-    volumes:
+        - name: podinfo
+          mountPath: /etc/podinfo
+          readOnly: false
+        - name: default-config
+          mountPath: /opt/spinnaker/config
+      volumes:
+      - name: default-config
+        configMap:
+          name: default-config
       - name: podinfo
         downwardAPI:
           items:

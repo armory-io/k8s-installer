@@ -1,0 +1,7 @@
+redis:
+  timeout: 50000
+
+rosco:
+  jobs:
+    local:
+      timeoutMinutes: 60

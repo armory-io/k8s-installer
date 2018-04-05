@@ -1,0 +1,48 @@
+server:
+  port: ${services.rosco.port:8087}
+  address: ${services.rosco.host:localhost}
+
+redis:
+  connection: ${services.redis.connection:redis://localhost:6379}
+
+aws:
+  enabled: ${providers.aws.enabled:false}
+
+docker:
+  enabled: ${services.docker.enabled:false}
+  bakeryDefaults:
+    targetRepository: ${services.docker.targetRepository}
+
+google:
+  enabled: ${providers.google.enabled:false}
+  accounts:
+    - name: ${providers.google.primaryCredentials.name}
+      project: ${providers.google.primaryCredentials.project}
+      jsonPath: ${providers.google.primaryCredentials.jsonPath}
+  gce:
+    bakeryDefaults:
+      zone: ${providers.google.defaultZone}
+
+rosco:
+  configDir: ${services.rosco.configDir}
+  jobs:
+    local:
+      timeoutMinutes: 30
+
+spectator:
+  applicationName: ${spring.application.name}
+  webEndpoint:
+    enabled: ${services.spectator.webEndpoint.enabled:false}
+    prototypeFilter:
+      path: ${services.spectator.webEndpoint.prototypeFilter.path:}
+
+  stackdriver:
+    enabled: ${services.stackdriver.enabled}
+    projectName: ${services.stackdriver.projectName}
+    credentialsPath: ${services.stackdriver.credentialsPath}
+
+stackdriver:
+  hints:
+    - name: bakes
+      labels:
+      - success

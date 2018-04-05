@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+apiVersion: extensions/v1beta1
 kind: ReplicaSet
 metadata:
   name: rosco
@@ -37,10 +37,15 @@ spec:
           initialDelaySeconds: 60
           periodSeconds: 3
         volumeMounts:
-          - name: podinfo
-            mountPath: /etc/podinfo
-            readOnly: false
-    volumes:
+        - name: podinfo
+          mountPath: /etc/podinfo
+          readOnly: false
+        - name: default-config
+          mountPath: /opt/spinnaker/config
+      volumes:
+      - name: default-config
+        configMap:
+          name: default-config
       - name: podinfo
         downwardAPI:
           items:

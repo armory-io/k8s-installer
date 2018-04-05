@@ -1,4 +1,4 @@
-apiVersion: apps/v1
+apiVersion: extensions/v1beta1
 kind: ReplicaSet
 metadata:
   name: front50
@@ -23,7 +23,7 @@ spec:
             name: init-env
         env:
         - name: JAVA_OPTS
-          value: -javaagent:/opt/echo/lib/jamm-0.2.5.jar
+          value: -javaagent:/opt/front50/lib/jamm-0.2.5.jar
         resources:
           requests:
             cpu: 500m
@@ -37,10 +37,20 @@ spec:
           initialDelaySeconds: 60
           periodSeconds: 3
         volumeMounts:
-          - name: podinfo
-            mountPath: /etc/podinfo
-            readOnly: false
-    volumes:
+        - name: podinfo
+          mountPath: /etc/podinfo
+          readOnly: false
+        - name: default-config
+          mountPath: /opt/spinnaker/config
+        - name: aws-s3-credentials
+          mountPath: /root/.aws
+      volumes:
+      - name: aws-s3-credentials
+        secret:
+          secretName: aws-s3-credentials
+      - name: default-config
+        configMap:
+          name: default-config
       - name: podinfo
         downwardAPI:
           items:
