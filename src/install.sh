@@ -71,13 +71,19 @@ function get_var() {
   local var_name="${2}"
   local val_func=${3}
   local val_list=${4}
+  local default_val=${5}
   if [ -z ${!var_name} ]; then
     [ ! -z "$val_list" ] && $val_list
     echo -n "${text}"
     read value
     if [ -z "${value}" ]; then
-      echo "This value can not be blank."
-      get_var "$1" $2 $3
+      if [ -z "$default_val" ]; then
+        echo "This value can not be blank."
+        get_var "$1" $2 $3
+      else
+        echo "Using default ${default_val}"
+        export ${var_name}=${default_val}
+      fi
     elif [ ! -z "$val_func" ] && ! $val_func ${value}; then
       get_var "$1" $2 $3
     else
@@ -88,7 +94,7 @@ function get_var() {
 
 function prompt_user() {
   get_var "Enter your AWS Profile [e.g. devprofile]: " AWS_PROFILE validate_profile
-  get_var "Path to kubeconfig [if blank default will be used]: " KUBE_CONFIG validate_kubeconfig
+  get_var "Path to kubeconfig [if blank default will be used]: " KUBE_CONFIG validate_kubeconfig "" "~/.kube/config"
 }
 
 function make_s3_bucket() {
