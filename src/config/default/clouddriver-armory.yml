@@ -1,0 +1,24 @@
+aws:
+  defaultAssumeRole: role/${SPINNAKER_AWS_DEFAULT_ASSUME_ROLE:SpinnakerManagedProfile}
+  accounts:
+    - name: default-aws-account
+      accountId: ${SPINNAKER_AWS_DEFAULT_ACCOUNT_ID:none}
+
+  client:
+    maxErrorRetry: 20
+
+serviceLimits:
+  cloudProviderOverrides:
+    aws:
+      rateLimit: 15.0
+
+  implementationLimits:
+    AmazonAutoScaling:
+      defaults:
+        rateLimit: 3.0
+    AmazonElasticLoadBalancing:
+      defaults:
+        rateLimit: 5.0
+
+security.basic.enabled: false
+management.security.enabled: false

@@ -1,0 +1,111 @@
+mine:
+  baseUrl: http://${services.barometer.host}:${services.barometer.port}
+
+pipelineTemplate:
+  enabled: ${features.pipelineTemplates.enabled:false}
+  jinja:
+    enabled: true
+
+kayenta:
+  enabled: ${services.kayenta.enabled:false}
+  baseUrl: ${services.kayenta.baseUrl}
+
+jira:
+  enabled: ${features.jira.enabled:false}
+  # Fill in your basic auth:  Base64("user:pass")
+  basicAuth:  "Basic ${features.jira.basicAuthToken}"
+  # ex. https://myjira.atlassian.net/rest/api/2/issue/
+  url: ${features.jira.createIssueUrl}
+
+webhook:
+  preconfigured:
+    - label: Enforce Pipeline Policy
+      description: Checks pipeline configuration against policy requirements
+      type: enforcePipelinePolicy
+      enabled: ${features.certifiedPipelines.enabled:false}
+      url: "http://lighthouse:5000/v1/pipelines/${execution.application}/${execution.pipelineConfigId}?check_policy=yes"
+      headers:
+        Accept:
+          - application/json
+      method: GET
+      waitForCompletion: true
+      statusUrlResolution: getMethod
+      statusJsonPath: $.status
+      successStatuses: pass
+      canceledStatuses:
+      terminalStatuses: TERMINAL
+
+    - label: "Jira: Create Issue"
+      description:  Enter a Jira ticket when this pipeline runs
+      type: createJiraIssue
+      enabled: ${jira.enabled}
+      url:  ${jira.url}
+      customHeaders:
+        "Content-Type": application/json
+        Authorization: ${jira.basicAuth}
+      method: POST
+      #payload: |
+      #  {
+      #    "fields" : {
+      #      "description": "Starting test...",
+      #      "issuetype": {
+      #         "name": "Task"
+      #      },
+      #      "project": {
+      #         "key": "CCRB"
+      #      },
+      #      "summary":  "This is a webhook test"
+      #    }
+      #  }
+      waitForCompletion: false
+
+    - label: "Jira: Update Issue"
+      description:  Update a previously created Jira Issue
+      type: updateJiraIssue
+      enabled: ${jira.enabled}
+      url: "${execution.stages.?[type == 'createJiraIssue'][0]['context']['buildInfo']['self']}"
+      customHeaders:
+        "Content-Type": application/json
+        Authorization: ${jira.basicAuth}
+      method: PUT
+      #payload: |
+      #  {
+      #    "fields" : {
+      #      "description" : "Test completed",
+      #      "summary" : "This is a webhook test -- COMPLETED"
+      #    }
+      #  }
+      waitForCompletion: false
+
+    - label: "Jira: Transition Issue"
+      description:  Change state of existing Jira Issue
+      type: transitionJiraIssue
+      enabled: ${jira.enabled}
+      url: "${execution.stages.?[type == 'createJiraIssue'][0]['context']['buildInfo']['self']}/transitions"
+      customHeaders:
+        "Content-Type": application/json
+        Authorization: ${jira.basicAuth}
+      method: POST
+      #payload: |
+      #  {
+      #    "transition" : {
+      #      "id" : "11"
+      #    }
+      #  }
+      waitForCompletion: false
+
+    - label: "Jira: Add Comment"
+      description:  Add a comment to an existing Jira Issue
+      type: commentJiraIssue
+      enabled: ${jira.enabled}
+      url: "${execution.stages.?[type == 'createJiraIssue'][0]['context']['buildInfo']['self']}/comment"
+      customHeaders:
+        "Content-Type": application/json
+        Authorization: ${jira.basicAuth}
+      method: POST
+      #payload: |
+      #  {
+      #    "body" : "This is a comment from a pipeline"
+      #  }
+      waitForCompletion: false
+

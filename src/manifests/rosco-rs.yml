@@ -1,0 +1,81 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    artifact.spinnaker.io/location: '"${NAMESPACE}"'
+    artifact.spinnaker.io/name: '"armory-rosco"'
+    artifact.spinnaker.io/type: '"kubernetes/deployment"'
+    moniker.spinnaker.io/application: '"armory"'
+    moniker.spinnaker.io/cluster: '"rosco"'
+  name: rosco
+  namespace: ${NAMESPACE}
+  labels:
+    app: rosco
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 3
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rosco
+  template:
+    metadata:
+      annotations:
+        artifact.spinnaker.io/location: '"${NAMESPACE}"'
+        artifact.spinnaker.io/name: '"armory-rosco"'
+        artifact.spinnaker.io/type: '"kubernetes/deployment"'
+        moniker.spinnaker.io/application: '"armory"'
+        moniker.spinnaker.io/cluster: '"rosco"'
+      labels:
+        app: rosco
+    spec:
+      containers:
+      - name: rosco
+        image: docker.io/armory/spinnaker-rosco-slim:${rosco_version}
+        command: ["bash", "-c"]
+        args: ["chmod 755 /opt/spinnaker/config/default/fetch.sh && /opt/spinnaker/config/default/fetch.sh && /opt/rosco/bin/rosco"]
+        envFrom:
+        - configMapRef:
+            name: init-env
+        env:
+        - name: ROSCO_PORT_MAPPING
+          value: -8087:8087
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+        ports:
+        - containerPort: 8087
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8087
+          initialDelaySeconds: 60
+          periodSeconds: 3
+        volumeMounts:
+        - name: podinfo
+          mountPath: /etc/podinfo
+          readOnly: false
+        - name: default-config
+          mountPath: /opt/spinnaker/config/default
+        - name: custom-config
+          mountPath: /opt/spinnaker/config/custom
+      volumes:
+      - name: custom-config
+        configMap:
+          name: custom-config
+      - name: default-config
+        configMap:
+          name: default-config
+      - name: podinfo
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
+            - path: "annotations"
+              fieldRef:
+                fieldPath: metadata.annotations

@@ -1,0 +1,86 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    artifact.spinnaker.io/location: '"${NAMESPACE}"'
+    artifact.spinnaker.io/name: '"armory-front50"'
+    artifact.spinnaker.io/type: '"kubernetes/deployment"'
+    moniker.spinnaker.io/application: '"armory"'
+    moniker.spinnaker.io/cluster: '"front50"'
+  name: front50
+  namespace: ${NAMESPACE}
+  labels:
+    app: front50
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 3
+  replicas: 1
+  selector:
+    matchLabels:
+      app: front50
+  template:
+    metadata:
+      annotations:
+        artifact.spinnaker.io/location: '"${NAMESPACE}"'
+        artifact.spinnaker.io/name: '"armory-front50"'
+        artifact.spinnaker.io/type: '"kubernetes/deployment"'
+        moniker.spinnaker.io/application: '"armory"'
+        moniker.spinnaker.io/cluster: '"front50"'
+      labels:
+        app: front50
+    spec:
+      containers:
+      - name: front50
+        image: docker.io/armory/spinnaker-front50-slim:${front50_version}
+        command: ["bash", "-c"]
+        args: ["chmod 755 /opt/spinnaker/config/default/fetch.sh && /opt/spinnaker/config/default/fetch.sh && /opt/front50/bin/front50"]
+        envFrom:
+        - configMapRef:
+            name: init-env
+        env:
+        - name: JAVA_OPTS
+          value: -javaagent:/opt/front50/lib/jamm-0.2.5.jar
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+        ports:
+        - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 3
+        volumeMounts:
+        - name: podinfo
+          mountPath: /etc/podinfo
+          readOnly: false
+        - name: aws-s3-credentials
+          mountPath: /root/.aws
+        - name: default-config
+          mountPath: /opt/spinnaker/config/default
+        - name: custom-config
+          mountPath: /opt/spinnaker/config/custom
+      volumes:
+      - name: custom-config
+        configMap:
+          name: custom-config
+      - name: default-config
+        configMap:
+          name: default-config
+      - name: aws-s3-credentials
+        secret:
+          secretName: aws-s3-credentials
+      - name: podinfo
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
+            - path: "annotations"
+              fieldRef:
+                fieldPath: metadata.annotations

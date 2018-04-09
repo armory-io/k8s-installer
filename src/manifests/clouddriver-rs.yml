@@ -1,0 +1,83 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    artifact.spinnaker.io/location: '"${NAMESPACE}"'
+    artifact.spinnaker.io/name: '"armory-clouddriver"'
+    artifact.spinnaker.io/type: '"kubernetes/deployment"'
+    moniker.spinnaker.io/application: '"armory"'
+    moniker.spinnaker.io/cluster: '"clouddriver"'
+  name: clouddriver
+  namespace: ${NAMESPACE}
+  labels:
+    app: clouddriver
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 3
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clouddriver
+  template:
+    metadata:
+      annotations:
+        artifact.spinnaker.io/location: '"${NAMESPACE}"'
+        artifact.spinnaker.io/name: '"armory-clouddriver"'
+        artifact.spinnaker.io/type: '"kubernetes/deployment"'
+        moniker.spinnaker.io/application: '"armory"'
+        moniker.spinnaker.io/cluster: '"clouddriver"'
+      labels:
+        app: clouddriver
+    spec:
+      containers:
+      - name: clouddriver
+        image: docker.io/armory/spinnaker-clouddriver-slim:${clouddriver_version}
+        command: ["bash", "-c"]
+        args: ["chmod 755 /opt/spinnaker/config/default/fetch.sh && /opt/spinnaker/config/default/fetch.sh && /opt/clouddriver/bin/clouddriver"]
+        envFrom:
+        - configMapRef:
+            name: init-env
+        resources:
+          requests:
+            cpu: 500m
+            memory: 256Mi
+        ports:
+        - containerPort: 7002
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 7002
+          initialDelaySeconds: 60
+          periodSeconds: 3
+        volumeMounts:
+        - name: podinfo
+          mountPath: /etc/podinfo
+          readOnly: false
+        - name: default-kubeconfig
+          mountPath: /opt/spinnaker/credentials/default
+        - name: default-config
+          mountPath: /opt/spinnaker/config/default
+        - name: custom-config
+          mountPath: /opt/spinnaker/config/custom
+      volumes:
+      - name: custom-config
+        configMap:
+          name: custom-config
+      - name: default-config
+        configMap:
+          name: default-config
+      - name: default-kubeconfig
+        secret:
+          secretName: default-kubeconfig
+      - name: podinfo
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
+            - path: "annotations"
+              fieldRef:
+                fieldPath: metadata.annotations

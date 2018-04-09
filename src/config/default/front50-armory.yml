@@ -1,0 +1,4 @@
+spinnaker:
+  redis:
+    enabled: true
+    host: ${REDIS_HOST}

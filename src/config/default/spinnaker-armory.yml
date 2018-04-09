@@ -1,0 +1,149 @@
+features:
+  artifacts:
+    enabled: true
+  # features are should be turned on in {ENV}.env. ex: prod.env
+  pipelineTemplates:
+    enabled: ${PIPELINE_TEMPLATES_ENABLED:false}
+  infrastructureStages:
+    enabled: ${INFRA_ENABLED:false}
+  certifiedPipelines:
+    enabled: ${CERTIFIED_PIPELINES_ENABLED:false}
+  configuratorEnabled:
+    enabled: ${CONFIGURATOR_ENABLED:false}
+  loadtestStage:
+    enabled: ${LOADTEST_ENABLED:false}
+  jira:
+    # These settings are for the Jira Stages (webhook-based):
+    enabled: ${JIRA_ENABLED:false}
+    # Should be the basic Authorization header value token, the Base64
+    # encoded version of "username:password".
+    basicAuthToken: ${JIRA_BASIC_AUTH}
+    # Should be the "create issue" endpoint, for example:
+    #    https://armory.atlassian.net/rest/api/2/issue/
+    url: ${JIRA_URL}
+
+    # These setings are for Echo's Jira integration
+    login: ${JIRA_LOGIN}
+    password: ${JIRA_PASSWORD}
+
+  slaEnabled:
+    enabled: ${SLA_ENABLED:false}
+  chaosMonkey:
+    enabled: ${CHAOS_ENABLED:false}
+
+  armoryPlatform:
+    enabled: ${PLATFORM_ENABLED:false}
+    uiEnabled: ${PLATFORM_UI_ENABLED:false}
+
+
+services:
+  default:
+    host: ${DEFAULT_DNS_NAME:localhost}
+
+  clouddriver:
+    host: ${DEFAULT_DNS_NAME:clouddriver}
+    entityTags:
+      enabled: false
+
+  echo:
+    host: ${DEFAULT_DNS_NAME:echo}
+
+  deck:
+    gateUrl: ${API_HOST:service.default.host}
+    baseUrl: ${DECK_HOST:deck}
+
+  dinghy:
+    enabled: ${DINGHY_ENABLED:false}
+    host: ${DEFAULT_DNS_NAME:dinghy}
+    baseUrl: ${services.default.protocol}://${services.dinghy.host}:${services.dinghy.port}
+    port: 8081
+
+  front50:
+    host: ${DEFAULT_DNS_NAME:front50}
+    cassandra:
+      enabled: false
+    redis:
+      enabled: true
+    s3:
+      enabled: true
+    storage_bucket: ${ARMORYSPINNAKER_S3_BUCKET:}
+    rootFolder: ${ARMORYSPINNAKER_S3_PREFIX:front50}
+
+  gate:
+    host: ${DEFAULT_DNS_NAME:gate}
+
+  igor:
+    host: ${DEFAULT_DNS_NAME:igor}
+
+  kayenta:
+    enabled: false # ${KAYENTA_ENABLED:false}  # disabled kayenta because the image is huge, we'll need address this when we enable it
+    host: ${DEFAULT_DNS_NAME:kayenta}
+    canaryConfigStore: true
+    port: 8090
+    baseUrl: ${services.default.protocol}://${services.kayenta.host}:${services.kayenta.port}
+    metricsStore: ${METRICS_STORE:stackdriver}
+    metricsAccountName: ${METRICS_ACCOUNT_NAME}
+    storageAccountName: ${STORAGE_ACCOUNT_NAME}
+    atlasWebComponentsUrl: ${ATLAS_COMPONENTS_URL}
+
+  lighthouse:
+    host: ${DEFAULT_DNS_NAME:lighthouse}
+    port: 5000
+    baseUrl: ${services.default.protocol}://${services.lighthouse.host}:${services.lighthouse.port}
+
+  orca:
+    host: ${DEFAULT_DNS_NAME:orca}
+
+  platform:
+    enabled: ${PLATFORM_ENABLED:false}
+    host: ${DEFAULT_DNS_NAME:platform}
+    baseUrl: ${services.default.protocol}://${services.platform.host}:${services.platform.port}
+    port: 5001
+
+  rosco:
+    host: ${DEFAULT_DNS_NAME:rosco}
+    enabled: true
+    configDir: /opt/spinnaker/config/packer
+
+  bakery:
+    allowMissingPackageInstallation: true
+
+  barometer:
+    enabled: ${BAROMETER_ENABLED:false}
+    host: ${DEFAULT_DNS_NAME:barometer}
+    baseUrl: ${services.default.protocol}://${services.barometer.host}:${services.barometer.port}
+    port: 9092
+    newRelicEnabled: ${NEW_RELIC_ENABLED:false}
+
+  redis:
+    # If you are using a remote redis server, you can set the host here.
+    # If the remote server is on a different port or url, you can add
+    # a "port" or "baseUrl" field here instead.
+    host: ${REDIS_HOST:redis}
+    port: 6379
+    connection: redis://${services.redis.host}:${services.redis.port}
+
+  fiat:
+    enabled: ${FIAT_ENABLED:false}
+    host: ${DEFAULT_DNS_NAME:fiat}
+    port: 7003
+    baseUrl: ${services.default.protocol}://${services.fiat.host}:${services.fiat.port}
+
+providers:
+  aws:
+    enabled: ${SPINNAKER_AWS_ENABLED:true}
+    defaultRegion: ${SPINNAKER_AWS_DEFAULT_REGION:us-west-2}
+    defaultIAMRole: ${SPINNAKER_AWS_DEFAULT_IAM_ROLE:SpinnakerInstanceProfile}
+    defaultAssumeRole: ${SPINNAKER_AWS_DEFAULT_ASSUME_ROLE:SpinnakerManagedProfile}
+    primaryCredentials:
+      name: ${SPINNAKER_AWS_DEFAULT_ACCOUNT:default-aws-account}
+      # The actual credentials are set using a standard AWS client library mechanism
+      # http://docs.aws.amazon.com/AWSSdkDocsJava/latest/DeveloperGuide/credentials.html
+      # Typically this is a $HOME/.aws/credentials file (remember, a standard
+      # spinnaker installation runs as user "spinnaker" whose $HOME is
+      # /home/spinnaker). The primaryCredentials.name will identify which profile
+      # to use (for .aws/credentials).
+
+  kubernetes:
+    proxy: localhost:8001
+    apiPrefix: api/v1/proxy/namespaces/kube-system/services/kubernetes-dashboard/#

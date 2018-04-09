@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: gate
+  namespace: ${NAMESPACE}
+spec:
+  selector:
+    app: gate
+  ports:
+  - protocol: TCP
+    port: 8084
+    targetPort: 8084
+  type: LoadBalancer

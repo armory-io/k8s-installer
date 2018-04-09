@@ -1,0 +1,8 @@
+kubernetes:
+  enabled: true
+  accounts:
+    - name: kubernetes
+      providerVersion: v2
+      kubeconfigFile: /opt/spinnaker/credentials/default/kubeconfig
+      namespaces:
+        - armory
