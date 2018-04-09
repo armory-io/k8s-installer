@@ -1,23 +1,42 @@
 apiVersion: extensions/v1beta1
-kind: ReplicaSet
+kind: Deployment
 metadata:
+  annotations:
+    artifact.spinnaker.io/location: '"${NAMESPACE}"'
+    artifact.spinnaker.io/name: '"armory-echo"'
+    artifact.spinnaker.io/type: '"kubernetes/deployment"'
+    moniker.spinnaker.io/application: '"armory"'
+    moniker.spinnaker.io/cluster: '"echo"'
   name: echo
   namespace: ${NAMESPACE}
   labels:
     app: echo
 spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 3
   replicas: 1
   selector:
     matchLabels:
       app: echo
   template:
     metadata:
+      annotations:
+        artifact.spinnaker.io/location: '"${NAMESPACE}"'
+        artifact.spinnaker.io/name: '"armory-echo"'
+        artifact.spinnaker.io/type: '"kubernetes/deployment"'
+        moniker.spinnaker.io/application: '"armory"'
+        moniker.spinnaker.io/cluster: '"echo"'
       labels:
         app: echo
     spec:
       containers:
       - name: echo
         image: docker.io/armory/echo-armory:${echo_armory_version}
+        command: ["bash", "-c"]
+        args: ["chmod 755 /opt/spinnaker/config/default/fetch.sh && /opt/spinnaker/config/default/fetch.sh && /opt/echo/bin/echo"]
         envFrom:
         - configMapRef:
             name: init-env
@@ -41,8 +60,13 @@ spec:
           mountPath: /etc/podinfo
           readOnly: false
         - name: default-config
-          mountPath: /opt/spinnaker/config
+          mountPath: /opt/spinnaker/config/default
+        - name: custom-config
+          mountPath: /opt/spinnaker/config/custom
       volumes:
+      - name: custom-config
+        configMap:
+          name: custom-config
       - name: default-config
         configMap:
           name: default-config

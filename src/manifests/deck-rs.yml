@@ -1,17 +1,34 @@
 apiVersion: extensions/v1beta1
-kind: ReplicaSet
+kind: Deployment
 metadata:
+  annotations:
+    artifact.spinnaker.io/location: '"${NAMESPACE}"'
+    artifact.spinnaker.io/name: '"armory-deck"'
+    artifact.spinnaker.io/type: '"kubernetes/deployment"'
+    moniker.spinnaker.io/application: '"armory"'
+    moniker.spinnaker.io/cluster: '"deck"'
   name: deck
   namespace: ${NAMESPACE}
   labels:
     app: deck
 spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 3
   replicas: 1
   selector:
     matchLabels:
       app: deck
   template:
     metadata:
+      annotations:
+        artifact.spinnaker.io/location: '"${NAMESPACE}"'
+        artifact.spinnaker.io/name: '"armory-deck"'
+        artifact.spinnaker.io/type: '"kubernetes/deployment"'
+        moniker.spinnaker.io/application: '"armory"'
+        moniker.spinnaker.io/cluster: '"deck"'
       labels:
         app: deck
     spec:

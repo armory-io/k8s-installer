@@ -1,10 +1,8 @@
-#!/bin/bash -xe
+#!/bin/bash -e
 cd "$(dirname "$0")"
-
-# curl -v \
-#  --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
-#  -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
-#  https://kubernetes/
+if [ ! -z "${ARMORY_DEBUG}" ]; then
+  set -x
+fi
 
 source version.manifest
 
@@ -58,6 +56,7 @@ function validate_kubeconfig() {
   else
     if [ -f "$file" ]; then
       echo "Found kubeconfig."
+      export KUBECONFIG=${file}
       export KUBECTL_OPTIONS="${KUBECTL_OPTIONS} --kubeconfig=$file"
     else
       echo "Could not find file ${file}"
@@ -89,14 +88,14 @@ function get_var() {
 
 function prompt_user() {
   get_var "Enter your AWS Profile [e.g. devprofile]: " AWS_PROFILE validate_profile
-  get_var "Path to kubeconfig [if blank default will be used]:" KUBE_CONFIG validate_kubeconfig
+  get_var "Path to kubeconfig [if blank default will be used]: " KUBE_CONFIG validate_kubeconfig
 }
 
 function make_s3_bucket() {
   echo "Creating S3 bucket to store configuration and persist data."
   export ARMORY_S3_PREFIX=front50
   if [ -z "${ARMORY_S3_BUCKET}" ]; then
-    export ARMORY_S3_BUCKET=$(awk '{ print tolower($0) }' <<< armory-$(uuidgen))
+    export ARMORY_S3_BUCKET=$(awk '{ print tolower($0) }' <<< armory-platform-$(uuidgen))
     aws --profile "${AWS_PROFILE}" s3 mb "s3://${ARMORY_S3_BUCKET}" --region us-west-1
   else
     echo "Using S3 bucket - ${ARMORY_S3_BUCKET}"
@@ -155,11 +154,17 @@ function create_k8s_default_config() {
   kubectl ${KUBECTL_OPTIONS} create configmap default-config --from-file=$(pwd)/config/default
 }
 
+function create_k8s_custom_config() {
+  kubectl ${KUBECTL_OPTIONS} delete configmap config || true
+  kubectl ${KUBECTL_OPTIONS} create configmap custom-config --from-file=$(pwd)/config/custom
+}
+
 function create_k8s_resources() {
   create_k8s_namespace
   create_k8s_gate_load_balancer
   create_k8s_deck_load_balancer
   create_k8s_default_config
+  create_k8s_custom_config
   create_k8s_svcs_and_rs
 }
 
@@ -179,6 +184,10 @@ function set_aws_vars() {
   export AWS_REGION=${TF_VAR_aws_region}
 }
 
+function encode_kubeconfig() {
+  export B64KUBECONFIG=$(base64 "${KUBECONFIG}")
+}
+
 function encode_credentials() {
   set_aws_vars
   export B64CREDENTIALS=$(base64 <<EOF
@@ -189,13 +198,25 @@ EOF
 )
 }
 
+function output_results() {
+cat <<EOF
+
+Installation complete. You can access The Armory Platform via:
+
+  http://${DECK_IP}
+
+EOF
+}
+
 function main() {
   describe_installer
   check_prereqs
   prompt_user
   make_s3_bucket
   encode_credentials
+  encode_kubeconfig
   create_k8s_resources
+  output_results
 }
 
 main

@@ -1,17 +1,34 @@
 apiVersion: extensions/v1beta1
-kind: ReplicaSet
+kind: Deployment
 metadata:
+  annotations:
+    artifact.spinnaker.io/location: '"${NAMESPACE}"'
+    artifact.spinnaker.io/name: '"armory-redis"'
+    artifact.spinnaker.io/type: '"kubernetes/deployment"'
+    moniker.spinnaker.io/application: '"armory"'
+    moniker.spinnaker.io/cluster: '"redis"'
   name: redis
   namespace: ${NAMESPACE}
   labels:
     app: redis
 spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 3
   replicas: 1
   selector:
     matchLabels:
       app: redis
   template:
     metadata:
+      annotations:
+        artifact.spinnaker.io/location: '"${NAMESPACE}"'
+        artifact.spinnaker.io/name: '"armory-redis"'
+        artifact.spinnaker.io/type: '"kubernetes/deployment"'
+        moniker.spinnaker.io/application: '"armory"'
+        moniker.spinnaker.io/cluster: '"redis"'
       labels:
         app: redis
     spec:
@@ -29,8 +46,13 @@ spec:
           mountPath: /etc/podinfo
           readOnly: false
         - name: default-config
-          mountPath: /opt/spinnaker/config
+          mountPath: /opt/spinnaker/config/default
+        - name: custom-config
+          mountPath: /opt/spinnaker/config/custom
       volumes:
+      - name: custom-config
+        configMap:
+          name: custom-config
       - name: default-config
         configMap:
           name: default-config

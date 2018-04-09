@@ -1,4 +1,6 @@
 features:
+  artifacts:
+    enabled: true
   # features are should be turned on in {ENV}.env. ex: prod.env
   pipelineTemplates:
     enabled: ${PIPELINE_TEMPLATES_ENABLED:false}
