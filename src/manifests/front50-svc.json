@@ -1,0 +1,20 @@
+{
+  "kind": "Service",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "front50",
+    "namespace": "${NAMESPACE}"
+  },
+  "spec": {
+    "selector": {
+      "app": "front50"
+    },
+    "ports": [
+      {
+        "protocol": "TCP",
+        "port": 8080,
+        "targetPort": 8080
+      }
+    ]
+  }
+}

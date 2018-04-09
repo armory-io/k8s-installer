@@ -115,9 +115,9 @@ function create_k8s_namespace() {
 function create_k8s_gate_load_balancer() {
   echo "Creating load balancer for the API Gateway."
   # TODO: envsubst is non-standard
-  envsubst < manifests/gate-svc.yml > ${BUILD_DIR}/gate-svc.yml
+  envsubst < manifests/gate-svc.json > ${BUILD_DIR}/gate-svc.json
   # Wait for IP
-  kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/gate-svc.yml
+  kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/gate-svc.json
   local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep gate | awk '{ print $4 }')
   echo -n "Waiting for load balancer to receive an IP..."
   while [ "$IP" == "<pending>" ] || [ -z "$IP" ]; do
@@ -132,9 +132,9 @@ function create_k8s_gate_load_balancer() {
 function create_k8s_deck_load_balancer() {
   echo "Creating load balancer for the Web UI."
   # TODO: envsubst is non-standard
-  envsubst < manifests/deck-svc.yml > ${BUILD_DIR}/deck-svc.yml
+  envsubst < manifests/deck-svc.json > ${BUILD_DIR}/deck-svc.json
   # Wait for IP
-  kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/deck-svc.yml
+  kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/deck-svc.json
   local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep deck | awk '{ print $4 }')
   echo -n "Waiting for load balancer to receive an IP..."
   while [ "$IP" == "<pending>" ] || [ -z "$IP" ]; do
@@ -147,10 +147,10 @@ function create_k8s_deck_load_balancer() {
 }
 
 function create_k8s_svcs_and_rs() {
-  for filename in manifests/*.yml; do
+  for filename in manifests/*.json; do
     envsubst < "$filename" > "$BUILD_DIR/$(basename $filename)"
   done
-  for filename in build/*.yml; do
+  for filename in build/*.json; do
     kubectl ${KUBECTL_OPTIONS} apply -f "$filename"
   done
 }

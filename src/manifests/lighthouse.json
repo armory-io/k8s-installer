@@ -1,0 +1,148 @@
+{
+  "apiVersion": "extensions/v1beta1",
+  "kind": "Deployment",
+  "metadata": {
+    "annotations": {
+      "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
+      "artifact.spinnaker.io/name": "\"armory-lighthouse\"",
+      "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
+      "moniker.spinnaker.io/application": "\"armory\"",
+      "moniker.spinnaker.io/cluster": "\"lighthouse\""
+    },
+    "name": "lighthouse",
+    "namespace": "${NAMESPACE}",
+    "labels": {
+      "app": "lighthouse"
+    }
+  },
+  "spec": {
+    "strategy": {
+      "type": "RollingUpdate",
+      "rollingUpdate": {
+        "maxUnavailable": 0,
+        "maxSurge": 3
+      }
+    },
+    "replicas": 1,
+    "selector": {
+      "matchLabels": {
+        "app": "lighthouse"
+      }
+    },
+    "template": {
+      "metadata": {
+        "annotations": {
+          "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
+          "artifact.spinnaker.io/name": "\"armory-lighthouse\"",
+          "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
+          "moniker.spinnaker.io/application": "\"armory\"",
+          "moniker.spinnaker.io/cluster": "\"lighthouse\""
+        },
+        "labels": {
+          "app": "lighthouse"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "lighthouse",
+            "image": "docker.io/armory/lighthouse:${lighthouse_version}",
+            "command": [
+              "bash",
+              "-c"
+            ],
+            "args": [
+              "chmod 755 /opt/spinnaker/config/default/fetch.sh && /opt/spinnaker/config/default/fetch.sh && /home/armory/run_lighthouse.sh"
+            ],
+            "envFrom": [
+              {
+                "configMapRef": {
+                  "name": "init-env"
+                }
+              }
+            ],
+            "env": [
+              {
+                "name": "LIGHTHOUSE_PORT_MAPPING",
+                "value": "-5000:5000"
+              },
+              {
+                "name": "LOG_LEVEL",
+                "value": "DEBUG"
+              }
+            ],
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "100Mi"
+              }
+            },
+            "ports": [
+              {
+                "containerPort": 5000
+              }
+            ],
+            "volumeMounts": [
+              {
+                "name": "podinfo",
+                "mountPath": "/etc/podinfo",
+                "readOnly": false
+              },
+              {
+                "name": "aws-s3-credentials",
+                "mountPath": "/root/.aws"
+              },
+              {
+                "name": "default-config",
+                "mountPath": "/opt/spinnaker/config/default"
+              },
+              {
+                "name": "custom-config",
+                "mountPath": "/opt/spinnaker/config/custom"
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "custom-config",
+            "configMap": {
+              "name": "custom-config"
+            }
+          },
+          {
+            "name": "default-config",
+            "configMap": {
+              "name": "default-config"
+            }
+          },
+          {
+            "name": "aws-s3-credentials",
+            "secret": {
+              "secretName": "aws-s3-credentials"
+            }
+          },
+          {
+            "name": "podinfo",
+            "downwardAPI": {
+              "items": [
+                {
+                  "path": "labels",
+                  "fieldRef": {
+                    "fieldPath": "metadata.labels"
+                  }
+                },
+                {
+                  "path": "annotations",
+                  "fieldRef": {
+                    "fieldPath": "metadata.annotations"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

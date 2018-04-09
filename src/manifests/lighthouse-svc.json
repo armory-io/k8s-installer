@@ -1,0 +1,20 @@
+{
+  "kind": "Service",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "lighthouse",
+    "namespace": "${NAMESPACE}"
+  },
+  "spec": {
+    "selector": {
+      "app": "lighthouse"
+    },
+    "ports": [
+      {
+        "protocol": "TCP",
+        "port": 5000,
+        "targetPort": 5000
+      }
+    ]
+  }
+}
