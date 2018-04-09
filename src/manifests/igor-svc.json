@@ -1,0 +1,20 @@
+{
+  "kind": "Service",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "igor",
+    "namespace": "${NAMESPACE}"
+  },
+  "spec": {
+    "selector": {
+      "app": "igor"
+    },
+    "ports": [
+      {
+        "protocol": "TCP",
+        "port": 8088,
+        "targetPort": 8088
+      }
+    ]
+  }
+}
