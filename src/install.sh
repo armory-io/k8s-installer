@@ -7,7 +7,7 @@ fi
 source version.manifest
 
 export TMP_DIR=$(mktemp -d)
-export NAMESPACE=armory
+export NAMESPACE=${NAMESPACE:-armory}
 # export BUILD_DIR=$TMP_DIR/build/
 export BUILD_DIR=build/
 mkdir -p "$BUILD_DIR"
@@ -23,7 +23,7 @@ function describe_installer() {
     - Docker
   The following will be created:
     - AWS S3 bucket to persist configuration
-    - Kubernetes namespace 'armory'
+    - Kubernetes namespace '${NAMESPACE}'
 
 Need help, advice, or just want to say hello during the installation?
 Chat with our eng. team at http://go.Armory.io/chat.
