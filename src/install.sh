@@ -216,6 +216,200 @@ Installation complete. You can access The Armory Platform via:
 EOF
 }
 
+function create_upgrade_pipeline() {
+  export packager_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'packager_version\']})
+  export armoryspinnaker_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'armoryspinnaker_version\']})
+  export fiat_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'fiat_version\']})
+  export front50_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'front50_version\']})
+  export igor_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'igor_version\']})
+  export rosco_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'rosco_version\']})
+  export clouddriver_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'clouddriver_version\']})
+  export orca_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'orca_version\']})
+  export lighthouse_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'lighthouse_version\']})
+  export barometer_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'barometer_version\']})
+  export dinghy_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'dinghy_version\']})
+  export platform_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'platform_version\']})
+  export kayenta_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'kayenta_version\']})
+  export gate_armory_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'gate_armory_version\']})
+  export gate_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'gate_version\']})
+  export echo_armory_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'echo_armory_version\']})
+  export echo_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'echo_version\']})
+  export deck_armory_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'deck_armory_version\']})
+  export deck_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'deck_version\']})
+
+  mkdir -p ${BUILD_DIR}/pipeline
+  for filename in manifests/*-deployment.json; do
+    envsubst < "$filename" > "$BUILD_DIR/pipeline/pipeline-$(basename $filename)"
+  done
+cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
+{
+  "application": "armory",
+  "name": "Deploy",
+  "keepWaitingPipelines": false,
+  "limitConcurrent": true,
+  "stages": [
+      {
+        "method": "GET",
+        "name": "Fetch latest version",
+        "refId": "2",
+        "requisiteStageRefIds": [],
+        "statusUrlResolution": "getMethod",
+        "type": "webhook",
+        "url": "https://get.armory.io/test.json",
+        "waitForCompletion": false
+    },
+    {
+        "account": "kubernetes",
+        "cloudProvider": "kubernetes",
+        "manifests": [
+            $(cat ${BUILD_DIR}/pipeline/pipeline-rosco-deployment.json)
+        ],
+        "moniker": {
+            "app": "armory",
+            "cluster": "rosco"
+        },
+        "name": "Deploy Rosco",
+        "refId": "10",
+        "requisiteStageRefIds": ["2"],
+        "source": "text",
+        "type": "deployManifest"
+    },
+    {
+        "account": "kubernetes",
+        "cloudProvider": "kubernetes",
+        "manifests": [
+            $(cat ${BUILD_DIR}/pipeline/pipeline-clouddriver-deployment.json)
+        ],
+        "moniker": {
+            "app": "armory",
+            "cluster": "clouddriver"
+        },
+        "name": "Deploy clouddriver",
+        "refId": "1",
+        "requisiteStageRefIds": ["2"],
+        "source": "text",
+        "type": "deployManifest"
+    },
+    {
+        "account": "kubernetes",
+        "cloudProvider": "kubernetes",
+        "manifests": [
+            $(cat ${BUILD_DIR}/pipeline/pipeline-deck-deployment.json)
+        ],
+        "moniker": {
+            "app": "armory",
+            "cluster": "deck"
+        },
+        "name": "Deploy deck",
+        "refId": "3",
+        "requisiteStageRefIds": ["2"],
+        "source": "text",
+        "type": "deployManifest"
+    },
+    {
+        "account": "kubernetes",
+        "cloudProvider": "kubernetes",
+        "manifests": [
+            $(cat ${BUILD_DIR}/pipeline/pipeline-echo-deployment.json)
+        ],
+        "moniker": {
+            "app": "armory",
+            "cluster": "echo"
+        },
+        "name": "Deploy echo",
+        "refId": "4",
+        "requisiteStageRefIds": ["2"],
+        "source": "text",
+        "type": "deployManifest"
+    },
+    {
+        "account": "kubernetes",
+        "cloudProvider": "kubernetes",
+        "manifests": [
+            $(cat ${BUILD_DIR}/pipeline/pipeline-front50-deployment.json)
+        ],
+        "moniker": {
+            "app": "armory",
+            "cluster": "front50"
+        },
+        "name": "Deploy front50",
+        "refId": "5",
+        "requisiteStageRefIds": ["2"],
+        "source": "text",
+        "type": "deployManifest"
+    },
+    {
+        "account": "kubernetes",
+        "cloudProvider": "kubernetes",
+        "manifests": [
+            $(cat ${BUILD_DIR}/pipeline/pipeline-gate-deployment.json)
+        ],
+        "moniker": {
+            "app": "armory",
+            "cluster": "gate"
+        },
+        "name": "Deploy gate",
+        "refId": "6",
+        "requisiteStageRefIds": ["2"],
+        "source": "text",
+        "type": "deployManifest"
+    },
+    {
+        "account": "kubernetes",
+        "cloudProvider": "kubernetes",
+        "manifests": [
+            $(cat ${BUILD_DIR}/pipeline/pipeline-igor-deployment.json)
+        ],
+        "moniker": {
+            "app": "armory",
+            "cluster": "igor"
+        },
+        "name": "Deploy igor",
+        "refId": "7",
+        "requisiteStageRefIds": ["2"],
+        "source": "text",
+        "type": "deployManifest"
+    },
+    {
+        "account": "kubernetes",
+        "cloudProvider": "kubernetes",
+        "manifests": [
+            $(cat ${BUILD_DIR}/pipeline/pipeline-lighthouse-deployment.json)
+        ],
+        "moniker": {
+            "app": "armory",
+            "cluster": "lighthouse"
+        },
+        "name": "Deploy lighthouse",
+        "refId": "8",
+        "requisiteStageRefIds": ["2"],
+        "source": "text",
+        "type": "deployManifest"
+    },
+    {
+        "account": "kubernetes",
+        "cloudProvider": "kubernetes",
+        "manifests": [
+            $(cat ${BUILD_DIR}/pipeline/pipeline-orca-deployment.json)
+        ],
+        "moniker": {
+            "app": "armory",
+            "cluster": "orca"
+        },
+        "name": "Deploy orca",
+        "refId": "9",
+        "requisiteStageRefIds": ["2"],
+        "source": "text",
+        "type": "deployManifest"
+    }
+  ]
+}
+EOF
+  echo "Waiting for the API gateway to become ready. This may take several minutes."
+  sleep 120
+  curl -v -XPOST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${GATE_IP}:8084/pipelines"
+}
+
 function main() {
   describe_installer
   check_prereqs
@@ -224,6 +418,7 @@ function main() {
   encode_credentials
   encode_kubeconfig
   create_k8s_resources
+  create_upgrade_pipeline
   output_results
 }
 
