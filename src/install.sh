@@ -109,7 +109,7 @@ function make_s3_bucket() {
 }
 
 function create_k8s_namespace() {
-  kubectl ${KUBECTL_OPTIONS} create namespace armory
+  kubectl ${KUBECTL_OPTIONS} create namespace ${NAMESPACE}
 }
 
 function create_k8s_gate_load_balancer() {
