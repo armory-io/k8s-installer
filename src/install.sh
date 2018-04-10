@@ -94,7 +94,7 @@ function get_var() {
 
 function prompt_user() {
   get_var "Enter your AWS Profile [e.g. devprofile]: " AWS_PROFILE validate_profile
-  get_var "Path to kubeconfig [if blank default will be used]: " KUBE_CONFIG validate_kubeconfig "" "~/.kube/config"
+  get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
 }
 
 function make_s3_bucket() {
