@@ -7,7 +7,7 @@ fi
 source version.manifest
 
 export TMP_DIR=$(mktemp -d)
-export NAMESPACE=armory
+export NAMESPACE=${NAMESPACE:-armory}
 # export BUILD_DIR=$TMP_DIR/build/
 export BUILD_DIR=build/
 mkdir -p "$BUILD_DIR"
@@ -23,7 +23,7 @@ function describe_installer() {
     - Docker
   The following will be created:
     - AWS S3 bucket to persist configuration
-    - Kubernetes namespace 'armory'
+    - Kubernetes namespace '${NAMESPACE}'
 
 Need help, advice, or just want to say hello during the installation?
 Chat with our eng. team at http://go.Armory.io/chat.
@@ -94,7 +94,7 @@ function get_var() {
 
 function prompt_user() {
   get_var "Enter your AWS Profile [e.g. devprofile]: " AWS_PROFILE validate_profile
-  get_var "Path to kubeconfig [if blank default will be used]: " KUBE_CONFIG validate_kubeconfig "" "~/.kube/config"
+  get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
 }
 
 function make_s3_bucket() {
@@ -109,7 +109,7 @@ function make_s3_bucket() {
 }
 
 function create_k8s_namespace() {
-  kubectl ${KUBECTL_OPTIONS} create namespace armory
+  kubectl ${KUBECTL_OPTIONS} create namespace ${NAMESPACE}
 }
 
 function create_k8s_gate_load_balancer() {
@@ -156,13 +156,15 @@ function create_k8s_svcs_and_rs() {
 }
 
 function create_k8s_default_config() {
-  kubectl ${KUBECTL_OPTIONS} delete configmap default-config || true
   kubectl ${KUBECTL_OPTIONS} create configmap default-config --from-file=$(pwd)/config/default
 }
 
 function create_k8s_custom_config() {
-  kubectl ${KUBECTL_OPTIONS} delete configmap config || true
-  kubectl ${KUBECTL_OPTIONS} create configmap custom-config --from-file=$(pwd)/config/custom
+  mkdir -p ${BUILD_DIR}/config/custom/
+  for filename in config/custom/*.yml; do
+    envsubst < $filename > ${BUILD_DIR}/config/custom/$(basename $filename)
+  done
+  kubectl ${KUBECTL_OPTIONS} create configmap custom-config --from-file=${BUILD_DIR}/config/custom
 }
 
 function create_k8s_resources() {

@@ -5,4 +5,4 @@ kubernetes:
       providerVersion: v2
       kubeconfigFile: /opt/spinnaker/credentials/default/kubeconfig
       namespaces:
-        - armory
+        - ${NAMESPACE}
