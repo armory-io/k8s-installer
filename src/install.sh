@@ -214,15 +214,43 @@ Installation complete. You can access The Armory Platform via:
 EOF
 }
 
+function create_upgrade_pipeline() {
+  export packager_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'packager_version\']})
+  export armoryspinnaker_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'armoryspinnaker_version\']})
+  export fiat_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'fiat_version\']})
+  export front50_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'front50_version\']})
+  export igor_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'igor_version\']})
+  export rosco_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'rosco_version\']})
+  export clouddriver_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'clouddriver_version\']})
+  export orca_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'orca_version\']})
+  export lighthouse_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'lighthouse_version\']})
+  export barometer_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'barometer_version\']})
+  export dinghy_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'dinghy_version\']})
+  export platform_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'platform_version\']})
+  export kayenta_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'kayenta_version\']})
+  export gate_armory_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'gate_armory_version\']})
+  export gate_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'gate_version\']})
+  export echo_armory_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'echo_armory_version\']})
+  export echo_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'echo_version\']})
+  export deck_armory_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'deck_armory_version\']})
+  export deck_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'deck_version\']})
+
+  for filename in manifests/*-deployment.json; do
+    envsubst < "$filename" > "$BUILD_DIR/pipeline-$(basename $filename)"
+  done
+
+}
+
 function main() {
-  describe_installer
-  check_prereqs
-  prompt_user
-  make_s3_bucket
-  encode_credentials
-  encode_kubeconfig
-  create_k8s_resources
-  output_results
+  # describe_installer
+  # check_prereqs
+  # prompt_user
+  # make_s3_bucket
+#  encode_credentials
+#  encode_kubeconfig
+#  create_k8s_resources
+#  output_results
+  create_upgrade_pipeline
 }
 
 main
