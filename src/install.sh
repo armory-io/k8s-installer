@@ -33,8 +33,10 @@ Press 'Enter' key to continue. Ctrl+C to quit.
 }
 
 function check_prereqs() {
-  type aws >/dev/null 2>&1 || { error "I require aws but it's not installed. Ref: http://docs.aws.amazon.com/cli/latest/userguide/installing.html"; }
-  type kubectl >/dev/null 2>&1 || { error "I require 'kubectl' but it's not installed. Ref: https://kubernetes.io/docs/tasks/tools/install-kubectl/"; }
+  type aws >/dev/null 2>&1 || { echo "I require aws but it's not installed. Ref: http://docs.aws.amazon.com/cli/latest/userguide/installing.html" 1>&2 && exit 1; }
+  type kubectl >/dev/null 2>&1 || { echo "I require 'kubectl' but it's not installed. Ref: https://kubernetes.io/docs/tasks/tools/install-kubectl/" 1>&2 && exit 1; }
+  type envsubst >/dev/null 2>&1 || { echo "I require 'envsubst' but it's not installed. Please install the 'gettext' package." 1>&2;
+                                     echo "On Mac OS X, you can run: 'brew install gettext && brew link --force gettext'" 1>&2 && exit 1; }
 }
 
 function validate_profile() {
