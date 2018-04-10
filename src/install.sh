@@ -237,10 +237,10 @@ function create_upgrade_pipeline() {
   export deck_armory_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'deck_armory_version\']})
   export deck_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'deck_version\']})
 
+  mkdir -p ${BUILD_DIR}/pipeline
   for filename in manifests/*-deployment.json; do
-    envsubst < "$filename" > "$BUILD_DIR/pipeline-$(basename $filename)"
+    envsubst < "$filename" > "$BUILD_DIR/pipeline/pipeline-$(basename $filename)"
   done
-mkdir -p ${BUILD_DIR}/pipeline
 cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
 {
   "application": "armory",
@@ -262,7 +262,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         "account": "kubernetes",
         "cloudProvider": "kubernetes",
         "manifests": [
-            $(cat ${BUILD_DIR}/pipeline-rosco-deployment.json)
+            $(cat ${BUILD_DIR}/pipeline/pipeline-rosco-deployment.json)
         ],
         "moniker": {
             "app": "armory",
@@ -278,7 +278,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         "account": "kubernetes",
         "cloudProvider": "kubernetes",
         "manifests": [
-            $(cat ${BUILD_DIR}/pipeline-clouddriver-deployment.json)
+            $(cat ${BUILD_DIR}/pipeline/pipeline-clouddriver-deployment.json)
         ],
         "moniker": {
             "app": "armory",
@@ -294,7 +294,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         "account": "kubernetes",
         "cloudProvider": "kubernetes",
         "manifests": [
-            $(cat ${BUILD_DIR}/pipeline-deck-deployment.json)
+            $(cat ${BUILD_DIR}/pipeline/pipeline-deck-deployment.json)
         ],
         "moniker": {
             "app": "armory",
@@ -310,7 +310,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         "account": "kubernetes",
         "cloudProvider": "kubernetes",
         "manifests": [
-            $(cat ${BUILD_DIR}/pipeline-echo-deployment.json)
+            $(cat ${BUILD_DIR}/pipeline/pipeline-echo-deployment.json)
         ],
         "moniker": {
             "app": "armory",
@@ -326,7 +326,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         "account": "kubernetes",
         "cloudProvider": "kubernetes",
         "manifests": [
-            $(cat ${BUILD_DIR}/pipeline-front50-deployment.json)
+            $(cat ${BUILD_DIR}/pipeline/pipeline-front50-deployment.json)
         ],
         "moniker": {
             "app": "armory",
@@ -342,7 +342,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         "account": "kubernetes",
         "cloudProvider": "kubernetes",
         "manifests": [
-            $(cat ${BUILD_DIR}/pipeline-gate-deployment.json)
+            $(cat ${BUILD_DIR}/pipeline/pipeline-gate-deployment.json)
         ],
         "moniker": {
             "app": "armory",
@@ -358,7 +358,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         "account": "kubernetes",
         "cloudProvider": "kubernetes",
         "manifests": [
-            $(cat ${BUILD_DIR}/pipeline-igor-deployment.json)
+            $(cat ${BUILD_DIR}/pipeline/pipeline-igor-deployment.json)
         ],
         "moniker": {
             "app": "armory",
@@ -374,7 +374,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         "account": "kubernetes",
         "cloudProvider": "kubernetes",
         "manifests": [
-            $(cat ${BUILD_DIR}/pipeline-lighthouse-deployment.json)
+            $(cat ${BUILD_DIR}/pipeline/pipeline-lighthouse-deployment.json)
         ],
         "moniker": {
             "app": "armory",
@@ -390,7 +390,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         "account": "kubernetes",
         "cloudProvider": "kubernetes",
         "manifests": [
-            $(cat ${BUILD_DIR}/pipeline-orca-deployment.json)
+            $(cat ${BUILD_DIR}/pipeline/pipeline-orca-deployment.json)
         ],
         "moniker": {
             "app": "armory",
@@ -405,21 +405,21 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
   ]
 }
 EOF
-
-curl -v -XPOST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://35.192.189.229:8084/pipelines"
-
+  echo "Waiting for the API gateway to become ready. This may take several minutes."
+  sleep 120
+  curl -v -XPOST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${GATE_IP}:8084/pipelines"
 }
 
 function main() {
-  # describe_installer
-  # check_prereqs
-  # prompt_user
-  # make_s3_bucket
-#  encode_credentials
-#  encode_kubeconfig
-#  create_k8s_resources
-#  output_results
+  describe_installer
+  check_prereqs
+  prompt_user
+  make_s3_bucket
+  encode_credentials
+  encode_kubeconfig
+  create_k8s_resources
   create_upgrade_pipeline
+  output_results
 }
 
 main
