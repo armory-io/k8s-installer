@@ -20,6 +20,7 @@
     "ECHO_OPTS": "-Dspring.profiles.active=armory,local",
     "SPRING_PROFILES_ACTIVE": "armory,local",
     "SPINNAKER_AWS_ENABLED": "false",
-    "CONFIGURATOR_ENABLED": "true"
+    "CONFIGURATOR_ENABLED": "true",
+    "PLATFORM_ARCHITECTURE": "k8s"
   }
 }
