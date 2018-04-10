@@ -156,13 +156,15 @@ function create_k8s_svcs_and_rs() {
 }
 
 function create_k8s_default_config() {
-  kubectl ${KUBECTL_OPTIONS} delete configmap default-config || true
   kubectl ${KUBECTL_OPTIONS} create configmap default-config --from-file=$(pwd)/config/default
 }
 
 function create_k8s_custom_config() {
-  kubectl ${KUBECTL_OPTIONS} delete configmap config || true
-  kubectl ${KUBECTL_OPTIONS} create configmap custom-config --from-file=$(pwd)/config/custom
+  mkdir -p ${BUILD_DIR}/config/custom/
+  for filename in config/custom/*.yml; do
+    envsubst < $filename > ${BUILD_DIR}/config/custom/$(basename $filename)
+  done
+  kubectl ${KUBECTL_OPTIONS} create configmap custom-config --from-file=${BUILD_DIR}/config/custom
 }
 
 function create_k8s_resources() {
