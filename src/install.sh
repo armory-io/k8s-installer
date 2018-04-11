@@ -32,9 +32,25 @@ Press 'Enter' key to continue. Ctrl+C to quit.
   read
 }
 
+function error() {
+  >&2 echo $1
+  exit 1
+}
+
+function check_kubectl_version() {
+  version=$(kubectl version help | grep "^Client Version" | sed 's/^.*GitVersion:"v\([0-9\.v]*\)".*$/\1/')
+  version_major=$(echo $version | cut -d. -f1)
+  version_minor=$(echo $version | cut -d. -f2)
+
+  if [ $version_major -lt 1 ] || [ $version_minor -lt 8 ]; then
+    error "I require 'kubectl' version 1.8.x or higher. Ref: https://kubernetes.io/docs/tasks/tools/install-kubectl/"
+  fi
+}
+
 function check_prereqs() {
   type aws >/dev/null 2>&1 || { error "I require aws but it's not installed. Ref: http://docs.aws.amazon.com/cli/latest/userguide/installing.html"; }
   type kubectl >/dev/null 2>&1 || { error "I require 'kubectl' but it's not installed. Ref: https://kubernetes.io/docs/tasks/tools/install-kubectl/"; }
+  check_kubectl_version
 }
 
 function validate_profile() {
