@@ -121,7 +121,7 @@ function create_k8s_gate_load_balancer() {
   local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep gate | awk '{ print $4 }')
   echo -n "Waiting for load balancer to receive an IP..."
   while [ "$IP" == "<pending>" ] || [ -z "$IP" ]; do
-    sleep 15
+    sleep 5
     local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep gate | awk '{ print $4 }')
     echo -n "."
   done
@@ -138,7 +138,7 @@ function create_k8s_deck_load_balancer() {
   local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep deck | awk '{ print $4 }')
   echo -n "Waiting for load balancer to receive an IP..."
   while [ "$IP" == "<pending>" ] || [ -z "$IP" ]; do
-    sleep 15
+    sleep 5
     local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep deck | awk '{ print $4 }')
     echo -n "."
   done
@@ -406,8 +406,20 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
 }
 EOF
   echo "Waiting for the API gateway to become ready. This may take several minutes."
-  sleep 120
-  curl -v -XPOST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${GATE_IP}:8084/pipelines"
+  counter=0
+  while true; do
+        if [ `curl -s -m 3 http://${GATE_IP}:8084/applications` ]; then
+          curl -s -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${GATE_IP}:8084/pipelines"
+          break
+        fi
+        if [ "$counter" -gt 30 ]; then
+            echo "ERROR: Timeout occurred waiting for http://${GATE_IP}:8084/applications to become available"
+            exit 2
+        fi
+        counter=$((counter+1))
+        echo -n "."
+        sleep 2
+  done
 }
 
 function main() {

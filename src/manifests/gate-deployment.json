@@ -82,6 +82,14 @@
                 "containerPort": 8084
               }
             ],
+            "readinessProbe": {
+              "httpGet":{
+                "path": "/health?checkDownstreamServices=true&downstreamServices=true",
+                "port": 8084
+              },
+              "initialDelaySeconds": 60,
+              "periodSeconds": 5
+            },
             "livenessProbe": {
               "httpGet": {
                 "path": "/health",
