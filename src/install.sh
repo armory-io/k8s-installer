@@ -190,9 +190,6 @@ function create_k8s_deck_load_balancer() {
 }
 
 function create_k8s_svcs_and_rs() {
-  env
-  export S3_ENABLED=true
-  export GCS_ENABLED=false
   for filename in manifests/*.json; do
     envsubst < "$filename" > "$BUILD_DIR/$(basename $filename)"
   done
