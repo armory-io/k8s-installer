@@ -85,10 +85,8 @@ function validate_config_store() {
   echo "$S3_ENABLED"
   if [ "$1" == "GCS" ]; then
     echo "GCS selected as config store."
-    export GCS_ENABLED=true
   elif [ "$1" == "S3" ]; then
     echo "S3 selected as config store."
-    export S3_ENABLED=true
   else
     echo "Config store has to be one of GCS or S3" 1>&2
     return 1
@@ -134,8 +132,12 @@ function get_var() {
 function prompt_user() {
   get_var "Do you want to persist config data in S3 or GCS [defaults to S3]: " CONFIG_STORE validate_config_store "" "S3"
   if [[ "$CONFIG_STORE" == "S3" ]]; then
+    export S3_ENABLED=true
+    export GCS_ENABLED=false
     get_var "Enter your AWS Profile [e.g. devprofile]: " AWS_PROFILE validate_profile
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
+    export GCS_ENABLED=true
+    export S3_ENABLED=false
     get_var "Enter path to gsutil creds [defaults to: \${HOME}/.gsutil/credstore]: " GCP_CREDS validate_gcp_creds "" "${HOME}/.gsutil/credstore"
   fi
   get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
