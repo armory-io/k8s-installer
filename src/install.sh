@@ -102,7 +102,7 @@ function make_s3_bucket() {
   export ARMORY_S3_PREFIX=front50
   if [ -z "${ARMORY_S3_BUCKET}" ]; then
     export ARMORY_S3_BUCKET=$(awk '{ print tolower($0) }' <<< armory-platform-$(uuidgen))
-    aws --profile "${AWS_PROFILE}" s3 mb "s3://${ARMORY_S3_BUCKET}" --region us-west-1
+    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 mb "s3://${ARMORY_S3_BUCKET}"
   else
     echo "Using S3 bucket - ${ARMORY_S3_BUCKET}"
   fi
@@ -121,7 +121,7 @@ function create_k8s_gate_load_balancer() {
   local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep gate | awk '{ print $4 }')
   echo -n "Waiting for load balancer to receive an IP..."
   while [ "$IP" == "<pending>" ] || [ -z "$IP" ]; do
-    sleep 15
+    sleep 5
     local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep gate | awk '{ print $4 }')
     echo -n "."
   done
@@ -138,7 +138,7 @@ function create_k8s_deck_load_balancer() {
   local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep deck | awk '{ print $4 }')
   echo -n "Waiting for load balancer to receive an IP..."
   while [ "$IP" == "<pending>" ] || [ -z "$IP" ]; do
-    sleep 15
+    sleep 5
     local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep deck | awk '{ print $4 }')
     echo -n "."
   done
@@ -189,7 +189,7 @@ function set_aws_vars() {
     export AWS_SECRET_ACCESS_KEY=$(echo ${temp_session_data} | awk '{print $7}')
     export AWS_SESSION_TOKEN=$(echo ${temp_session_data} | awk '{print $8}')
   fi
-  export AWS_REGION=${TF_VAR_aws_region}
+  export AWS_REGION=us-east-1
 }
 
 function encode_kubeconfig() {
@@ -414,8 +414,8 @@ function main() {
   describe_installer
   check_prereqs
   prompt_user
-  make_s3_bucket
   encode_credentials
+  make_s3_bucket
   encode_kubeconfig
   create_k8s_resources
   create_upgrade_pipeline
