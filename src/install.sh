@@ -79,10 +79,6 @@ function validate_kubeconfig() {
 }
 
 function validate_config_store() {
-  export GCS_ENABLED=false
-  export S3_ENABLED=false
-  echo "$GCS_ENABLED"
-  echo "$S3_ENABLED"
   if [ "$1" == "GCS" ]; then
     echo "GCS selected as config store."
   elif [ "$1" == "S3" ]; then
