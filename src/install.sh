@@ -92,6 +92,15 @@ function validate_config_store() {
   return 0
 }
 
+function validate_gcp_creds() {
+  # might need more robust validation of creds
+  if [ ! -f "$1" ]; then
+    echo "$1 does not exist!" 1>&2
+    return 1
+  fi
+  return 0
+}
+
 function get_var() {
   local text=$1
   local var_name="${2}"
@@ -122,6 +131,8 @@ function prompt_user() {
   get_var "Do you want to persist config data in S3 or GCS [defaults to S3]: " CONFIG_STORE validate_config_store "" "S3"
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     get_var "Enter your AWS Profile [e.g. devprofile]: " AWS_PROFILE validate_profile
+  elif [[ "$CONFIG_STORE" == "GCS" ]]; then
+    get_var "Enter path to gsutil creds [defaults to: \${HOME}/.gsutil/credstore]: " GCP_CREDS validate_gcp_creds "" "${HOME}/.gsutil/credstore"
   fi
   get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
 
@@ -246,7 +257,9 @@ aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
 EOF
 )
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
-    echo "TODO: what GCS credentials are required in what format by what microservice?"
+    export B64CREDENTIALS=$(base64 -i "$GCP_CREDS")
+    echo "using.... $B64CREDENTIALS"
+    exit 0
   fi
 }
 
@@ -403,7 +416,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         "cloudProvider": "kubernetes",
         "manifests": [
             $(cat ${BUILD_DIR}/pipeline/pipeline-igor-deployment.json)
-        ],
+        ],ah ok,
         "moniker": {
             "app": "armory",
             "cluster": "igor"
@@ -461,7 +474,8 @@ function main() {
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     make_s3_bucket
   else
-    make_gcs_bucket
+    #make_gcs_bucket
+    echo hi
   fi
   encode_credentials
   encode_kubeconfig
