@@ -417,7 +417,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         "cloudProvider": "kubernetes",
         "manifests": [
             $(cat ${BUILD_DIR}/pipeline/pipeline-igor-deployment.json)
-        ],ah ok,
+        ],
         "moniker": {
             "app": "armory",
             "cluster": "igor"
