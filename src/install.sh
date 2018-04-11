@@ -165,6 +165,11 @@ function create_k8s_custom_config() {
     envsubst < $filename > ${BUILD_DIR}/config/custom/$(basename $filename)
   done
   kubectl ${KUBECTL_OPTIONS} create configmap custom-config --from-file=${BUILD_DIR}/config/custom
+  # dump to a file to upload to S3. Used when we re-deploy
+  kubectl ${KUBECTL_OPTIONS} get cm custom-config -o json > ${BUILD_DIR}/config/custom/custom-config.json
+  aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+    "${BUILD_DIR}/config/custom/custom-config.json" \
+    "s3://${ARMORY_S3_BUCKET}/front50/config_v2/custom-config.json"
 }
 
 function create_k8s_resources() {
@@ -247,7 +252,44 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
   "name": "Deploy",
   "keepWaitingPipelines": false,
   "limitConcurrent": true,
+  "expectedArtifacts": [
+    {
+      "defaultArtifact": {
+        "kind": "default.s3",
+        "name": "s3://${ARMORY_S3_BUCKET}/front50/config_v2/custom-config.json",
+        "reference": "s3://${ARMORY_S3_BUCKET}/front50/config_v2/custom-config.json",
+        "type": "s3/object"
+      },
+      "id": "ced981ba-4bf5-41e2-8ee0-07209f79d190",
+      "matchArtifact": {
+        "kind": "s3",
+        "name": "s3://${ARMORY_S3_BUCKET}/front50/config_v2/custom-config.json",
+        "type": "s3/object"
+      },
+      "useDefaultArtifact": true,
+      "usePriorExecution": false
+    }
+  ],
   "stages": [
+      {
+        "account": "kubernetes",
+        "cloudProvider": "kubernetes",
+        "manifestArtifactAccount": "armory-config-s3-account",
+        "manifestArtifactId": "ced981ba-4bf5-41e2-8ee0-07209f79d190",
+        "moniker": {
+          "app": "armory",
+          "cluster": "custom-config"
+        },
+        "name": "Deploy Config",
+        "refId": "1",
+        "relationships": {
+          "loadBalancers": [],
+          "securityGroups": []
+        },
+        "requisiteStageRefIds": [],
+        "source": "artifact",
+        "type": "deployManifest"
+      },
       {
         "method": "GET",
         "name": "Fetch latest version",
@@ -255,7 +297,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         "requisiteStageRefIds": [],
         "statusUrlResolution": "getMethod",
         "type": "webhook",
-        "url": "https://get.armory.io/test.json",
+        "url": "https://get.armory.io/k8s-latest.json",
         "waitForCompletion": false
     },
     {
@@ -270,7 +312,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy Rosco",
         "refId": "10",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -285,8 +327,8 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
             "cluster": "clouddriver"
         },
         "name": "Deploy clouddriver",
-        "refId": "1",
-        "requisiteStageRefIds": ["2"],
+        "refId": "11",
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -302,7 +344,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy deck",
         "refId": "3",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -318,7 +360,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy echo",
         "refId": "4",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -334,7 +376,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy front50",
         "refId": "5",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -350,7 +392,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy gate",
         "refId": "6",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -366,7 +408,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy igor",
         "refId": "7",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -382,7 +424,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy lighthouse",
         "refId": "8",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -398,7 +440,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy orca",
         "refId": "9",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     }
