@@ -17,12 +17,17 @@ function describe_installer() {
   echo "
   This installer will launch the Armory Platform into your Kubernetes cluster.
   The following are required:
-    - AWS Credentials File
-    - aws cli
+    If using AWS:
+      - AWS Credentials File
+      - aws cli
+    If using GCP:
+      - GCP Credentials
+      - gcloud sdk (gsutil in particular)
     - kubectl and kubeconfig file
     - Docker
   The following will be created:
-    - AWS S3 bucket to persist configuration
+    - AWS S3 bucket to persist configuration (If using S3)
+    - GCP bucket to persist configuration (If using GCP)
     - Kubernetes namespace '${NAMESPACE}'
 
 Need help, advice, or just want to say hello during the installation?
@@ -33,8 +38,15 @@ Press 'Enter' key to continue. Ctrl+C to quit.
 }
 
 function check_prereqs() {
-  type aws >/dev/null 2>&1 || { error "I require aws but it's not installed. Ref: http://docs.aws.amazon.com/cli/latest/userguide/installing.html"; }
-  type kubectl >/dev/null 2>&1 || { error "I require 'kubectl' but it's not installed. Ref: https://kubernetes.io/docs/tasks/tools/install-kubectl/"; }
+  if [[ "$CONFIG_STORE" == "S3" ]]; then
+    type aws >/dev/null 2>&1 || { echo "I require aws but it's not installed. Ref: http://docs.aws.amazon.com/cli/latest/userguide/installing.html" 1>&2 && exit 1; }
+  fi
+  type kubectl >/dev/null 2>&1 || { echo "I require 'kubectl' but it's not installed. Ref: https://kubernetes.io/docs/tasks/tools/install-kubectl/" 1>&2 && exit 1; }
+  if [[ "$CONFIG_STORE" == "GCS" ]]; then
+    type gsutil >/dev/null 2>&1 || { echo "I require 'gsutil' but it's not installed. Ref: https://cloud.google.com/storage/docs/gsutil_install#sdk-install" 1>&2 && exit 1; }
+  fi
+  type envsubst >/dev/null 2>&1 || { echo "I require 'envsubst' but it's not installed. Please install the 'gettext' package." 1>&2;
+                                     echo "On Mac OS X, you can run: 'brew install gettext && brew link --force gettext'" 1>&2 && exit 1; }
 }
 
 function validate_profile() {
@@ -66,6 +78,20 @@ function validate_kubeconfig() {
   return 0
 }
 
+function validate_config_store() {
+  if [ "$1" == "GCS" ]; then
+    echo "GCS selected as config store."
+    export GCS_ENABLED=true
+  elif [ "$1" == "S3" ]; then
+    echo "S3 selected as config store."
+    export S3_ENABLED=true
+  else
+    echo "Config store has to be one of GCS or S3" 1>&2
+    return 1
+  fi
+  return 0
+}
+
 function get_var() {
   local text=$1
   local var_name="${2}"
@@ -93,18 +119,32 @@ function get_var() {
 }
 
 function prompt_user() {
-  get_var "Enter your AWS Profile [e.g. devprofile]: " AWS_PROFILE validate_profile
+  get_var "Do you want to persist config data in S3 or GCS [defaults to S3]: " CONFIG_STORE validate_config_store "" "S3"
+  if [[ "$CONFIG_STORE" == "S3" ]]; then
+    get_var "Enter your AWS Profile [e.g. devprofile]: " AWS_PROFILE validate_profile
+  fi
   get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
+
 }
 
 function make_s3_bucket() {
   echo "Creating S3 bucket to store configuration and persist data."
-  export ARMORY_S3_PREFIX=front50
-  if [ -z "${ARMORY_S3_BUCKET}" ]; then
-    export ARMORY_S3_BUCKET=$(awk '{ print tolower($0) }' <<< armory-platform-$(uuidgen))
-    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 mb "s3://${ARMORY_S3_BUCKET}"
+  export ARMORY_CONF_STORE_PREFIX=front50
+  if [ -z "${ARMORY_CONF_STORE_BUCKET}" ]; then
+    export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< armory-platform-$(uuidgen))
+    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 mb "s3://${ARMORY_CONF_STORE_BUCKET}"
   else
-    echo "Using S3 bucket - ${ARMORY_S3_BUCKET}"
+    echo "Using S3 bucket - ${ARMORY_CONF_STORE_BUCKET}"
+  fi
+}
+
+function make_gcs_bucket() {
+  echo "Creating GCS bucket to store configuration and persist data."
+  if [ -z "${ARMORY_CONF_STORE_BUCKET}" ]; then
+    export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< armory-platform-$(uuidgen))
+    gsutil mb "gs://${ARMORY_CONF_STORE_BUCKET}/"
+  else
+    echo "Using GCS bucket - ${ARMORY_CONF_STORE_BUCKET}"
   fi
 }
 
@@ -169,7 +209,7 @@ function create_k8s_custom_config() {
   kubectl ${KUBECTL_OPTIONS} get cm custom-config -o json > ${BUILD_DIR}/config/custom/custom-config.json
   aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
     "${BUILD_DIR}/config/custom/custom-config.json" \
-    "s3://${ARMORY_S3_BUCKET}/front50/config_v2/custom-config.json"
+    "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json"
 }
 
 function create_k8s_resources() {
@@ -202,13 +242,17 @@ function encode_kubeconfig() {
 }
 
 function encode_credentials() {
-  set_aws_vars
-  export B64CREDENTIALS=$(base64 <<EOF
+  if [[ "$CONFIG_STORE" == "S3" ]]; then
+      set_aws_vars
+      export B64CREDENTIALS=$(base64 <<EOF
 [default]
 aws_access_key_id=${AWS_ACCESS_KEY_ID}
 aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
 EOF
 )
+  elif [[ "$CONFIG_STORE" == "GCS" ]]; then
+    echo "TODO: what GCS credentials are required in what format by what microservice?"
+  fi
 }
 
 function output_results() {
@@ -256,14 +300,14 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
     {
       "defaultArtifact": {
         "kind": "default.s3",
-        "name": "s3://${ARMORY_S3_BUCKET}/front50/config_v2/custom-config.json",
-        "reference": "s3://${ARMORY_S3_BUCKET}/front50/config_v2/custom-config.json",
+        "name": "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json",
+        "reference": "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json",
         "type": "s3/object"
       },
       "id": "ced981ba-4bf5-41e2-8ee0-07209f79d190",
       "matchArtifact": {
         "kind": "s3",
-        "name": "s3://${ARMORY_S3_BUCKET}/front50/config_v2/custom-config.json",
+        "name": "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json",
         "type": "s3/object"
       },
       "useDefaultArtifact": true,
@@ -448,14 +492,31 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
 }
 EOF
   echo "Waiting for the API gateway to become ready. This may take several minutes."
-  sleep 120
-  curl -v -XPOST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${GATE_IP}:8084/pipelines"
+  counter=0
+  while true; do
+        if [ `curl -s -m 3 http://${GATE_IP}:8084/applications` ]; then
+          curl -s -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${GATE_IP}:8084/pipelines"
+          break
+        fi
+        if [ "$counter" -gt 30 ]; then
+            echo "ERROR: Timeout occurred waiting for http://${GATE_IP}:8084/applications to become available"
+            exit 2
+        fi
+        counter=$((counter+1))
+        echo -n "."
+        sleep 2
+  done
 }
 
 function main() {
   describe_installer
-  check_prereqs
   prompt_user
+  check_prereqs
+  if [[ "$CONFIG_STORE" == "S3" ]]; then
+    make_s3_bucket
+  else
+    make_gcs_bucket
+  fi
   encode_credentials
   make_s3_bucket
   encode_kubeconfig

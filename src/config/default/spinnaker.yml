@@ -10,6 +10,7 @@
 global:
   spinnaker:
     timezone: 'America/Los_Angeles'
+    architecture: ${PLATFORM_ARCHITECTURE}
 
 services:
   default:
