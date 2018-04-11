@@ -87,6 +87,10 @@
                 "readOnly": false
               },
               {
+                "name": "aws-s3-credentials",
+                "mountPath": "/root/.aws"
+              },
+              {
                 "name": "default-kubeconfig",
                 "mountPath": "/opt/spinnaker/credentials/default"
               },
@@ -102,6 +106,12 @@
           }
         ],
         "volumes": [
+          {
+            "name": "aws-s3-credentials",
+            "secret": {
+              "secretName": "aws-s3-credentials"
+            }
+          },
           {
             "name": "custom-config",
             "configMap": {
