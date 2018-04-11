@@ -35,6 +35,7 @@ Press 'Enter' key to continue. Ctrl+C to quit.
 function check_prereqs() {
   type aws >/dev/null 2>&1 || { echo "I require aws but it's not installed. Ref: http://docs.aws.amazon.com/cli/latest/userguide/installing.html" 1>&2 && exit 1; }
   type kubectl >/dev/null 2>&1 || { echo "I require 'kubectl' but it's not installed. Ref: https://kubernetes.io/docs/tasks/tools/install-kubectl/" 1>&2 && exit 1; }
+  type gsutil >/dev/null 2>&1 || { echo "I require 'gsutil' but it's not installed. Ref: https://cloud.google.com/storage/docs/gsutil_install#sdk-install" 1>&2 && exit 1; }
   type envsubst >/dev/null 2>&1 || { echo "I require 'envsubst' but it's not installed. Please install the 'gettext' package." 1>&2;
                                      echo "On Mac OS X, you can run: 'brew install gettext && brew link --force gettext'" 1>&2 && exit 1; }
 }
@@ -68,6 +69,19 @@ function validate_kubeconfig() {
   return 0
 }
 
+function validate_config_store() {
+  if [ "$1" == "GCS" ]; then
+    echo "GCS selected as config store."
+  elif [ "$1" == "S3" ]; then
+    echo "S3 selected as config store."
+  else
+    echo "Config store can be either GCS or S3"
+    return 1
+  fi
+  export CONFIG_STORE="$1"
+  return 0
+}
+
 function get_var() {
   local text=$1
   local var_name="${2}"
@@ -97,6 +111,7 @@ function get_var() {
 function prompt_user() {
   get_var "Enter your AWS Profile [e.g. devprofile]: " AWS_PROFILE validate_profile
   get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
+  get_var "Do you want to persist config data in S3 or GCS [defaults to S3]: " CONFIG_STORE validate_config_store
 }
 
 function make_s3_bucket() {
@@ -107,6 +122,16 @@ function make_s3_bucket() {
     aws --profile "${AWS_PROFILE}" s3 mb "s3://${ARMORY_S3_BUCKET}" --region us-west-1
   else
     echo "Using S3 bucket - ${ARMORY_S3_BUCKET}"
+  fi
+}
+
+function make_gcs_bucket() {
+  echo "Creating GCS bucket to store configuration and persist data."
+  if [ -z "${ARMORY_GCS_BUCKET}" ]; then
+    export ARMORY_GCS_BUCKET=$(awk '{ print tolower($0) }' <<< armory-platform-$(uuidgen))
+    gsutil mb "gs://${ARMORY_GCS_BUCKET}/"
+  else
+    echo "Using GCS bucket - ${ARMORY_GCS_BUCKET}"
   fi
 }
 
@@ -416,7 +441,11 @@ function main() {
   describe_installer
   check_prereqs
   prompt_user
-  make_s3_bucket
+  if [[ "$CONFIG_STORE" == "S3" ]]; then
+    make_s3_bucket
+  else
+    make_gcs_bucket
+  fi
   encode_credentials
   encode_kubeconfig
   create_k8s_resources
