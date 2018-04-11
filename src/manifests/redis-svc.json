@@ -3,7 +3,7 @@
   "kind": "Service",
   "metadata": {
     "name": "redis",
-    "namespace": "armory",
+    "namespace": "${NAMESPACE}",
     "labels": {
       "app": "redis"
     }
