@@ -3,14 +3,14 @@
   "kind": "Deployment",
   "metadata": {
     "annotations": {
-      "artifact.spinnaker.io/location": "\"brandon\"",
+      "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
       "artifact.spinnaker.io/name": "\"armory-redis\"",
       "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
       "moniker.spinnaker.io/application": "\"armory\"",
       "moniker.spinnaker.io/cluster": "\"redis\""
     },
     "name": "redis",
-    "namespace": "brandon",
+    "namespace": "${NAMESPACE}",
     "labels": {
       "app": "redis"
     }
@@ -32,7 +32,7 @@
     "template": {
       "metadata": {
         "annotations": {
-          "artifact.spinnaker.io/location": "\"brandon\"",
+          "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
           "artifact.spinnaker.io/name": "\"armory-redis\"",
           "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
           "moniker.spinnaker.io/application": "\"armory\"",
