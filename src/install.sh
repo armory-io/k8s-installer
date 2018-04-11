@@ -191,6 +191,7 @@ function create_k8s_svcs_and_rs() {
     envsubst < "$filename" > "$BUILD_DIR/$(basename $filename)"
   done
   for filename in build/*.json; do
+    echo "Applying $filename..."
     kubectl ${KUBECTL_OPTIONS} apply -f "$filename"
   done
 }
@@ -453,8 +454,12 @@ EOF
   counter=0
   while true; do
         if [ `curl -s -m 3 http://${GATE_IP}:8084/applications` ]; then
-          curl -s -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${GATE_IP}:8084/pipelines"
-          break
+          #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
+          curl -s --fail -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${GATE_IP}:8084/pipelines"
+          if [ "$?" -ne "0" ]; then
+            echo "Received a non-zero exit code from pipeline curl request: $?"
+            break
+          fi
         fi
         if [ "$counter" -gt 30 ]; then
             echo "ERROR: Timeout occurred waiting for http://${GATE_IP}:8084/applications to become available"

@@ -72,9 +72,18 @@
                 "containerPort": 7002
               }
             ],
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/health",
+                "port": 7002
+              },
+              "initialDelaySeconds": 60,
+              "periodSeconds": 3,
+              "successThreshold": 5
+            },
             "livenessProbe": {
               "httpGet": {
-                "path": "/",
+                "path": "/health",
                 "port": 7002
               },
               "initialDelaySeconds": 60,
