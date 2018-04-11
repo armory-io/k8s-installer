@@ -258,8 +258,7 @@ EOF
 )
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
     export B64CREDENTIALS=$(base64 -i "$GCP_CREDS")
-    echo "using.... $B64CREDENTIALS"
-    exit 0
+
   fi
 }
 
