@@ -80,7 +80,7 @@
             ],
             "readinessProbe": {
               "httpGet": {
-                "path": "/health",
+                "path": "/",
                 "port": 8088
               },
               "initialDelaySeconds": 60,
@@ -89,7 +89,7 @@
             },
             "livenessProbe": {
               "httpGet": {
-                "path": "/health",
+                "path": "/",
                 "port": 8088
               },
               "initialDelaySeconds": 60,
