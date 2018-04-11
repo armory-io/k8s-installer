@@ -64,10 +64,12 @@ services:
       enabled: false
     redis:
       enabled: true
+    gcs:
+      enabled: ${ARMORYSPINNAKER_GCS_ENABLED}
     s3:
-      enabled: true
-    storage_bucket: ${ARMORYSPINNAKER_S3_BUCKET:}
-    rootFolder: ${ARMORYSPINNAKER_S3_PREFIX:front50}
+      enabled: ${ARMORYSPINNAKER_S3_ENABLED}
+    storage_bucket: ${ARMORYSPINNAKER_CONF_STORE_BUCKET}
+    rootFolder: ${ARMORYSPINNAKER_CONF_STORE_PREFIX:front50}
 
   gate:
     host: ${DEFAULT_DNS_NAME:gate}
