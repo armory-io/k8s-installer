@@ -169,7 +169,7 @@ function create_k8s_custom_config() {
 
 
 function create_k8s_redis_config() {
-  kubectl ${KUBECTL_OPTIONS} create configmap redis-config --from-file=${BUILD_DIR}/config/redis
+  kubectl ${KUBECTL_OPTIONS} create configmap redis-config --from-file=$(pwd)/config/redis
 }
 
 function create_k8s_resources() {

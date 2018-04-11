@@ -47,7 +47,12 @@
           {
             "name": "redis",
             "image": "redis:3.2",
-            "resources": {"limits": {"cpu": "0.1"}},
+            "resources": {
+              "limits": {
+                "cpu": "500m",
+                "memory": "256Mi"
+              }
+            },
             "command": [ "redis-server" ],
             "args": ["/opt/spinnaker/config/redis/redis-master.conf"],
             "ports": [
@@ -70,7 +75,12 @@
           {
             "name": "redis-sentinel",
             "image": "redis:3.2",
-            "resources": {"limits": {"cpu": "0.1"}},
+            "resources": {
+              "limits": {
+                "cpu": "500m",
+                "memory": "256Mi"
+              }
+            },
             "command": [
               "bash", "-c", "touch sentinel.conf && redis-sentinel sentinel.conf"
             ],
@@ -84,7 +94,11 @@
           {
             "name": "redis-sidecar",
             "image": "armory/k8s-redis:latest",
-            "resources": {"limits": {"cpu": "0.1"}}
+            "resources": {
+              "limits": {
+                "cpu": "200m"
+              }
+            }
           }
         ],
         "volumes": [
