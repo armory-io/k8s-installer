@@ -167,12 +167,18 @@ function create_k8s_custom_config() {
   kubectl ${KUBECTL_OPTIONS} create configmap custom-config --from-file=${BUILD_DIR}/config/custom
 }
 
+
+function create_k8s_redis_config() {
+  kubectl ${KUBECTL_OPTIONS} create configmap redis-config --from-file=${BUILD_DIR}/config/redis
+}
+
 function create_k8s_resources() {
   create_k8s_namespace
   create_k8s_gate_load_balancer
   create_k8s_deck_load_balancer
   create_k8s_default_config
   create_k8s_custom_config
+  create_k8s_redis_config
   create_k8s_svcs_and_rs
 }
 

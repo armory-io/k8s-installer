@@ -3,7 +3,7 @@
   "kind": "Service",
   "metadata": {
     "name": "redis",
-    "namespace": "${NAMESPACE}",
+    "namespace": "brandon",
     "labels": {
       "app": "redis"
     }
@@ -11,13 +11,16 @@
   "spec": {
     "ports": [
       {
+        "name": "redis",
         "port": 6379,
         "targetPort": 6379,
         "protocol": "TCP"
       }
     ],
     "selector": {
-      "app": "redis"
-    }
+      "app": "redis",
+      "role": "master"
+    },
+    "type": "LoadBalancer"
   }
 }
