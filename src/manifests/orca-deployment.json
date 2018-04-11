@@ -16,14 +16,15 @@
     }
   },
   "spec": {
+    "minReadySeconds": 60,
     "strategy": {
       "type": "RollingUpdate",
       "rollingUpdate": {
         "maxUnavailable": 0,
-        "maxSurge": 3
+        "maxSurge": 4
       }
     },
-    "replicas": 1,
+    "replicas": 2,
     "selector": {
       "matchLabels": {
         "app": "orca"

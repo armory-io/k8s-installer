@@ -20,10 +20,10 @@
       "type": "RollingUpdate",
       "rollingUpdate": {
         "maxUnavailable": 0,
-        "maxSurge": 3
+        "maxSurge": "100%"
       }
     },
-    "replicas": 1,
+    "replicas": 2,
     "selector": {
       "matchLabels": {
         "app": "deck"
