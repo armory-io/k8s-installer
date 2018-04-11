@@ -65,9 +65,9 @@ services:
     redis:
       enabled: true
     gcs:
-      enabled: ${ARMORYSPINNAKER_GCS_ENABLED}
+      enabled: ${ARMORYSPINNAKER_GCS_ENABLED:false}
     s3:
-      enabled: ${ARMORYSPINNAKER_S3_ENABLED}
+      enabled: ${ARMORYSPINNAKER_S3_ENABLED:false}
     storage_bucket: ${ARMORYSPINNAKER_CONF_STORE_BUCKET}
     rootFolder: ${ARMORYSPINNAKER_CONF_STORE_PREFIX:front50}
 
