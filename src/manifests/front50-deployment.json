@@ -70,8 +70,8 @@
             ],
             "resources": {
               "requests": {
-                "cpu": "2000m",
-                "memory": "4Gi"
+                "cpu": "1000m",
+                "memory": "2Gi"
               }
             },
             "ports": [
