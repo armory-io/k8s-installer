@@ -179,7 +179,9 @@ function make_gcs_bucket() {
 }
 
 function create_k8s_namespace() {
-  kubectl ${KUBECTL_OPTIONS} create namespace ${NAMESPACE}
+  if [ -z "$(kubectl ${KUBECTL_OPTIONS} get namespace ${NAMESPACE})" ]; then
+    kubectl ${KUBECTL_OPTIONS} create namespace ${NAMESPACE}
+  fi
 }
 
 function create_k8s_gate_load_balancer() {

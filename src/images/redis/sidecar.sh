@@ -53,7 +53,7 @@ if [[ -n $master ]]; then
 else
   host=`hostname -i`
   echo "starting master @ $host"
-  sentinel-monitor `hostname -i`
+  sentinel-monitor $host
 fi
 
 last_role="none"
