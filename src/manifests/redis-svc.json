@@ -19,7 +19,6 @@
     "selector": {
       "app": "redis",
       "role": "master"
-    },
-    "type": "LoadBalancer"
+    }
   }
 }
