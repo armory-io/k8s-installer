@@ -106,6 +106,15 @@ function validate_config_store() {
   return 0
 }
 
+function validate_gcp_creds() {
+  # might need more robust validation of creds
+  if [ ! -f "$1" ]; then
+    echo "$1 does not exist!" 1>&2
+    return 1
+  fi
+  return 0
+}
+
 function get_var() {
   local text=$1
   local var_name="${2}"
@@ -141,6 +150,8 @@ function prompt_user() {
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
     export GCS_ENABLED=true
     export S3_ENABLED=false
+    export GCP_CREDS_MNT_PATH="/root/.gsutil/credstore"
+    get_var "Enter path to gsutil creds [defaults to: \${HOME}/.gsutil/credstore]: " GCP_CREDS validate_gcp_creds "" "${HOME}/.gsutil/credstore"
   fi
   get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
 
@@ -282,7 +293,8 @@ aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
 EOF
 )
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
-    echo "TODO: what GCS credentials are required in what format by what microservice?"
+    export B64CREDENTIALS=$(base64 -i "$GCP_CREDS")
+
   fi
 }
 
