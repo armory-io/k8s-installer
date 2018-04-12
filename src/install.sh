@@ -289,7 +289,8 @@ EOF
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
     export PROJECT_ID=$(gcloud config get-value core/project)
     export SERVICE_ACCOUNT_NAME="$(mktemp armory-svc-acct-XXXXXXXXXXXX | tr '[:upper:]' '[:lower:]')"
-    export GCP_CREDS="${BUILD_DIR}/service-account.json"
+    mkdir -p ${BUILD_DIR}/credentials
+    export GCP_CREDS="${BUILD_DIR}/credentials/service-account.json"
     gcloud iam service-accounts create ${SERVICE_ACCOUNT_NAME} \
       --display-name "Armory GCS service account"
     gcloud projects add-iam-policy-binding ${PROJECT_ID} \
