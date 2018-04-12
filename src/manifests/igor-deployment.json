@@ -69,8 +69,13 @@
             ],
             "resources": {
               "requests": {
+<<<<<<< HEAD
                 "cpu": "${IGOR_CPU}",
                 "memory": "${IGOR_MEMORY}"
+=======
+                "cpu": "1000m",
+                "memory": "2Gi"
+>>>>>>> 9dc9fec3fc4bbafcf89d28c36d5ea5342e3b51fc
               }
             },
             "ports": [

@@ -64,8 +64,13 @@
             ],
             "resources": {
               "requests": {
+<<<<<<< HEAD
                 "cpu": "${ORCA_CPU}",
                 "memory": "${ORCA_MEMORY}"
+=======
+                "cpu": "2000m",
+                "memory": "4Gi"
+>>>>>>> 9dc9fec3fc4bbafcf89d28c36d5ea5342e3b51fc
               }
             },
             "ports": [
