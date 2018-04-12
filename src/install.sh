@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 cd "$(dirname "$0")"
 if [ ! -z "${ARMORY_DEBUG}" ]; then
   set -x
@@ -458,9 +458,11 @@ EOF
   while true; do
         if [ `curl -s -m 3 http://${GATE_IP}:8084/applications` ]; then
           #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
-          curl -s --fail -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${GATE_IP}:8084/pipelines"
-          if [ "$?" -ne "0" ]; then
-            echo "Received a non-zero exit code from pipeline curl request: $?"
+          http_code=$(curl -s -o /dev/null -w %{http_code} -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${GATE_IP}:8084/pipelines")
+          if [[ "$http_code" -lt "200" || "$http_code" -gt "399" ]]; then
+            echo "Received a error code from pipeline curl request: $http_code"
+            exit 10
+          else
             break
           fi
         fi
