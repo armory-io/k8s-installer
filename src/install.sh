@@ -241,7 +241,7 @@ function create_k8s_custom_config() {
   if [[ "${S3_ENABLED}" == "true" ]]; then
     aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
       "${BUILD_DIR}/config/custom/custom-config.json" \
-      "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json"
+      "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
   elif [[ "${GCS_ENABLED}" == "true" ]]; then
     # TODO: upload to GCS
     echo "TODO - should load custom-config.json to GCS"
@@ -330,11 +330,11 @@ function create_upgrade_pipeline() {
 
   # TODO: the s3/gcs substitutions below are probably wrong.
   if [[ "${S3_ENABLED}" == "true" ]]; then
-    export ARTIFACT_URI=s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json
+    export ARTIFACT_URI=s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json
     export ARTIFACT_KIND=s3
     export ARTIFACT_ACCOUNT=armory-config-s3-account
   elif [[ "${GCS_ENABLED}" == "true" ]]; then
-    export ARTIFACT_URI=gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json
+    export ARTIFACT_URI=gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json
     export ARTIFACT_KIND=gcs
     export ARTIFACT_ACCOUNT=armory-config-gcs-account
   else
