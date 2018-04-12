@@ -575,38 +575,57 @@ EOF
   done
 }
 
-function set_env() {
-  if [[ ! -z ${ARMORY_DEV} ]]; then
-    export DEV_CPU="100m"
-    export DEV_MEMORY="128Mi"
+function set_resources() {
+  if [[ "${ARMORY_DEV}" == "true" ]]; then
+    export CLOUDDRIVER_CPU="100m"
+    export DECK_CPU="100m"
+    export ECHO_CPU="100m"
+    export FRONT50_CPU="100m"
+    export GATE_CPU="100m"
+    export IGOR_CPU="100m"
+    export LIGHTHOUSE_CPU="100m"
+    export ORCA_CPU="100m"
+    export REDIS_CPU="100m"
+    export ROSCO_CPU="100m"
+    export CLOUDRIVER_MEMORY="128Mi"
+    export DECK_MEMORY="128Mi"
+    export ECHO_MEMORY="128Mi"
+    export FRONT50_MEMORY="128Mi"
+    export GATE_MEMORY="128Mi"
+    export IGOR_MEMORY="128Mi"
+    export LIGHTHOUSE_MEMORY="128Mi"
+    export ORCA_MEMORY="128Mi"
+    export REDIS_MEMORY="128Mi"
+    export ROSCO_MEMORY="128Mi"
+  else
+    export CLOUDDRIVER_MEMORY="2000m"
+    export DECK_CPU="1000m"
+    export ECHO_CPU="1000m"
+    export FRONT50_CPU="1000m"
+    export GATE_CPU="1000m"
+    export IGOR_CPU="1000m"
+    export LIGHTHOUSE_CPU="500m"
+    export ORCA_CPU="2000m"
+    export REDIS_CPU="1000m"
+    export ROSCO_CPU="1000m"
+    export CLOUDRIVER_MEMORY="8Gi"
+    export DECK_MEMORY="512Mi"
+    export ECHO_MEMORY="1Gi"
+    export FRONT50_MEMORY="2Gi"
+    export GATE_MEMORY="2Gi"
+    export IGOR_MEMORY="2Gi"
+    export LIGHTHOUSE_MEMORY="512Mi"
+    export ORCA_MEMORY="4Gi"
+    export REDIS_MEMORY="16Gi"
+    export ROSCO_MEMORY="1Gi"
   fi
-  export CLOUDRIVER_CPU=${DEV_CPU:-2000m}
-  export DECK_CPU=${DEV_CPU:-1000m}
-  export ECHO_CPU=${DEV_CPU:-1000m}
-  export FRONT50_CPU=${DEV_CPU:-1000m}
-  export GATE_CPU=${DEV_CPU:-1000m}
-  export IGOR_CPU=${DEV_CPU:-1000m}
-  export LIGHTHOUSE_CPU=${DEV_CPU:-500m}
-  export ORCA_CPU=${DEV_CPU:-2000m}
-  export REDIS_CPU=${DEV_CPU:-1000m}
-  export ROSCO_CPU=${DEV_CPU:-1000m}
-  export CLOUDRIVER_MEMORY=${DEV_MEMORY:-8Gi}
-  export DECK_MEMORY=${DEV_MEMORY:-512Mi}
-  export ECHO_MEMORY=${DEV_MEMORY:-1Gi}
-  export FRONT50_MEMORY=${DEV_MEMORY:-2Gi}
-  export GATE_MEMORY=${DEV_MEMORY:-2Gi}
-  export IGOR_MEMORY=${DEV_MEMORY:-2Gi}
-  export LIGHTHOUSE_MEMORY=${DEV_MEMORY:-512Mi}
-  export ORCA_MEMORY=${DEV_MEMORY:-4Gi}
-  export REDIS_MEMORY=${DEV_MEMORY:-16Gi}
-  export ROSCO_MEMORY=${DEV_MEMORY:-1Gi}
 }
 
 function main() {
   describe_installer
   prompt_user
   check_prereqs
-  set_env
+  set_resources
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     make_s3_bucket
   else
