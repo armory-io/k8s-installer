@@ -6,9 +6,13 @@
     "namespace": "${NAMESPACE}"
   },
   "data": {
-    "ARMORYSPINNAKER_S3_BUCKET": "${ARMORY_S3_BUCKET}",
-    "ARMORYSPINNAKER_S3_PREFIX": "front50",
-    "SPINNAKER_AWS_DEFAULT_REGION": "us-west-2",
+    "SPINNAKER_AWS_DEFAULT_REGION": "us-east-1",
+    "AWS_REGION": "us-east-1",
+    "ARMORYSPINNAKER_S3_ENABLED": "${S3_ENABLED}",
+    "ARMORYSPINNAKER_GCS_ENABLED": "${GCS_ENABLED}",
+    "ARMORYSPINNAKER_CONF_STORE_BUCKET": "${ARMORY_CONF_STORE_BUCKET}",
+    "ARMORYSPINNAKER_CONF_STORE_PREFIX": "front50",
+    "SPINNAKER_GOOGLE_PROJECT_CREDENTIALS_PATH": "${GCP_CREDS_MNT_PATH}",
     "REDIS_HOST": "redis",
     "API_HOST": "http://${GATE_IP}:8084",
     "DECK_HOST": "http://${DECK_IP}",
@@ -20,6 +24,7 @@
     "ECHO_OPTS": "-Dspring.profiles.active=armory,local",
     "SPRING_PROFILES_ACTIVE": "armory,local",
     "SPINNAKER_AWS_ENABLED": "false",
-    "CONFIGURATOR_ENABLED": "true"
+    "CONFIGURATOR_ENABLED": "true",
+    "PLATFORM_ARCHITECTURE": "k8s"
   }
 }

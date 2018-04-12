@@ -4,15 +4,15 @@
   "metadata": {
     "annotations": {
       "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
-      "artifact.spinnaker.io/name": "\"armory-clouddriver\"",
+      "artifact.spinnaker.io/name": "\"armory-front50\"",
       "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
       "moniker.spinnaker.io/application": "\"armory\"",
-      "moniker.spinnaker.io/cluster": "\"clouddriver\""
+      "moniker.spinnaker.io/cluster": "\"front50\""
     },
-    "name": "clouddriver",
+    "name": "front50",
     "namespace": "${NAMESPACE}",
     "labels": {
-      "app": "clouddriver"
+      "app": "front50"
     }
   },
   "spec": {
@@ -26,33 +26,33 @@
     "replicas": 1,
     "selector": {
       "matchLabels": {
-        "app": "clouddriver"
+        "app": "front50"
       }
     },
     "template": {
       "metadata": {
         "annotations": {
           "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
-          "artifact.spinnaker.io/name": "\"armory-clouddriver\"",
+          "artifact.spinnaker.io/name": "\"armory-front50\"",
           "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
           "moniker.spinnaker.io/application": "\"armory\"",
-          "moniker.spinnaker.io/cluster": "\"clouddriver\""
+          "moniker.spinnaker.io/cluster": "\"front50\""
         },
         "labels": {
-          "app": "clouddriver"
+          "app": "front50"
         }
       },
       "spec": {
         "containers": [
           {
-            "name": "clouddriver",
-            "image": "docker.io/armory/spinnaker-clouddriver-slim:${clouddriver_version}",
+            "name": "front50",
+            "image": "docker.io/armory/spinnaker-front50-slim:${front50_version}",
             "command": [
               "bash",
               "-c"
             ],
             "args": [
-              "chmod 755 /opt/spinnaker/config/default/fetch.sh && /opt/spinnaker/config/default/fetch.sh && /opt/clouddriver/bin/clouddriver"
+              "chmod 755 /opt/spinnaker/config/default/fetch.sh && /opt/spinnaker/config/default/fetch.sh && /opt/front50/bin/front50"
             ],
             "envFrom": [
               {
@@ -61,21 +61,36 @@
                 }
               }
             ],
+            "env": [
+              {
+                "name": "JAVA_OPTS",
+                "value": "-javaagent:/opt/front50/lib/jamm-0.2.5.jar"
+              }
+            ],
             "resources": {
               "requests": {
                 "cpu": "500m",
-                "memory": "256Mi"
+                "memory": "512Mi"
               }
             },
             "ports": [
               {
-                "containerPort": 7002
+                "containerPort": 8080
               }
             ],
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/health",
+                "port": 8080
+              },
+              "initialDelaySeconds": 60,
+              "periodSeconds": 5,
+              "successThreshold": 10
+            },
             "livenessProbe": {
               "httpGet": {
-                "path": "/",
-                "port": 7002
+                "path": "/health",
+                "port": 8080
               },
               "initialDelaySeconds": 60,
               "periodSeconds": 3
@@ -87,8 +102,12 @@
                 "readOnly": false
               },
               {
-                "name": "default-kubeconfig",
-                "mountPath": "/opt/spinnaker/credentials/default"
+                "name": "aws-s3-credentials",
+                "mountPath": "/root/.aws"
+              },
+              {
+                "name": "gcp-credentials",
+                "mountPath": "/root/.gsutil/credstore"
               },
               {
                 "name": "default-config",
@@ -115,9 +134,15 @@
             }
           },
           {
-            "name": "default-kubeconfig",
+            "name": "aws-s3-credentials",
             "secret": {
-              "secretName": "default-kubeconfig"
+              "secretName": "aws-s3-credentials"
+            }
+          },
+          {
+            "name": "gcp-credentials",
+            "secret": {
+              "secretName": "gcp-credentials"
             }
           },
           {

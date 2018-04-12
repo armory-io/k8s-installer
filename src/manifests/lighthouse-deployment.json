@@ -4,15 +4,15 @@
   "metadata": {
     "annotations": {
       "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
-      "artifact.spinnaker.io/name": "\"armory-echo\"",
+      "artifact.spinnaker.io/name": "\"armory-lighthouse\"",
       "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
       "moniker.spinnaker.io/application": "\"armory\"",
-      "moniker.spinnaker.io/cluster": "\"echo\""
+      "moniker.spinnaker.io/cluster": "\"lighthouse\""
     },
-    "name": "echo",
+    "name": "lighthouse",
     "namespace": "${NAMESPACE}",
     "labels": {
-      "app": "echo"
+      "app": "lighthouse"
     }
   },
   "spec": {
@@ -26,33 +26,33 @@
     "replicas": 1,
     "selector": {
       "matchLabels": {
-        "app": "echo"
+        "app": "lighthouse"
       }
     },
     "template": {
       "metadata": {
         "annotations": {
           "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
-          "artifact.spinnaker.io/name": "\"armory-echo\"",
+          "artifact.spinnaker.io/name": "\"armory-lighthouse\"",
           "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
           "moniker.spinnaker.io/application": "\"armory\"",
-          "moniker.spinnaker.io/cluster": "\"echo\""
+          "moniker.spinnaker.io/cluster": "\"lighthouse\""
         },
         "labels": {
-          "app": "echo"
+          "app": "lighthouse"
         }
       },
       "spec": {
         "containers": [
           {
-            "name": "echo",
-            "image": "docker.io/armory/echo-armory:${echo_armory_version}",
+            "name": "lighthouse",
+            "image": "docker.io/armory/lighthouse:${lighthouse_version}",
             "command": [
               "bash",
               "-c"
             ],
             "args": [
-              "chmod 755 /opt/spinnaker/config/default/fetch.sh && /opt/spinnaker/config/default/fetch.sh && /opt/echo/bin/echo"
+              "chmod 755 /opt/spinnaker/config/default/fetch.sh && /opt/spinnaker/config/default/fetch.sh && /home/armory/run_lighthouse.sh"
             ],
             "envFrom": [
               {
@@ -63,8 +63,20 @@
             ],
             "env": [
               {
-                "name": "JAVA_OPTS",
-                "value": "-javaagent:/opt/echo/lib/jamm-0.2.5.jar"
+                "name": "LIGHTHOUSE_PORT_MAPPING",
+                "value": "-5000:5000"
+              },
+              {
+                "name": "LOG_LEVEL",
+                "value": "DEBUG"
+              },
+              {
+                "name": "NAMESPACE",
+                "valueFrom": {
+                  "fieldRef": {
+                    "fieldPath": "metadata.namespace"
+                  }
+                }
               }
             ],
             "resources": {
@@ -75,22 +87,18 @@
             },
             "ports": [
               {
-                "containerPort": 8089
+                "containerPort": 5000
               }
             ],
-            "livenessProbe": {
-              "httpGet": {
-                "path": "/health",
-                "port": 8089
-              },
-              "initialDelaySeconds": 60,
-              "periodSeconds": 3
-            },
             "volumeMounts": [
               {
                 "name": "podinfo",
                 "mountPath": "/etc/podinfo",
                 "readOnly": false
+              },
+              {
+                "name": "aws-s3-credentials",
+                "mountPath": "/root/.aws"
               },
               {
                 "name": "default-config",
@@ -114,6 +122,12 @@
             "name": "default-config",
             "configMap": {
               "name": "default-config"
+            }
+          },
+          {
+            "name": "aws-s3-credentials",
+            "secret": {
+              "secretName": "aws-s3-credentials"
             }
           },
           {

@@ -4,15 +4,15 @@
   "metadata": {
     "annotations": {
       "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
-      "artifact.spinnaker.io/name": "\"armory-gate\"",
+      "artifact.spinnaker.io/name": "\"armory-rosco\"",
       "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
       "moniker.spinnaker.io/application": "\"armory\"",
-      "moniker.spinnaker.io/cluster": "\"gate\""
+      "moniker.spinnaker.io/cluster": "\"rosco\""
     },
-    "name": "gate",
+    "name": "rosco",
     "namespace": "${NAMESPACE}",
     "labels": {
-      "app": "gate"
+      "app": "rosco"
     }
   },
   "spec": {
@@ -26,33 +26,33 @@
     "replicas": 1,
     "selector": {
       "matchLabels": {
-        "app": "gate"
+        "app": "rosco"
       }
     },
     "template": {
       "metadata": {
         "annotations": {
           "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
-          "artifact.spinnaker.io/name": "\"armory-gate\"",
+          "artifact.spinnaker.io/name": "\"armory-rosco\"",
           "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
           "moniker.spinnaker.io/application": "\"armory\"",
-          "moniker.spinnaker.io/cluster": "\"gate\""
+          "moniker.spinnaker.io/cluster": "\"rosco\""
         },
         "labels": {
-          "app": "gate"
+          "app": "rosco"
         }
       },
       "spec": {
         "containers": [
           {
-            "name": "gate",
-            "image": "docker.io/armory/gate-armory:${gate_armory_version}",
+            "name": "rosco",
+            "image": "docker.io/armory/spinnaker-rosco-slim:${rosco_version}",
             "command": [
               "bash",
               "-c"
             ],
             "args": [
-              "chmod 755 /opt/spinnaker/config/default/fetch.sh && /opt/spinnaker/config/default/fetch.sh && /opt/gate/bin/gate"
+              "chmod 755 /opt/spinnaker/config/default/fetch.sh && /opt/spinnaker/config/default/fetch.sh && /opt/rosco/bin/rosco"
             ],
             "envFrom": [
               {
@@ -63,29 +63,34 @@
             ],
             "env": [
               {
-                "name": "GATE_PORT_MAPPING",
-                "value": "-8084:8084"
-              },
-              {
-                "name": "GATE_API_PORT_MAPPING",
-                "value": "-8085:8085"
+                "name": "ROSCO_PORT_MAPPING",
+                "value": "-8087:8087"
               }
             ],
             "resources": {
               "requests": {
-                "cpu": "500m",
+                "cpu": "250m",
                 "memory": "256Mi"
               }
             },
             "ports": [
               {
-                "containerPort": 8084
+                "containerPort": 8087
               }
             ],
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/health",
+                "port": 8087
+              },
+              "initialDelaySeconds": 60,
+              "periodSeconds": 3,
+              "successThreshold": 5
+            },
             "livenessProbe": {
               "httpGet": {
                 "path": "/health",
-                "port": 8084
+                "port": 8087
               },
               "initialDelaySeconds": 60,
               "periodSeconds": 3

@@ -4,15 +4,15 @@
   "metadata": {
     "annotations": {
       "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
-      "artifact.spinnaker.io/name": "\"armory-igor\"",
+      "artifact.spinnaker.io/name": "\"armory-orca\"",
       "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
       "moniker.spinnaker.io/application": "\"armory\"",
-      "moniker.spinnaker.io/cluster": "\"igor\""
+      "moniker.spinnaker.io/cluster": "\"orca\""
     },
-    "name": "igor",
+    "name": "orca",
     "namespace": "${NAMESPACE}",
     "labels": {
-      "app": "igor"
+      "app": "orca"
     }
   },
   "spec": {
@@ -26,33 +26,33 @@
     "replicas": 1,
     "selector": {
       "matchLabels": {
-        "app": "igor"
+        "app": "orca"
       }
     },
     "template": {
       "metadata": {
         "annotations": {
           "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
-          "artifact.spinnaker.io/name": "\"armory-igor\"",
+          "artifact.spinnaker.io/name": "\"armory-orca\"",
           "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
           "moniker.spinnaker.io/application": "\"armory\"",
-          "moniker.spinnaker.io/cluster": "\"igor\""
+          "moniker.spinnaker.io/cluster": "\"orca\""
         },
         "labels": {
-          "app": "igor"
+          "app": "orca"
         }
       },
       "spec": {
         "containers": [
           {
-            "name": "igor",
-            "image": "docker.io/armory/spinnaker-igor-slim:${igor_version}",
+            "name": "orca",
+            "image": "docker.io/armory/spinnaker-orca-slim:${orca_version}",
             "command": [
               "bash",
               "-c"
             ],
             "args": [
-              "chmod 755 /opt/spinnaker/config/default/fetch.sh && /opt/spinnaker/config/default/fetch.sh && /opt/igor/bin/igor"
+              "chmod 755 /opt/spinnaker/config/default/fetch.sh && /opt/spinnaker/config/default/fetch.sh && /opt/orca/bin/orca"
             ],
             "envFrom": [
               {
@@ -61,27 +61,30 @@
                 }
               }
             ],
-            "env": [
-              {
-                "name": "IGOR_PORT_MAPPING",
-                "value": "-8088:8088"
-              }
-            ],
             "resources": {
               "requests": {
-                "cpu": "100m",
-                "memory": "100Mi"
+                "cpu": "500m",
+                "memory": "256Mi"
               }
             },
             "ports": [
               {
-                "containerPort": 8088
+                "containerPort": 8083
               }
             ],
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/health",
+                "port": 8083
+              },
+              "initialDelaySeconds": 60,
+              "periodSeconds": 3,
+              "successThreshold": 5
+            },
             "livenessProbe": {
               "httpGet": {
-                "path": "/",
-                "port": 8088
+                "path": "/health",
+                "port": 8083
               },
               "initialDelaySeconds": 60,
               "periodSeconds": 3
