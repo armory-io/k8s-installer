@@ -565,7 +565,7 @@ EOF
             break
           fi
         fi
-        if [ "$counter" -gt 30 ]; then
+        if [ "$counter" -gt 90 ]; then
             echo "ERROR: Timeout occurred waiting for http://${GATE_IP}:8084/applications to become available"
             exit 2
         fi
