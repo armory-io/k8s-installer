@@ -106,6 +106,15 @@ function validate_config_store() {
   return 0
 }
 
+function validate_gcp_creds() {
+  # might need more robust validation of creds
+  if [ ! -f "$1" ]; then
+    echo "$1 does not exist!" 1>&2
+    return 1
+  fi
+  return 0
+}
+
 function get_var() {
   local text=$1
   local var_name="${2}"
@@ -141,6 +150,8 @@ function prompt_user() {
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
     export GCS_ENABLED=true
     export S3_ENABLED=false
+    export GCP_CREDS_MNT_PATH="/root/.gcp/gcp.json"
+    # get_var "Enter path to GCP service account creds: " GCP_CREDS validate_gcp_creds
   fi
   get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
 
@@ -230,7 +241,7 @@ function create_k8s_custom_config() {
   if [[ "${S3_ENABLED}" == "true" ]]; then
     aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
       "${BUILD_DIR}/config/custom/custom-config.json" \
-      "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json"
+      "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
   elif [[ "${GCS_ENABLED}" == "true" ]]; then
     # TODO: upload to GCS
     echo "TODO - should load custom-config.json to GCS"
@@ -276,7 +287,18 @@ aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
 EOF
 )
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
-    echo "TODO: what GCS credentials are required in what format by what microservice?"
+    export PROJECT_ID=$(gcloud config get-value core/project)
+    export SERVICE_ACCOUNT_NAME="$(mktemp armory-svc-acct-XXXXXXXXXXXX | tr '[:upper:]' '[:lower:]')"
+    export GCP_CREDS="${BUILD_DIR}/service-account.json"
+    gcloud iam service-accounts create ${SERVICE_ACCOUNT_NAME} \
+      --display-name "Armory GCS service account"
+    gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+      --member="serviceAccount:${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
+      --role='roles/storage.admin'
+    gcloud iam service-accounts keys create \
+      --iam-account "${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
+      ${GCP_CREDS}
+    export B64CREDENTIALS=$(base64 -i "$GCP_CREDS")
   fi
 }
 
@@ -318,11 +340,11 @@ function create_upgrade_pipeline() {
 
   # TODO: the s3/gcs substitutions below are probably wrong.
   if [[ "${S3_ENABLED}" == "true" ]]; then
-    export ARTIFACT_URI=s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json
+    export ARTIFACT_URI=s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json
     export ARTIFACT_KIND=s3
     export ARTIFACT_ACCOUNT=armory-config-s3-account
   elif [[ "${GCS_ENABLED}" == "true" ]]; then
-    export ARTIFACT_URI=gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json
+    export ARTIFACT_URI=gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json
     export ARTIFACT_KIND=gcs
     export ARTIFACT_ACCOUNT=armory-config-gcs-account
   else

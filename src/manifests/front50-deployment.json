@@ -107,6 +107,10 @@
                 "mountPath": "/root/.aws"
               },
               {
+                "name": "gcp-credentials",
+                "mountPath": "/root/.gcp"
+              },
+              {
                 "name": "default-config",
                 "mountPath": "/opt/spinnaker/config/default"
               },
@@ -134,6 +138,12 @@
             "name": "aws-s3-credentials",
             "secret": {
               "secretName": "aws-s3-credentials"
+            }
+          },
+          {
+            "name": "gcp-credentials",
+            "secret": {
+              "secretName": "gcp-credentials"
             }
           },
           {
