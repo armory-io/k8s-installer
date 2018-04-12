@@ -210,6 +210,16 @@ function create_k8s_custom_config() {
     envsubst < $filename > ${BUILD_DIR}/config/custom/$(basename $filename)
   done
   kubectl ${KUBECTL_OPTIONS} create configmap custom-config --from-file=${BUILD_DIR}/config/custom
+  # dump to a file to upload to S3. Used when we re-deploy
+  kubectl ${KUBECTL_OPTIONS} get cm custom-config -o json > ${BUILD_DIR}/config/custom/custom-config.json
+  if [[ "${S3_ENABLED}" == "true" ]]; then
+    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+      "${BUILD_DIR}/config/custom/custom-config.json" \
+      "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json"
+  elif [[ "${GCS_ENABLED}" == "true" ]]; then
+    # TODO: upload to GCS
+    echo "TODO - should load custom-config.json to GCS"
+  fi
 }
 
 function create_k8s_resources() {
@@ -290,13 +300,64 @@ function create_upgrade_pipeline() {
   for filename in manifests/*-deployment.json; do
     envsubst < "$filename" > "$BUILD_DIR/pipeline/pipeline-$(basename $filename)"
   done
+
+  # TODO: the s3/gcs substitutions below are probably wrong.
+  if [[ "${S3_ENABLED}" == "true" ]]; then
+    export ARTIFACT_URI=s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json
+    export ARTIFACT_KIND=s3
+    export ARTIFACT_ACCOUNT=armory-config-s3-account
+  elif [[ "${GCS_ENABLED}" == "true" ]]; then
+    export ARTIFACT_URI=gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json
+    export ARTIFACT_KIND=gcs
+    export ARTIFACT_ACCOUNT=armory-config-gcs-account
+  else
+    error "Either S3 or GCS must be enabled."
+  fi
+
 cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
 {
   "application": "armory",
   "name": "Deploy",
   "keepWaitingPipelines": false,
   "limitConcurrent": true,
+  "expectedArtifacts": [
+    {
+      "defaultArtifact": {
+        "kind": "default.${ARTIFACT_KIND}",
+        "name": "${ARTIFACT_URI}",
+        "reference": "${ARTIFACT_URI}",
+        "type": "${ARTIFACT_KIND}/object"
+      },
+      "id": "ced981ba-4bf5-41e2-8ee0-07209f79d190",
+      "matchArtifact": {
+        "kind": "${ARTIFACT_KIND}",
+        "name": "${ARTIFACT_URI}",
+        "type": "${ARTIFACT_KIND}/object"
+      },
+      "useDefaultArtifact": true,
+      "usePriorExecution": false
+    }
+  ],
   "stages": [
+      {
+        "account": "kubernetes",
+        "cloudProvider": "kubernetes",
+        "manifestArtifactAccount": "${ARTIFACT_ACCOUNT}",
+        "manifestArtifactId": "ced981ba-4bf5-41e2-8ee0-07209f79d190",
+        "moniker": {
+          "app": "armory",
+          "cluster": "custom-config"
+        },
+        "name": "Deploy Config",
+        "refId": "1",
+        "relationships": {
+          "loadBalancers": [],
+          "securityGroups": []
+        },
+        "requisiteStageRefIds": [],
+        "source": "artifact",
+        "type": "deployManifest"
+      },
       {
         "method": "GET",
         "name": "Fetch latest version",
