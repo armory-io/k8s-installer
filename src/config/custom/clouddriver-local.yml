@@ -6,9 +6,3 @@ kubernetes:
       kubeconfigFile: /opt/spinnaker/credentials/default/kubeconfig
       namespaces:
         - ${NAMESPACE}
-
-artifacts:
-  s3:
-    enabled: true
-    accounts:
-    - name: armory-config-s3-account
