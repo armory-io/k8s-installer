@@ -555,7 +555,6 @@ function main() {
     make_gcs_bucket
   fi
   encode_credentials
-  make_s3_bucket
   encode_kubeconfig
   create_k8s_resources
   create_upgrade_pipeline
