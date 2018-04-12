@@ -49,8 +49,8 @@
             "image": "redis",
             "resources": {
               "requests": {
-                "memory": "1024Mi",
-                "cpu": "1000m"
+                "memory": "16Gi",
+                "cpu": "2000m"
               }
             },
             "ports": [

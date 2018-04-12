@@ -64,8 +64,8 @@
             ],
             "resources": {
               "requests": {
-                "cpu": "500m",
-                "memory": "256Mi"
+                "cpu": "4000m",
+                "memory": "8Gi"
               }
             },
             "ports": [
