@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 cd "$(dirname "$0")"
 if [ ! -z "${ARMORY_DEBUG}" ]; then
   set -x
@@ -588,7 +588,7 @@ function set_resources() {
     export ORCA_CPU="100m"
     export REDIS_CPU="100m"
     export ROSCO_CPU="100m"
-    export CLOUDRIVER_MEMORY="128Mi"
+    export CLOUDDRIVER_MEMORY="128Mi"
     export DECK_MEMORY="128Mi"
     export ECHO_MEMORY="128Mi"
     export FRONT50_MEMORY="128Mi"
@@ -599,7 +599,7 @@ function set_resources() {
     export REDIS_MEMORY="128Mi"
     export ROSCO_MEMORY="128Mi"
   else
-    export CLOUDDRIVER_MEMORY="2000m"
+    export CLOUDDRIVER_CPU="2000m"
     export DECK_CPU="1000m"
     export ECHO_CPU="1000m"
     export FRONT50_CPU="1000m"
@@ -609,7 +609,7 @@ function set_resources() {
     export ORCA_CPU="2000m"
     export REDIS_CPU="1000m"
     export ROSCO_CPU="1000m"
-    export CLOUDRIVER_MEMORY="8Gi"
+    export CLOUDDRIVER_MEMORY="8Gi"
     export DECK_MEMORY="512Mi"
     export ECHO_MEMORY="1Gi"
     export FRONT50_MEMORY="2Gi"

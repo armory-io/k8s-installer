@@ -70,13 +70,8 @@
             ],
             "resources": {
               "requests": {
-<<<<<<< HEAD
                 "cpu": "${ROSCO_CPU}",
                 "memory": "${ROSCO_MEMORY}"
-=======
-                "cpu": "1000m",
-                "memory": "1Gi"
->>>>>>> 9dc9fec3fc4bbafcf89d28c36d5ea5342e3b51fc
               }
             },
             "ports": [

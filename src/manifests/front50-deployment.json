@@ -70,13 +70,8 @@
             ],
             "resources": {
               "requests": {
-<<<<<<< HEAD
                 "cpu": "${FRONT50_CPU}",
                 "memory": "${FRONT50_MEMORY}"
-=======
-                "cpu": "1000m",
-                "memory": "2Gi"
->>>>>>> 9dc9fec3fc4bbafcf89d28c36d5ea5342e3b51fc
               }
             },
             "ports": [

@@ -64,13 +64,8 @@
             ],
             "resources": {
               "requests": {
-<<<<<<< HEAD
                 "cpu": "${CLOUDDRIVER_CPU}",
                 "memory": "${CLOUDDRIVER_MEMORY}"
-=======
-                "cpu": "2000m",
-                "memory": "8Gi"
->>>>>>> 9dc9fec3fc4bbafcf89d28c36d5ea5342e3b51fc
               }
             },
             "ports": [
