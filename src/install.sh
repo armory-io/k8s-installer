@@ -287,8 +287,18 @@ aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
 EOF
 )
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
+    export PROJECT_ID=$(gcloud config get-value core/project)
+    export SERVICE_ACCOUNT_NAME="armory-gcs-service-account"
+    export GCP_CREDS="${BUILD_DIR}/service-account.json"
+    gcloud iam service-accounts create ${SERVICE_ACCOUNT_NAME} \
+      --display-name "Armory GCS service account"
+    gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+      --member="serviceAccount:${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
+      --role='roles/storage.admin'
+    gcloud iam service-accounts keys create \
+      --iam-account "${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
+      ${GCP_CREDS}
     export B64CREDENTIALS=$(base64 -i "$GCP_CREDS")
-
   fi
 }
 
