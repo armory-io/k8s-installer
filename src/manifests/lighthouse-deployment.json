@@ -67,6 +67,10 @@
                 "value": "-5000:5000"
               },
               {
+                "name": "GOOGLE_APPLICATION_CREDENTIALS",
+                "value": "${GCP_CREDS_MNT_PATH}"
+              },
+              {
                 "name": "LOG_LEVEL",
                 "value": "DEBUG"
               },
@@ -105,6 +109,10 @@
                 "mountPath": "/opt/spinnaker/config/default"
               },
               {
+                "name": "gcp-credentials",
+                "mountPath": "/root/.gcp"
+              },
+              {
                 "name": "custom-config",
                 "mountPath": "/opt/spinnaker/config/custom"
               }
@@ -128,6 +136,12 @@
             "name": "aws-s3-credentials",
             "secret": {
               "secretName": "aws-s3-credentials"
+            }
+          },
+          {
+            "name": "gcp-credentials",
+            "secret": {
+              "secretName": "gcp-credentials"
             }
           },
           {
