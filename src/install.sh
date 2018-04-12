@@ -37,12 +37,26 @@ Press 'Enter' key to continue. Ctrl+C to quit.
 "
   read
 }
+function error() {
+  >&2 echo $1
+  exit 1
+}
 
+function check_kubectl_version() {
+  version=$(kubectl version help | grep "^Client Version" | sed 's/^.*GitVersion:"v\([0-9\.v]*\)".*$/\1/')
+  version_major=$(echo $version | cut -d. -f1)
+  version_minor=$(echo $version | cut -d. -f2)
+
+  if [ $version_major -lt 1 ] || [ $version_minor -lt 8 ]; then
+    error "I require 'kubectl' version 1.8.x or higher. Ref: https://kubernetes.io/docs/tasks/tools/install-kubectl/"
+  fi
+}
 function check_prereqs() {
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     type aws >/dev/null 2>&1 || { echo "I require aws but it's not installed. Ref: http://docs.aws.amazon.com/cli/latest/userguide/installing.html" 1>&2 && exit 1; }
   fi
   type kubectl >/dev/null 2>&1 || { echo "I require 'kubectl' but it's not installed. Ref: https://kubernetes.io/docs/tasks/tools/install-kubectl/" 1>&2 && exit 1; }
+  check_kubectl_version
   if [[ "$CONFIG_STORE" == "GCS" ]]; then
     type gsutil >/dev/null 2>&1 || { echo "I require 'gsutil' but it's not installed. Ref: https://cloud.google.com/storage/docs/gsutil_install#sdk-install" 1>&2 && exit 1; }
   fi
@@ -136,7 +150,7 @@ function make_s3_bucket() {
   export ARMORY_S3_PREFIX=front50
   if [ -z "${ARMORY_CONF_STORE_BUCKET}" ]; then
     export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< armory-platform-$(uuidgen))
-    aws --profile "${AWS_PROFILE}" s3 mb "s3://${ARMORY_CONF_STORE_BUCKET}" --region us-west-1
+    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 mb "s3://${ARMORY_CONF_STORE_BUCKET}"
   else
     echo "Using S3 bucket - ${ARMORY_CONF_STORE_BUCKET}"
   fi
@@ -244,7 +258,7 @@ function set_aws_vars() {
     export AWS_SECRET_ACCESS_KEY=$(echo ${temp_session_data} | awk '{print $7}')
     export AWS_SESSION_TOKEN=$(echo ${temp_session_data} | awk '{print $8}')
   fi
-  export AWS_REGION=${TF_VAR_aws_region}
+  export AWS_REGION=us-east-1
 }
 
 function encode_kubeconfig() {

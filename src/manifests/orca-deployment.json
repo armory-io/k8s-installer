@@ -21,7 +21,7 @@
       "type": "RollingUpdate",
       "rollingUpdate": {
         "maxUnavailable": 0,
-        "maxSurge": 4
+        "maxSurge": "100%"
       }
     },
     "replicas": 2,
