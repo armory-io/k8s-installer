@@ -9,6 +9,10 @@ kubernetes:
 
 artifacts:
   s3:
-    enabled: true
+    enabled: ${S3_ENABLED}
     accounts:
     - name: armory-config-s3-account
+  gcs:
+    enabled: ${GCS_ENABLED}
+    accounts:
+    - name: armory-config-gcs-account

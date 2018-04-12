@@ -23,7 +23,7 @@
         "maxSurge": 3
       }
     },
-    "replicas": 1,
+    "replicas": 3,
     "selector": {
       "matchLabels": {
         "app": "redis"
@@ -46,66 +46,71 @@
         "containers": [
           {
             "name": "redis",
-            "image": "redis",
+            "image": "redis:3.2",
             "resources": {
-              "requests": {
-                "memory": "1024Mi",
-                "cpu": "1000m"
+              "limits": {
+                "cpu": "1000m",
+                "memory": "1024Mi"
               }
             },
+            "command": [ "redis-server" ],
+            "args": ["/opt/spinnaker/config/redis/redis-master.conf"],
             "ports": [
               {
+                "name": "redis",
                 "containerPort": 6379
               }
             ],
             "volumeMounts": [
               {
-                "name": "podinfo",
-                "mountPath": "/etc/podinfo",
-                "readOnly": false
+                "name": "data",
+                "mountPath": "/redis-master-data"
               },
               {
-                "name": "default-config",
-                "mountPath": "/opt/spinnaker/config/default"
-              },
-              {
-                "name": "custom-config",
-                "mountPath": "/opt/spinnaker/config/custom"
+                "name": "redis-config",
+                "mountPath": "/opt/spinnaker/config/redis"
               }
             ]
+          },
+          {
+            "name": "redis-sentinel",
+            "image": "redis:3.2",
+            "resources": {
+              "limits": {
+                "cpu": "1000m",
+                "memory": "1024Mi"
+              }
+            },
+            "command": [
+              "bash", "-c", "touch sentinel.conf && redis-sentinel sentinel.conf"
+            ],
+            "ports": [
+              {
+                "name": "redis",
+                "containerPort": 26379
+              }
+            ]
+          },
+          {
+            "name": "redis-sidecar",
+            "image": "armory/k8s-redis:latest",
+            "resources": {
+              "limits": {
+                "cpu": "200m"
+              }
+            }
           }
         ],
         "volumes": [
           {
-            "name": "custom-config",
+            "name": "redis-config",
             "configMap": {
-              "name": "custom-config"
+              "name": "redis-config"
             }
           },
           {
-            "name": "default-config",
-            "configMap": {
-              "name": "default-config"
-            }
-          },
-          {
-            "name": "podinfo",
-            "downwardAPI": {
-              "items": [
-                {
-                  "path": "labels",
-                  "fieldRef": {
-                    "fieldPath": "metadata.labels"
-                  }
-                },
-                {
-                  "path": "annotations",
-                  "fieldRef": {
-                    "fieldPath": "metadata.annotations"
-                  }
-                }
-              ]
-            }
+            "name": "data",
+            "emptyDir": {}
           }
         ]
       }

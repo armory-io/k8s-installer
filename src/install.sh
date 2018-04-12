@@ -238,9 +238,19 @@ function create_k8s_custom_config() {
   kubectl ${KUBECTL_OPTIONS} create configmap custom-config --from-file=${BUILD_DIR}/config/custom
   # dump to a file to upload to S3. Used when we re-deploy
   kubectl ${KUBECTL_OPTIONS} get cm custom-config -o json > ${BUILD_DIR}/config/custom/custom-config.json
-  aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
-    "${BUILD_DIR}/config/custom/custom-config.json" \
-    "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json"
+  if [[ "${S3_ENABLED}" == "true" ]]; then
+    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+      "${BUILD_DIR}/config/custom/custom-config.json" \
+      "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json"
+  elif [[ "${GCS_ENABLED}" == "true" ]]; then
+    # TODO: upload to GCS
+    echo "TODO - should load custom-config.json to GCS"
+  fi
+}
+
+
+function create_k8s_redis_config() {
+  kubectl ${KUBECTL_OPTIONS} create configmap redis-config --from-file=$(pwd)/config/redis
 }
 
 function create_k8s_resources() {
@@ -249,6 +259,7 @@ function create_k8s_resources() {
   create_k8s_deck_load_balancer
   create_k8s_default_config
   create_k8s_custom_config
+  create_k8s_redis_config
   create_k8s_svcs_and_rs
 }
 
@@ -322,6 +333,20 @@ function create_upgrade_pipeline() {
   for filename in manifests/*-deployment.json; do
     envsubst < "$filename" > "$BUILD_DIR/pipeline/pipeline-$(basename $filename)"
   done
+
+  # TODO: the s3/gcs substitutions below are probably wrong.
+  if [[ "${S3_ENABLED}" == "true" ]]; then
+    export ARTIFACT_URI=s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json
+    export ARTIFACT_KIND=s3
+    export ARTIFACT_ACCOUNT=armory-config-s3-account
+  elif [[ "${GCS_ENABLED}" == "true" ]]; then
+    export ARTIFACT_URI=gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json
+    export ARTIFACT_KIND=gcs
+    export ARTIFACT_ACCOUNT=armory-config-gcs-account
+  else
+    error "Either S3 or GCS must be enabled."
+  fi
+
 cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
 {
   "application": "armory",
@@ -331,16 +356,16 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
   "expectedArtifacts": [
     {
       "defaultArtifact": {
-        "kind": "default.s3",
-        "name": "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json",
-        "reference": "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json",
-        "type": "s3/object"
+        "kind": "default.${ARTIFACT_KIND}",
+        "name": "${ARTIFACT_URI}",
+        "reference": "${ARTIFACT_URI}",
+        "type": "${ARTIFACT_KIND}/object"
       },
       "id": "ced981ba-4bf5-41e2-8ee0-07209f79d190",
       "matchArtifact": {
-        "kind": "s3",
-        "name": "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json",
-        "type": "s3/object"
+        "kind": "${ARTIFACT_KIND}",
+        "name": "${ARTIFACT_URI}",
+        "type": "${ARTIFACT_KIND}/object"
       },
       "useDefaultArtifact": true,
       "usePriorExecution": false
@@ -350,7 +375,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       {
         "account": "kubernetes",
         "cloudProvider": "kubernetes",
-        "manifestArtifactAccount": "armory-config-s3-account",
+        "manifestArtifactAccount": "${ARTIFACT_ACCOUNT}",
         "manifestArtifactId": "ced981ba-4bf5-41e2-8ee0-07209f79d190",
         "moniker": {
           "app": "armory",
