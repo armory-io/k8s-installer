@@ -1,0 +1,3 @@
+services:
+  deck:
+    isUsingNewK8SInstaller: true
