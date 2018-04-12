@@ -247,6 +247,7 @@ function create_k8s_custom_config() {
     # TODO: upload to GCS
     echo "TODO - should load custom-config.json to GCS"
   fi
+  rm ${BUILD_DIR}/config/custom/custom-config.json
 }
 
 function create_k8s_resources() {
