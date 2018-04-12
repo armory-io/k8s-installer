@@ -72,9 +72,18 @@
                 "containerPort": 8083
               }
             ],
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/health",
+                "port": 8083
+              },
+              "initialDelaySeconds": 60,
+              "periodSeconds": 3,
+              "successThreshold": 5
+            },
             "livenessProbe": {
               "httpGet": {
-                "path": "/",
+                "path": "/health",
                 "port": 8083
               },
               "initialDelaySeconds": 60,
