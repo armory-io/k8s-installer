@@ -54,6 +54,13 @@
                 }
               }
             ],
+            "command": [
+              "bash",
+              "-c"
+            ],
+            "args": [
+              "chmod 755 /opt/spinnaker/config/default/fetch.sh && /opt/spinnaker/config/default/fetch.sh && /entrypoint.sh"
+            ],
             "resources": {
               "requests": {
                 "cpu": "1000m",
@@ -82,11 +89,21 @@
               {
                 "name": "default-config",
                 "mountPath": "/opt/spinnaker/config"
+              },
+              {
+                "name": "custom-config",
+                "mountPath": "/opt/spinnaker/config/custom"
               }
             ]
           }
         ],
         "volumes": [
+          {
+            "name": "custom-config",
+            "configMap": {
+              "name": "custom-config"
+            }
+          },
           {
             "name": "default-config",
             "configMap": {
