@@ -575,10 +575,38 @@ EOF
   done
 }
 
+function set_env() {
+  if [[ ! -z ${ARMORY_DEV} ]]; then
+    export DEV_CPU="100m"
+    export DEV_MEMORY="128Mi"
+  fi
+  export CLOUDRIVER_CPU=${DEV_CPU:-2000m}
+  export DECK_CPU=${DEV_CPU:-1000m}
+  export ECHO_CPU=${DEV_CPU:-1000m}
+  export FRONT50_CPU=${DEV_CPU:-1000m}
+  export GATE_CPU=${DEV_CPU:-1000m}
+  export IGOR_CPU=${DEV_CPU:-1000m}
+  export LIGHTHOUSE_CPU=${DEV_CPU:-500m}
+  export ORCA_CPU=${DEV_CPU:-2000m}
+  export REDIS_CPU=${DEV_CPU:-1000m}
+  export ROSCO_CPU=${DEV_CPU:-1000m}
+  export CLOUDRIVER_MEMORY=${DEV_MEMORY:-8Gi}
+  export DECK_MEMORY=${DEV_MEMORY:-512Mi}
+  export ECHO_MEMORY=${DEV_MEMORY:-1Gi}
+  export FRONT50_MEMORY=${DEV_MEMORY:-2Gi}
+  export GATE_MEMORY=${DEV_MEMORY:-2Gi}
+  export IGOR_MEMORY=${DEV_MEMORY:-2Gi}
+  export LIGHTHOUSE_MEMORY=${DEV_MEMORY:-512Mi}
+  export ORCA_MEMORY=${DEV_MEMORY:-4Gi}
+  export REDIS_MEMORY=${DEV_MEMORY:-16Gi}
+  export ROSCO_MEMORY=${DEV_MEMORY:-1Gi}
+}
+
 function main() {
   describe_installer
   prompt_user
   check_prereqs
+  set_env
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     make_s3_bucket
   else
