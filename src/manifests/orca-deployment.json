@@ -94,11 +94,8 @@
               "preStop": {
                 "exec": {
                   "command": [
-                    "/usr/bin/wget",
-                    "--header='Content-Type: application/json'",
-                    "--post-data", "{\"enabled\":false}",
-                    "http://localhost:8083/admin/instance/enabled",
-                    "&&", "sleep", "60"
+                    "/bin/bash", "-c",
+                    "/usr/bin/wget --header='Content-Type: application/json' --post-data {\\\"enabled\\\":false} http://localhost:8083/admin/instance/enabled && sleep 60"
                   ]
                 }
               }
