@@ -151,7 +151,7 @@ function prompt_user() {
     export GCS_ENABLED=true
     export S3_ENABLED=false
     export GCP_CREDS_MNT_PATH="/root/.gcp/gcp.json"
-    get_var "Enter path to GCP service account creds: " GCP_CREDS validate_gcp_creds
+    # get_var "Enter path to GCP service account creds: " GCP_CREDS validate_gcp_creds
   fi
   get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
 
