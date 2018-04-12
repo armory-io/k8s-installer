@@ -107,7 +107,7 @@
               },
               {
                 "name": "gcp-credentials",
-                "mountPath": "/root/.gsutil/credstore"
+                "mountPath": "/root/.gsutil"
               },
               {
                 "name": "default-config",
