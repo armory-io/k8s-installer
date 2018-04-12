@@ -37,11 +37,27 @@ Press 'Enter' key to continue. Ctrl+C to quit.
   read
 }
 
+function error() {
+  >&2 echo $1
+  exit 1
+}
+
+function check_kubectl_version() {
+  version=$(kubectl version help | grep "^Client Version" | sed 's/^.*GitVersion:"v\([0-9\.v]*\)".*$/\1/')
+  version_major=$(echo $version | cut -d. -f1)
+  version_minor=$(echo $version | cut -d. -f2)
+
+  if [ $version_major -lt 1 ] || [ $version_minor -lt 8 ]; then
+    error "I require 'kubectl' version 1.8.x or higher. Ref: https://kubernetes.io/docs/tasks/tools/install-kubectl/"
+  fi
+}
+
 function check_prereqs() {
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     type aws >/dev/null 2>&1 || { echo "I require aws but it's not installed. Ref: http://docs.aws.amazon.com/cli/latest/userguide/installing.html" 1>&2 && exit 1; }
   fi
   type kubectl >/dev/null 2>&1 || { echo "I require 'kubectl' but it's not installed. Ref: https://kubernetes.io/docs/tasks/tools/install-kubectl/" 1>&2 && exit 1; }
+  check_kubectl_version
   if [[ "$CONFIG_STORE" == "GCS" ]]; then
     type gsutil >/dev/null 2>&1 || { echo "I require 'gsutil' but it's not installed. Ref: https://cloud.google.com/storage/docs/gsutil_install#sdk-install" 1>&2 && exit 1; }
   fi
