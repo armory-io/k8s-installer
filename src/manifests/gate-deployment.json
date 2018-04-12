@@ -20,10 +20,10 @@
       "type": "RollingUpdate",
       "rollingUpdate": {
         "maxUnavailable": 0,
-        "maxSurge": 3
+        "maxSurge": "100%"
       }
     },
-    "replicas": 1,
+    "replicas": 2,
     "selector": {
       "matchLabels": {
         "app": "gate"
@@ -73,8 +73,8 @@
             ],
             "resources": {
               "requests": {
-                "cpu": "500m",
-                "memory": "256Mi"
+                "cpu": "1000m",
+                "memory": "2Gi"
               }
             },
             "ports": [
@@ -88,7 +88,8 @@
                 "port": 8084
               },
               "initialDelaySeconds": 60,
-              "periodSeconds": 5
+              "periodSeconds": 5,
+              "successThreshold": 10
             },
             "livenessProbe": {
               "httpGet": {
