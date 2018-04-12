@@ -90,6 +90,18 @@
               "initialDelaySeconds": 60,
               "periodSeconds": 3
             },
+            "lifecycle": {
+              "preStop": {
+                "exec": {
+                  "command": [
+                    "/usr/bin/wget",
+                    "--header='Content-Type: application/json'",
+                    "--post-data", "{\"enabled\":false}",
+                    "http://localhost:8083/admin/instance/enabled"
+                  ]
+                }
+              }
+            },
             "volumeMounts": [
               {
                 "name": "podinfo",
