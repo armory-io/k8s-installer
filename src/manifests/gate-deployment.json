@@ -52,7 +52,7 @@
               "-c"
             ],
             "args": [
-              "chmod 755 /opt/spinnaker/config/default/fetch.sh && /opt/spinnaker/config/default/fetch.sh && /opt/gate/bin/gate"
+              "bash /opt/spinnaker/config/default/fetch.sh && /opt/gate/bin/gate"
             ],
             "envFrom": [
               {
@@ -83,7 +83,7 @@
               }
             ],
             "readinessProbe": {
-              "httpGet":{
+              "httpGet": {
                 "path": "/health?checkDownstreamServices=true&downstreamServices=true",
                 "port": 8084
               },

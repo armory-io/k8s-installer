@@ -53,7 +53,7 @@
               "-c"
             ],
             "args": [
-              "chmod 755 /opt/spinnaker/config/default/fetch.sh && /opt/spinnaker/config/default/fetch.sh && /opt/clouddriver/bin/clouddriver"
+              "bash /opt/spinnaker/config/default/fetch.sh && /opt/clouddriver/bin/clouddriver"
             ],
             "envFrom": [
               {
