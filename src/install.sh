@@ -10,6 +10,8 @@ export TMP_DIR=$(mktemp -d)
 export NAMESPACE=${NAMESPACE:-armory}
 # export BUILD_DIR=$TMP_DIR/build/
 export BUILD_DIR=build/
+# Start from a fresh build dir
+rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 export KUBECTL_OPTIONS="--namespace=${NAMESPACE}"
 
