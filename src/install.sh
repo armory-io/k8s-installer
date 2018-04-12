@@ -184,7 +184,6 @@ function create_k8s_namespace() {
 
 function create_k8s_gate_load_balancer() {
   echo "Creating load balancer for the API Gateway."
-  # TODO: envsubst is non-standard
   envsubst < manifests/gate-svc.json > ${BUILD_DIR}/gate-svc.json
   # Wait for IP
   kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/gate-svc.json
@@ -201,7 +200,6 @@ function create_k8s_gate_load_balancer() {
 
 function create_k8s_deck_load_balancer() {
   echo "Creating load balancer for the Web UI."
-  # TODO: envsubst is non-standard
   envsubst < manifests/deck-svc.json > ${BUILD_DIR}/deck-svc.json
   # Wait for IP
   kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/deck-svc.json
@@ -238,13 +236,13 @@ function create_k8s_custom_config() {
   kubectl ${KUBECTL_OPTIONS} create configmap custom-config --from-file=${BUILD_DIR}/config/custom
   # dump to a file to upload to S3. Used when we re-deploy
   kubectl ${KUBECTL_OPTIONS} get cm custom-config -o json > ${BUILD_DIR}/config/custom/custom-config.json
+  local config_file="${BUILD_DIR}/config/custom/custom-config.json"
   if [[ "${S3_ENABLED}" == "true" ]]; then
     aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
-      "${BUILD_DIR}/config/custom/custom-config.json" \
+      "${config_file}" \
       "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
   elif [[ "${GCS_ENABLED}" == "true" ]]; then
-    # TODO: upload to GCS
-    echo "TODO - should load custom-config.json to GCS"
+    gsutil cp "${config_file}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
   fi
 }
 
