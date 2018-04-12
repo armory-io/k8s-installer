@@ -6,11 +6,12 @@
     "namespace": "${NAMESPACE}"
   },
   "data": {
+    "SPINNAKER_AWS_DEFAULT_REGION": "us-east-1",
+    "AWS_REGION": "us-east-1",
     "ARMORYSPINNAKER_S3_ENABLED": "${S3_ENABLED}",
     "ARMORYSPINNAKER_GCS_ENABLED": "${GCS_ENABLED}",
     "ARMORYSPINNAKER_CONF_STORE_BUCKET": "${ARMORY_CONF_STORE_BUCKET}",
     "ARMORYSPINNAKER_CONF_STORE_PREFIX": "front50",
-    "SPINNAKER_AWS_DEFAULT_REGION": "us-west-2",
     "SPINNAKER_GOOGLE_PROJECT_CREDENTIALS_PATH": "/root/.gsutil/credstore",
     "REDIS_HOST": "redis",
     "API_HOST": "http://${GATE_IP}:8084",

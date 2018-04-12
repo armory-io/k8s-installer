@@ -37,11 +37,27 @@ Press 'Enter' key to continue. Ctrl+C to quit.
   read
 }
 
+function error() {
+  >&2 echo $1
+  exit 1
+}
+
+function check_kubectl_version() {
+  version=$(kubectl version help | grep "^Client Version" | sed 's/^.*GitVersion:"v\([0-9\.v]*\)".*$/\1/')
+  version_major=$(echo $version | cut -d. -f1)
+  version_minor=$(echo $version | cut -d. -f2)
+
+  if [ $version_major -lt 1 ] || [ $version_minor -lt 8 ]; then
+    error "I require 'kubectl' version 1.8.x or higher. Ref: https://kubernetes.io/docs/tasks/tools/install-kubectl/"
+  fi
+}
+
 function check_prereqs() {
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     type aws >/dev/null 2>&1 || { echo "I require aws but it's not installed. Ref: http://docs.aws.amazon.com/cli/latest/userguide/installing.html" 1>&2 && exit 1; }
   fi
   type kubectl >/dev/null 2>&1 || { echo "I require 'kubectl' but it's not installed. Ref: https://kubernetes.io/docs/tasks/tools/install-kubectl/" 1>&2 && exit 1; }
+  check_kubectl_version
   if [[ "$CONFIG_STORE" == "GCS" ]]; then
     type gsutil >/dev/null 2>&1 || { echo "I require 'gsutil' but it's not installed. Ref: https://cloud.google.com/storage/docs/gsutil_install#sdk-install" 1>&2 && exit 1; }
   fi
@@ -142,10 +158,10 @@ function prompt_user() {
 
 function make_s3_bucket() {
   echo "Creating S3 bucket to store configuration and persist data."
-  export ARMORY_S3_PREFIX=front50
+  export ARMORY_CONF_STORE_PREFIX=front50
   if [ -z "${ARMORY_CONF_STORE_BUCKET}" ]; then
     export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< armory-platform-$(uuidgen))
-    aws --profile "${AWS_PROFILE}" s3 mb "s3://${ARMORY_CONF_STORE_BUCKET}" --region us-west-1
+    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 mb "s3://${ARMORY_CONF_STORE_BUCKET}"
   else
     echo "Using S3 bucket - ${ARMORY_CONF_STORE_BUCKET}"
   fi
@@ -204,6 +220,7 @@ function create_k8s_svcs_and_rs() {
     envsubst < "$filename" > "$BUILD_DIR/$(basename $filename)"
   done
   for filename in build/*.json; do
+    echo "Applying $filename..."
     kubectl ${KUBECTL_OPTIONS} apply -f "$filename"
   done
 }
@@ -218,6 +235,11 @@ function create_k8s_custom_config() {
     envsubst < $filename > ${BUILD_DIR}/config/custom/$(basename $filename)
   done
   kubectl ${KUBECTL_OPTIONS} create configmap custom-config --from-file=${BUILD_DIR}/config/custom
+  # dump to a file to upload to S3. Used when we re-deploy
+  kubectl ${KUBECTL_OPTIONS} get cm custom-config -o json > ${BUILD_DIR}/config/custom/custom-config.json
+  aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+    "${BUILD_DIR}/config/custom/custom-config.json" \
+    "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json"
 }
 
 function create_k8s_resources() {
@@ -242,7 +264,7 @@ function set_aws_vars() {
     export AWS_SECRET_ACCESS_KEY=$(echo ${temp_session_data} | awk '{print $7}')
     export AWS_SESSION_TOKEN=$(echo ${temp_session_data} | awk '{print $8}')
   fi
-  export AWS_REGION=${TF_VAR_aws_region}
+  export AWS_REGION=us-east-1
 }
 
 function encode_kubeconfig() {
@@ -305,7 +327,44 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
   "name": "Deploy",
   "keepWaitingPipelines": false,
   "limitConcurrent": true,
+  "expectedArtifacts": [
+    {
+      "defaultArtifact": {
+        "kind": "default.s3",
+        "name": "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json",
+        "reference": "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json",
+        "type": "s3/object"
+      },
+      "id": "ced981ba-4bf5-41e2-8ee0-07209f79d190",
+      "matchArtifact": {
+        "kind": "s3",
+        "name": "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/custom-config.json",
+        "type": "s3/object"
+      },
+      "useDefaultArtifact": true,
+      "usePriorExecution": false
+    }
+  ],
   "stages": [
+      {
+        "account": "kubernetes",
+        "cloudProvider": "kubernetes",
+        "manifestArtifactAccount": "armory-config-s3-account",
+        "manifestArtifactId": "ced981ba-4bf5-41e2-8ee0-07209f79d190",
+        "moniker": {
+          "app": "armory",
+          "cluster": "custom-config"
+        },
+        "name": "Deploy Config",
+        "refId": "1",
+        "relationships": {
+          "loadBalancers": [],
+          "securityGroups": []
+        },
+        "requisiteStageRefIds": [],
+        "source": "artifact",
+        "type": "deployManifest"
+      },
       {
         "method": "GET",
         "name": "Fetch latest version",
@@ -313,7 +372,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         "requisiteStageRefIds": [],
         "statusUrlResolution": "getMethod",
         "type": "webhook",
-        "url": "https://get.armory.io/test.json",
+        "url": "https://get.armory.io/k8s-latest.json",
         "waitForCompletion": false
     },
     {
@@ -328,7 +387,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy Rosco",
         "refId": "10",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -343,8 +402,8 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
             "cluster": "clouddriver"
         },
         "name": "Deploy clouddriver",
-        "refId": "1",
-        "requisiteStageRefIds": ["2"],
+        "refId": "11",
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -360,7 +419,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy deck",
         "refId": "3",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -376,7 +435,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy echo",
         "refId": "4",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -392,7 +451,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy front50",
         "refId": "5",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -408,7 +467,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy gate",
         "refId": "6",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -424,7 +483,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy igor",
         "refId": "7",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -440,7 +499,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy lighthouse",
         "refId": "8",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -456,7 +515,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy orca",
         "refId": "9",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     }
@@ -467,8 +526,14 @@ EOF
   counter=0
   while true; do
         if [ `curl -s -m 3 http://${GATE_IP}:8084/applications` ]; then
-          curl -s -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${GATE_IP}:8084/pipelines"
-          break
+          #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
+          http_code=$(curl -s -o /dev/null -w %{http_code} -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${GATE_IP}:8084/pipelines")
+          if [[ "$http_code" -lt "200" || "$http_code" -gt "399" ]]; then
+            echo "Received a error code from pipeline curl request: $http_code"
+            exit 10
+          else
+            break
+          fi
         fi
         if [ "$counter" -gt 30 ]; then
             echo "ERROR: Timeout occurred waiting for http://${GATE_IP}:8084/applications to become available"
@@ -490,6 +555,7 @@ function main() {
     make_gcs_bucket
   fi
   encode_credentials
+  make_s3_bucket
   encode_kubeconfig
   create_k8s_resources
   create_upgrade_pipeline

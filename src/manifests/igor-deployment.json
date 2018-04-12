@@ -78,6 +78,15 @@
                 "containerPort": 8088
               }
             ],
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/",
+                "port": 8088
+              },
+              "initialDelaySeconds": 60,
+              "periodSeconds": 5,
+              "successThreshold": 5
+            },
             "livenessProbe": {
               "httpGet": {
                 "path": "/",

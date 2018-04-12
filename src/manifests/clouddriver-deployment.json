@@ -72,9 +72,18 @@
                 "containerPort": 7002
               }
             ],
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/health",
+                "port": 7002
+              },
+              "initialDelaySeconds": 60,
+              "periodSeconds": 3,
+              "successThreshold": 5
+            },
             "livenessProbe": {
               "httpGet": {
-                "path": "/",
+                "path": "/health",
                 "port": 7002
               },
               "initialDelaySeconds": 60,
@@ -85,6 +94,10 @@
                 "name": "podinfo",
                 "mountPath": "/etc/podinfo",
                 "readOnly": false
+              },
+              {
+                "name": "aws-s3-credentials",
+                "mountPath": "/root/.aws"
               },
               {
                 "name": "default-kubeconfig",
@@ -102,6 +115,12 @@
           }
         ],
         "volumes": [
+          {
+            "name": "aws-s3-credentials",
+            "secret": {
+              "secretName": "aws-s3-credentials"
+            }
+          },
           {
             "name": "custom-config",
             "configMap": {
