@@ -5,10 +5,10 @@ sentinel_port=26379
 master_group=mymaster
 
 sentinel-monitor() {
-  redis-cli -p $sentinel_port sentinel monitor mymaster $1 $redis_port 2
-  redis-cli -p $sentinel_port sentinel set mymaster down-after-milliseconds 1000
-  redis-cli -p $sentinel_port sentinel set mymaster failover-timeout 10000
-  redis-cli -p $sentinel_port sentinel set mymaster parallel-syncs 1
+  redis-cli -p $sentinel_port sentinel monitor $master_group $1 $redis_port 2
+  redis-cli -p $sentinel_port sentinel set $master_group down-after-milliseconds 1000
+  redis-cli -p $sentinel_port sentinel set $master_group failover-timeout 10000
+  redis-cli -p $sentinel_port sentinel set $master_group parallel-syncs 1
 }
 
 become-slave-of() {
