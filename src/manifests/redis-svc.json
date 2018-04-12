@@ -17,8 +17,7 @@
       }
     ],
     "selector": {
-      "app": "redis",
-      "role": "master"
+      "app": "redis"
     }
   }
 }
