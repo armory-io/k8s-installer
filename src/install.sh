@@ -150,6 +150,7 @@ function prompt_user() {
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
     export GCS_ENABLED=true
     export S3_ENABLED=false
+    export GCP_CREDS_MNT_PATH="/root/.gsutil/credstore"
     get_var "Enter path to gsutil creds [defaults to: \${HOME}/.gsutil/credstore]: " GCP_CREDS validate_gcp_creds "" "${HOME}/.gsutil/credstore"
   fi
   get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
