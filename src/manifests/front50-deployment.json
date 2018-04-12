@@ -53,7 +53,7 @@
               "-c"
             ],
             "args": [
-              "chmod 755 /opt/spinnaker/config/default/fetch.sh && /opt/spinnaker/config/default/fetch.sh && /opt/front50/bin/front50"
+              "bash /opt/spinnaker/config/default/fetch.sh && /opt/front50/bin/front50"
             ],
             "envFrom": [
               {
