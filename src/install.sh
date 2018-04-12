@@ -1,5 +1,4 @@
 #!/bin/bash -e
-
 cd "$(dirname "$0")"
 if [ ! -z "${ARMORY_DEBUG}" ]; then
   set -x
@@ -37,6 +36,7 @@ Press 'Enter' key to continue. Ctrl+C to quit.
 "
   read
 }
+
 function error() {
   >&2 echo $1
   exit 1
@@ -51,6 +51,7 @@ function check_kubectl_version() {
     error "I require 'kubectl' version 1.8.x or higher. Ref: https://kubernetes.io/docs/tasks/tools/install-kubectl/"
   fi
 }
+
 function check_prereqs() {
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     type aws >/dev/null 2>&1 || { echo "I require aws but it's not installed. Ref: http://docs.aws.amazon.com/cli/latest/userguide/installing.html" 1>&2 && exit 1; }
@@ -147,7 +148,7 @@ function prompt_user() {
 
 function make_s3_bucket() {
   echo "Creating S3 bucket to store configuration and persist data."
-  export ARMORY_S3_PREFIX=front50
+  export ARMORY_CONF_STORE_PREFIX=front50
   if [ -z "${ARMORY_CONF_STORE_BUCKET}" ]; then
     export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< armory-platform-$(uuidgen))
     aws --profile "${AWS_PROFILE}" --region us-east-1 s3 mb "s3://${ARMORY_CONF_STORE_BUCKET}"
@@ -379,7 +380,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         "requisiteStageRefIds": [],
         "statusUrlResolution": "getMethod",
         "type": "webhook",
-        "url": "https://get.armory.io/test.json",
+        "url": "https://get.armory.io/k8s-latest.json",
         "waitForCompletion": false
     },
     {
@@ -394,7 +395,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy Rosco",
         "refId": "10",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -409,8 +410,8 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
             "cluster": "clouddriver"
         },
         "name": "Deploy clouddriver",
-        "refId": "1",
-        "requisiteStageRefIds": ["2"],
+        "refId": "11",
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -426,7 +427,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy deck",
         "refId": "3",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -442,7 +443,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy echo",
         "refId": "4",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -458,7 +459,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy front50",
         "refId": "5",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -474,7 +475,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy gate",
         "refId": "6",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -490,7 +491,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy igor",
         "refId": "7",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -506,7 +507,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy lighthouse",
         "refId": "8",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -522,7 +523,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy orca",
         "refId": "9",
-        "requisiteStageRefIds": ["2"],
+        "requisiteStageRefIds": ["2", "1"],
         "source": "text",
         "type": "deployManifest"
     }
