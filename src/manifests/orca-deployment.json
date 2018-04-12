@@ -97,7 +97,8 @@
                     "/usr/bin/wget",
                     "--header='Content-Type: application/json'",
                     "--post-data", "{\"enabled\":false}",
-                    "http://localhost:8083/admin/instance/enabled"
+                    "http://localhost:8083/admin/instance/enabled",
+                    "&&", "sleep", "60"
                   ]
                 }
               }
