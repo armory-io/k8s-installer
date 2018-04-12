@@ -4,24 +4,20 @@ redis_port=6379
 sentinel_port=26379
 master_group=mymaster
 
-panic () {
-  >&2 echo $1
-  exit 1
-}
-
 ### boot
 
-sleep 10
-redis-cli -p $redis_port ping > /dev/null \
-  && redis-cli -p $sentinel_port ping > /dev/null \
-  || panic "redis and/or sentinel not up";
+until redis-cli -p $redis_port ping > /dev/null && redis-cli -p $sentinel_port ping > /dev/null; do
+  sleep 1
+done
 
 master=`redis-cli -p $sentinel_port sentinel get-master-addr-by-name mymaster`
 if [[ -n $master ]]; then
   # there's a master, have this instance connect to it
+  kubectl label --overwrite pods `hostname` role=slave
   redis-cli -p $redis_port slaveof $master $redis_port
 else
   # there's no master, promote this instance
+  kubectl label --overwrite pods `hostname` role=master
   redis-cli -p $sentinel_port sentinel monitor mymaster `hostname -i` $redis_port 2
   redis-cli -p $sentinel_port sentinel set mymaster down-after-milliseconds 1000
   redis-cli -p $sentinel_port sentinel set mymaster failover-timeout 10000
