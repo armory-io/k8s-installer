@@ -46,39 +46,41 @@
         "containers": [
           {
             "name": "redis",
-            "image": "redis:3.2",
+            "image": "redis",
             "resources": {
-              "limits": {
-                "cpu": "1000m",
-                "memory": "1024Mi"
+              "requests": {
+                "memory": "1024Mi",
+                "cpu": "1000m"
               }
             },
-            "command": [ "redis-server" ],
-            "args": ["/opt/spinnaker/config/redis/redis-master.conf"],
             "ports": [
               {
-                "name": "redis",
                 "containerPort": 6379
               }
             ],
             "volumeMounts": [
               {
-                "name": "data",
-                "mountPath": "/redis-master-data"
+                "name": "podinfo",
+                "mountPath": "/etc/podinfo",
+                "readOnly": false
               },
               {
-                "name": "redis-config",
-                "mountPath": "/opt/spinnaker/config/redis"
+                "name": "default-config",
+                "mountPath": "/opt/spinnaker/config/default"
+              },
+              {
+                "name": "custom-config",
+                "mountPath": "/opt/spinnaker/config/custom"
               }
             ]
           },
           {
             "name": "redis-sentinel",
-            "image": "redis:3.2",
+            "image": "redis",
             "resources": {
-              "limits": {
-                "cpu": "1000m",
-                "memory": "1024Mi"
+              "requests": {
+                "memory": "1024Mi",
+                "cpu": "1000m"
               }
             },
             "command": [
@@ -103,14 +105,35 @@
         ],
         "volumes": [
           {
-            "name": "redis-config",
+            "name": "custom-config",
             "configMap": {
-              "name": "redis-config"
+              "name": "custom-config"
             }
           },
           {
-            "name": "data",
-            "emptyDir": {}
+            "name": "default-config",
+            "configMap": {
+              "name": "default-config"
+            }
+          },
+          {
+            "name": "podinfo",
+            "downwardAPI": {
+              "items": [
+                {
+                  "path": "labels",
+                  "fieldRef": {
+                    "fieldPath": "metadata.labels"
+                  }
+                },
+                {
+                  "path": "annotations",
+                  "fieldRef": {
+                    "fieldPath": "metadata.annotations"
+                  }
+                }
+              ]
+            }
           }
         ]
       }

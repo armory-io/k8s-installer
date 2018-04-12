@@ -14,7 +14,7 @@ panic () {
 sleep 10
 redis-cli -p $redis_port ping > /dev/null \
   && redis-cli -p $sentinel_port ping > /dev/null \
-  || panic "redis and/or sentinel not up"; 
+  || panic "redis and/or sentinel not up";
 
 master=`redis-cli -p $sentinel_port sentinel get-master-addr-by-name mymaster`
 if [[ -n $master ]]; then
