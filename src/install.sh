@@ -646,8 +646,6 @@ function main() {
   check_prereqs
   select_kubectl_context
   set_resources
-  if [[ "$CONFIG_STORE" == "S3" ]]; then
-    make_s3_bucket
   if [[ "$ARMORY_CONF_STORE_BUCKET" == "" ]]; then
     if [[ "$CONFIG_STORE" == "S3" ]]; then
       make_s3_bucket
