@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 cd "$(dirname "$0")"
 if [ ! -z "${ARMORY_DEBUG}" ]; then
   set -x
