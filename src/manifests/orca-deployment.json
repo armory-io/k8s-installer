@@ -64,8 +64,8 @@
             ],
             "resources": {
               "requests": {
-                "cpu": "2000m",
-                "memory": "4Gi"
+                "cpu": "${ORCA_CPU}",
+                "memory": "${ORCA_MEMORY}"
               }
             },
             "ports": [
@@ -89,6 +89,16 @@
               },
               "initialDelaySeconds": 60,
               "periodSeconds": 3
+            },
+            "lifecycle": {
+              "preStop": {
+                "exec": {
+                  "command": [
+                    "/bin/bash", "-c",
+                    "/usr/bin/wget --header='Content-Type: application/json' --post-data {\\\"enabled\\\":false} http://localhost:8083/admin/instance/enabled && sleep 60"
+                  ]
+                }
+              }
             },
             "volumeMounts": [
               {

@@ -70,8 +70,8 @@
             ],
             "resources": {
               "requests": {
-                "cpu": "1000m",
-                "memory": "1Gi"
+                "cpu": "${ROSCO_CPU}",
+                "memory": "${ROSCO_MEMORY}"
               }
             },
             "ports": [

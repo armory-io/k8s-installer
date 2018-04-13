@@ -7,7 +7,7 @@
     "rosco_version": "release-1.6.x-266bf0d",
     "clouddriver_version": "v2.19.0",
     "orca_version": "v6.35.5",
-    "lighthouse_version": "38a6e14",
+    "lighthouse_version": "af2205a",
     "barometer_version": "f12a2f8",
     "dinghy_version": "master-f2716b5",
     "platform_version": "master-41aefad",
@@ -16,6 +16,6 @@
     "gate_version": "release-1.6.x-edd0ad3",
     "echo_armory_version": "d0feee3-release-1.6.x-be7fd9e",
     "echo_version": "release-1.6.x-be7fd9e",
-    "deck_armory_version": "6b751d6-release-1.6.x-fd93a17",
-    "deck_version": "release-1.6.x-fd93a17"
+    "deck_armory_version": "a484ad7-release-1.6.x-3bfc381",
+    "deck_version": "release-1.6.x-3bfc381"
 }
