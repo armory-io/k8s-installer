@@ -15,5 +15,5 @@ export gate_armory_version=0191333-release-1.6.x-edd0ad3
 export gate_version=release-1.6.x-edd0ad3
 export echo_armory_version=d0feee3-release-1.6.x-be7fd9e
 export echo_version=release-1.6.x-be7fd9e
-export deck_armory_version=6b751d6-release-1.6.x-fd93a17
-export deck_version=release-1.6.x-fd93a17
+export deck_armory_version=a484ad7-release-1.6.x-3bfc381
+export deck_version=release-1.6.x-3bfc381
