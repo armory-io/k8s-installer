@@ -101,8 +101,8 @@
                 "mountPath": "/root/.aws"
               },
               {
-                "name": "default-kubeconfig",
-                "mountPath": "/opt/spinnaker/credentials/default"
+                "name": "custom-credentials",
+                "mountPath": "/opt/spinnaker/credentials/custom"
               },
               {
                 "name": "default-config",
@@ -135,9 +135,9 @@
             }
           },
           {
-            "name": "default-kubeconfig",
+            "name": "custom-credentials",
             "secret": {
-              "secretName": "default-kubeconfig"
+              "secretName": "custom-credentials"
             }
           },
           {
