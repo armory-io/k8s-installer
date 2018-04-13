@@ -85,8 +85,8 @@
             ],
             "resources": {
               "requests": {
-                "cpu": "500m",
-                "memory": "512Mi"
+                "cpu": "${LIGHTHOUSE_CPU}",
+                "memory": "${LIGHTHOUSE_MEMORY}"
               }
             },
             "ports": [

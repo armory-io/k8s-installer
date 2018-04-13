@@ -63,8 +63,8 @@
             ],
             "resources": {
               "requests": {
-                "cpu": "1000m",
-                "memory": "512Mi"
+                "cpu": "${DECK_CPU}",
+                "memory": "${DECK_MEMORY}"
               }
             },
             "ports": [
