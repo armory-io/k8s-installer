@@ -145,6 +145,7 @@ function get_var() {
 
 function prompt_user() {
   get_var "Do you want to persist config data in S3 or GCS [defaults to S3]: " CONFIG_STORE validate_config_store "" "S3"
+  get_var "${CONFIG_STORE} bucket to use [if blank, a bucket will be generated for you]: " ARMORY_CONF_STORE_BUCKET
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     export S3_ENABLED=true
     export GCS_ENABLED=false
@@ -160,6 +161,7 @@ function prompt_user() {
 }
 
 function make_s3_bucket() {
+  get_var ""
   echo "Creating S3 bucket to store configuration and persist data."
   export ARMORY_CONF_STORE_PREFIX=front50
   if [ -z "${ARMORY_CONF_STORE_BUCKET}" ]; then
@@ -582,11 +584,16 @@ function main() {
   describe_installer
   prompt_user
   check_prereqs
-  if [[ "$CONFIG_STORE" == "S3" ]]; then
-    make_s3_bucket
+  if [[ "$ARMORY_CONF_STORE_BUCKET" == "" ]]; then
+    if [[ "$CONFIG_STORE" == "S3" ]]; then
+      make_s3_bucket
+    else
+      make_gcs_bucket
+    fi
   else
-    make_gcs_bucket
+    echo "Using existing bucket: $ARMORY_CONF_STORE_BUCKET"
   fi
+
   encode_credentials
   encode_kubeconfig
   create_k8s_resources
