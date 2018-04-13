@@ -122,13 +122,13 @@ function get_var() {
   local var_name="${2}"
   local val_func=${3}
   local val_list=${4}
-  local default_val=${5}
+  local default_val="${5}"
   if [ -z ${!var_name} ]; then
     [ ! -z "$val_list" ] && $val_list
     echo -n "${text}"
     read value
     if [ -z "${value}" ]; then
-      if [ -z "$default_val" ]; then
+      if [ -z ${default_val+x} ]; then
         echo "This value can not be blank."
         get_var "$1" $2 $3
       else
@@ -145,7 +145,7 @@ function get_var() {
 
 function prompt_user() {
   get_var "Do you want to persist config data in S3 or GCS [defaults to S3]: " CONFIG_STORE validate_config_store "" "S3"
-  get_var "${CONFIG_STORE} bucket to use [if blank, a bucket will be generated for you]: " ARMORY_CONF_STORE_BUCKET "" "" "AUTO_GENERATED"
+  get_var "${CONFIG_STORE} bucket to use [if blank, a bucket will be generated for you]: " ARMORY_CONF_STORE_BUCKET "" "" ""
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     export S3_ENABLED=true
     export GCS_ENABLED=false
@@ -646,7 +646,7 @@ function main() {
   check_prereqs
   select_kubectl_context
   set_resources
-  if [[ "$ARMORY_CONF_STORE_BUCKET" == "AUTO_GENERATED" ]]; then
+  if [[ "$ARMORY_CONF_STORE_BUCKET" == "" ]]; then
     if [[ "$CONFIG_STORE" == "S3" ]]; then
       make_s3_bucket
     else
