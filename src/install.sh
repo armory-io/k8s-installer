@@ -713,11 +713,34 @@ function set_resources() {
   done
 }
 
+function set_lb_type() {
+  echo "Load balancer types [defaults to 'Internal']: "
+  options=("Internal" "External")
+  PS3='Select the LB type you want to use: '
+  select opt in "${options[@]}"
+  do
+    case $opt in
+        "Internal")
+            export LB_TYPE="Internal"
+            echo "Using LB type: 'Internal'"
+            break
+            ;;
+        "External")
+            export LB_TYPE="External"
+            echo "Using LB type: 'External'"
+            break
+            ;;
+        *) echo "Invalid option";;
+    esac
+  done
+}
+
 function main() {
   describe_installer
   prompt_user
   check_prereqs
   select_kubectl_context
+  set_lb_type
   set_resources
   if [[ "$ARMORY_CONF_STORE_BUCKET" == "" ]]; then
     if [[ "$CONFIG_STORE" == "S3" ]]; then
