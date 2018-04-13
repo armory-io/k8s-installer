@@ -73,8 +73,8 @@
             ],
             "resources": {
               "requests": {
-                "cpu": "1000m",
-                "memory": "2Gi"
+                "cpu": "${GATE_CPU}",
+                "memory": "${GATE_MEMORY}"
               }
             },
             "ports": [

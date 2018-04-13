@@ -160,6 +160,23 @@ function prompt_user() {
 
 }
 
+function select_kubectl_context() {
+  options=($(kubectl config get-contexts | awk '{print $2}' | grep -v NAME))
+  if [ ${#options[@]} -eq 0 ]; then
+      echo "It appears you do not have any K8s contexts in your KUBECONFIG file. Please refer to the docs to setup access to clusters:" 1>&2
+      echo "https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/"  1>&2
+      exit 1
+  else
+    echo "Found the following K8s context(s) in you KUBECONFIG file: "
+    PS3='Please select the one you want to use: '
+    select opt in "${options[@]}"
+    do
+      kubectl config use-context "$opt"
+      break
+    done
+  fi
+}
+
 function make_s3_bucket() {
   echo "Creating S3 bucket to store configuration and persist data."
   export ARMORY_CONF_STORE_PREFIX=front50
@@ -187,7 +204,6 @@ function create_k8s_namespace() {
 
 function create_k8s_gate_load_balancer() {
   echo "Creating load balancer for the API Gateway."
-  # TODO: envsubst is non-standard
   envsubst < manifests/gate-svc.json > ${BUILD_DIR}/gate-svc.json
   # Wait for IP
   kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/gate-svc.json
@@ -204,7 +220,6 @@ function create_k8s_gate_load_balancer() {
 
 function create_k8s_deck_load_balancer() {
   echo "Creating load balancer for the Web UI."
-  # TODO: envsubst is non-standard
   envsubst < manifests/deck-svc.json > ${BUILD_DIR}/deck-svc.json
   # Wait for IP
   kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/deck-svc.json
@@ -241,13 +256,13 @@ function create_k8s_custom_config() {
   kubectl ${KUBECTL_OPTIONS} create configmap custom-config --from-file=${BUILD_DIR}/config/custom
   # dump to a file to upload to S3. Used when we re-deploy
   kubectl ${KUBECTL_OPTIONS} get cm custom-config -o json > ${BUILD_DIR}/config/custom/custom-config.json
+  local config_file="${BUILD_DIR}/config/custom/custom-config.json"
   if [[ "${S3_ENABLED}" == "true" ]]; then
     aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
-      "${BUILD_DIR}/config/custom/custom-config.json" \
+      "${config_file}" \
       "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
   elif [[ "${GCS_ENABLED}" == "true" ]]; then
-    # TODO: upload to GCS
-    echo "TODO - should load custom-config.json to GCS"
+    gsutil cp "${config_file}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
   fi
 }
 
@@ -579,10 +594,60 @@ EOF
   done
 }
 
+function set_resources() {
+  if [[ "${ARMORY_DEV}" == "true" ]]; then
+    export CLOUDDRIVER_CPU="100m"
+    export DECK_CPU="100m"
+    export ECHO_CPU="100m"
+    export FRONT50_CPU="100m"
+    export GATE_CPU="100m"
+    export IGOR_CPU="100m"
+    export LIGHTHOUSE_CPU="100m"
+    export ORCA_CPU="100m"
+    export REDIS_CPU="100m"
+    export ROSCO_CPU="100m"
+    export CLOUDDRIVER_MEMORY="128Mi"
+    export DECK_MEMORY="128Mi"
+    export ECHO_MEMORY="128Mi"
+    export FRONT50_MEMORY="128Mi"
+    export GATE_MEMORY="128Mi"
+    export IGOR_MEMORY="128Mi"
+    export LIGHTHOUSE_MEMORY="128Mi"
+    export ORCA_MEMORY="128Mi"
+    export REDIS_MEMORY="128Mi"
+    export ROSCO_MEMORY="128Mi"
+  else
+    export CLOUDDRIVER_CPU="2000m"
+    export DECK_CPU="1000m"
+    export ECHO_CPU="1000m"
+    export FRONT50_CPU="1000m"
+    export GATE_CPU="1000m"
+    export IGOR_CPU="1000m"
+    export LIGHTHOUSE_CPU="500m"
+    export ORCA_CPU="2000m"
+    export REDIS_CPU="1000m"
+    export ROSCO_CPU="1000m"
+    export CLOUDDRIVER_MEMORY="8Gi"
+    export DECK_MEMORY="512Mi"
+    export ECHO_MEMORY="1Gi"
+    export FRONT50_MEMORY="2Gi"
+    export GATE_MEMORY="2Gi"
+    export IGOR_MEMORY="2Gi"
+    export LIGHTHOUSE_MEMORY="512Mi"
+    export ORCA_MEMORY="4Gi"
+    export REDIS_MEMORY="16Gi"
+    export ROSCO_MEMORY="1Gi"
+  fi
+}
+
 function main() {
   describe_installer
   prompt_user
   check_prereqs
+  select_kubectl_context
+  set_resources
+  if [[ "$CONFIG_STORE" == "S3" ]]; then
+    make_s3_bucket
   if [[ "$ARMORY_CONF_STORE_BUCKET" == "" ]]; then
     if [[ "$CONFIG_STORE" == "S3" ]]; then
       make_s3_bucket
