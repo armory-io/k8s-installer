@@ -594,50 +594,123 @@ EOF
   done
 }
 
+function set_profile_small() {
+  export CLOUDDRIVER_CPU="100m"
+  export DECK_CPU="100m"
+  export ECHO_CPU="100m"
+  export FRONT50_CPU="100m"
+  export GATE_CPU="100m"
+  export IGOR_CPU="100m"
+  export LIGHTHOUSE_CPU="100m"
+  export ORCA_CPU="100m"
+  export REDIS_CPU="100m"
+  export ROSCO_CPU="100m"
+  export CLOUDDRIVER_MEMORY="128Mi"
+  export DECK_MEMORY="128Mi"
+  export ECHO_MEMORY="128Mi"
+  export FRONT50_MEMORY="128Mi"
+  export GATE_MEMORY="128Mi"
+  export IGOR_MEMORY="128Mi"
+  export LIGHTHOUSE_MEMORY="128Mi"
+  export ORCA_MEMORY="128Mi"
+  export REDIS_MEMORY="128Mi"
+  export ROSCO_MEMORY="128Mi"
+}
+
+function set_profile_medium() {
+  export CLOUDDRIVER_CPU="1000m"
+  export DECK_CPU="500m"
+  export ECHO_CPU="500m"
+  export FRONT50_CPU="500m"
+  export GATE_CPU="500m"
+  export IGOR_CPU="500m"
+  export LIGHTHOUSE_CPU="500m"
+  export ORCA_CPU="1000m"
+  export REDIS_CPU="500m"
+  export ROSCO_CPU="500m"
+  export CLOUDDRIVER_MEMORY="128Mi"
+  export DECK_MEMORY="512Mi"
+  export ECHO_MEMORY="512Mi"
+  export FRONT50_MEMORY="1Gi"
+  export GATE_MEMORY="1Gi"
+  export IGOR_MEMORY="1Gi"
+  export LIGHTHOUSE_MEMORY="512Mi"
+  export ORCA_MEMORY="2Gi"
+  export REDIS_MEMORY="2Gi"
+  export ROSCO_MEMORY="1Gi"
+}
+
+function set_profile_large() {
+  export CLOUDDRIVER_CPU="2000m"
+  export DECK_CPU="1000m"
+  export ECHO_CPU="1000m"
+  export FRONT50_CPU="1000m"
+  export GATE_CPU="1000m"
+  export IGOR_CPU="1000m"
+  export LIGHTHOUSE_CPU="500m"
+  export ORCA_CPU="2000m"
+  export REDIS_CPU="1000m"
+  export ROSCO_CPU="1000m"
+  export CLOUDDRIVER_MEMORY="8Gi"
+  export DECK_MEMORY="512Mi"
+  export ECHO_MEMORY="1Gi"
+  export FRONT50_MEMORY="2Gi"
+  export GATE_MEMORY="2Gi"
+  export IGOR_MEMORY="2Gi"
+  export LIGHTHOUSE_MEMORY="512Mi"
+  export ORCA_MEMORY="4Gi"
+  export REDIS_MEMORY="16Gi"
+  export ROSCO_MEMORY="1Gi"
+}
+
 function set_resources() {
-  if [[ "${ARMORY_DEV}" == "true" ]]; then
-    export CLOUDDRIVER_CPU="100m"
-    export DECK_CPU="100m"
-    export ECHO_CPU="100m"
-    export FRONT50_CPU="100m"
-    export GATE_CPU="100m"
-    export IGOR_CPU="100m"
-    export LIGHTHOUSE_CPU="100m"
-    export ORCA_CPU="100m"
-    export REDIS_CPU="100m"
-    export ROSCO_CPU="100m"
-    export CLOUDDRIVER_MEMORY="128Mi"
-    export DECK_MEMORY="128Mi"
-    export ECHO_MEMORY="128Mi"
-    export FRONT50_MEMORY="128Mi"
-    export GATE_MEMORY="128Mi"
-    export IGOR_MEMORY="128Mi"
-    export LIGHTHOUSE_MEMORY="128Mi"
-    export ORCA_MEMORY="128Mi"
-    export REDIS_MEMORY="128Mi"
-    export ROSCO_MEMORY="128Mi"
-  else
-    export CLOUDDRIVER_CPU="2000m"
-    export DECK_CPU="1000m"
-    export ECHO_CPU="1000m"
-    export FRONT50_CPU="1000m"
-    export GATE_CPU="1000m"
-    export IGOR_CPU="1000m"
-    export LIGHTHOUSE_CPU="500m"
-    export ORCA_CPU="2000m"
-    export REDIS_CPU="1000m"
-    export ROSCO_CPU="1000m"
-    export CLOUDDRIVER_MEMORY="8Gi"
-    export DECK_MEMORY="512Mi"
-    export ECHO_MEMORY="1Gi"
-    export FRONT50_MEMORY="2Gi"
-    export GATE_MEMORY="2Gi"
-    export IGOR_MEMORY="2Gi"
-    export LIGHTHOUSE_MEMORY="512Mi"
-    export ORCA_MEMORY="4Gi"
-    export REDIS_MEMORY="16Gi"
-    export ROSCO_MEMORY="1Gi"
-  fi
+  echo "The following resource allocation profiles available: "
+  echo ""
+  echo "  'small'"
+  echo "       CPU: 100m per microservice"
+  echo "       MEMORY: 128Mi per microservice"
+  echo ""
+  echo "  'medium'"
+  echo "       CPU: 500m for deck, echo, front50, gate, igor, lighthouse, redis & rosco"
+  echo "            1000m for clouddriver & orca"
+  echo "       MEMORY: 521Mi for deck, echo, lighthouse & rosco"
+  echo "               1Gi for front50, gate, igor & rosco"
+  echo "               2Gi for orca & redis"
+  echo ""
+  echo "  'large'"
+  echo "       CPU: 500m for lighthouse"
+  echo "            1000m for deck, echo, front50, gate, igor, redis & rosco"
+  echo "            2000m for clouddriver & orca"
+  echo "       MEMORY: 521Mi for deck & lighthouse"
+  echo "               1Gi for echo & rosco"
+  echo "               2Gi for front50, gate & igor"
+  echo "               4Gi for orca"
+  echo "               16Gi for redis"
+  echo ""
+
+  options=("small" "medium" "large")
+  PS3='Which profile would you like to use: '
+  select opt in "${options[@]}"
+  do
+    case $opt in
+        "small")
+            echo "Using profile: 'small'"
+            set_profile_small
+            break
+            ;;
+        "medium")
+            echo "Using profile: 'medium'"
+            set_profile_medium
+            break
+            ;;
+        "large")
+            echo "Using profile: 'large'"
+            set_profile_large
+            break
+            ;;
+        *) echo "Invalid option";;
+    esac
+  done
 }
 
 function main() {
