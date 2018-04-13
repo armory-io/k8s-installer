@@ -3,7 +3,7 @@ kubernetes:
   accounts:
     - name: kubernetes
       providerVersion: v2
-      kubeconfigFile: /opt/spinnaker/credentials/default/kubeconfig
+      serviceAccount: true
       namespaces:
         - ${NAMESPACE}
 
