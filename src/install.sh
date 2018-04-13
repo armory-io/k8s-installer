@@ -161,7 +161,6 @@ function prompt_user() {
 }
 
 function make_s3_bucket() {
-  get_var ""
   echo "Creating S3 bucket to store configuration and persist data."
   export ARMORY_CONF_STORE_PREFIX=front50
   if [ -z "${ARMORY_CONF_STORE_BUCKET}" ]; then
