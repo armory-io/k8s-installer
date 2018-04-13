@@ -164,6 +164,7 @@ function select_kubectl_context() {
   if [ ${#options[@]} -eq 0 ]; then
       echo "It appears you do not have any K8s contexts in your KUBECONFIG file. Please refer to the docs to setup access to clusters:" 1>&2
       echo "https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/"  1>&2
+      exit 1
   else
     echo "Found the following K8s context(s) in you KUBECONFIG file: "
     PS3='Please select the one you want to use: '
