@@ -145,7 +145,7 @@ function get_var() {
 
 function prompt_user() {
   get_var "Do you want to persist config data in S3 or GCS [defaults to S3]: " CONFIG_STORE validate_config_store "" "S3"
-  get_var "${CONFIG_STORE} bucket to use [if blank, a bucket will be generated for you]: " ARMORY_CONF_STORE_BUCKET
+  get_var "${CONFIG_STORE} bucket to use [if blank, a bucket will be generated for you]: " ARMORY_CONF_STORE_BUCKET "" "" "AUTO_GENERATED"
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     export S3_ENABLED=true
     export GCS_ENABLED=false
@@ -646,7 +646,7 @@ function main() {
   check_prereqs
   select_kubectl_context
   set_resources
-  if [[ "$ARMORY_CONF_STORE_BUCKET" == "" ]]; then
+  if [[ "$ARMORY_CONF_STORE_BUCKET" == "AUTO_GENERATED" ]]; then
     if [[ "$CONFIG_STORE" == "S3" ]]; then
       make_s3_bucket
     else
