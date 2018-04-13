@@ -159,6 +159,23 @@ function prompt_user() {
 
 }
 
+function select_kubectl_context() {
+  options=($(kubectl config get-contexts | awk '{print $2}' | grep -v NAME))
+  if [ ${#options[@]} -eq 0 ]; then
+      echo "It appears you do not have any K8s contexts in your KUBECONFIG file. Please refer to the docs to setup access to clusters:" 1>&2
+      echo "https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/"  1>&2
+      exit 1
+  else
+    echo "Found the following K8s context(s) in you KUBECONFIG file: "
+    PS3='Please select the one you want to use: '
+    select opt in "${options[@]}"
+    do
+      kubectl config use-context "$opt"
+      break
+    done
+  fi
+}
+
 function make_s3_bucket() {
   echo "Creating S3 bucket to store configuration and persist data."
   export ARMORY_CONF_STORE_PREFIX=front50
@@ -626,6 +643,7 @@ function main() {
   describe_installer
   prompt_user
   check_prereqs
+  select_kubectl_context
   set_resources
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     make_s3_bucket
