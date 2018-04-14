@@ -25,6 +25,6 @@
     "SPRING_PROFILES_ACTIVE": "armory,local",
     "SPINNAKER_AWS_ENABLED": "false",
     "CONFIGURATOR_ENABLED": "true",
-    "PLATFORM_ARCHITECTURE": "k8s"
+    "PLATFORM_ARCHITECTURE": "k8s",
   }
 }

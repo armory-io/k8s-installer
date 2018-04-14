@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 cd "$(dirname "$0")"
 if [ ! -z "${ARMORY_DEBUG}" ]; then
   set -x
@@ -10,6 +10,7 @@ export TMP_DIR=$(mktemp -d)
 export NAMESPACE=${NAMESPACE:-armory}
 # export BUILD_DIR=$TMP_DIR/build/
 export BUILD_DIR=build/
+export ARMORY_CONF_STORE_PREFIX=front50
 # Start from a fresh build dir
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
@@ -63,6 +64,7 @@ function check_prereqs() {
   if [[ "$CONFIG_STORE" == "GCS" ]]; then
     type gsutil >/dev/null 2>&1 || { echo "I require 'gsutil' but it's not installed. Ref: https://cloud.google.com/storage/docs/gsutil_install#sdk-install" 1>&2 && exit 1; }
   fi
+
   type envsubst >/dev/null 2>&1 || { echo "I require 'envsubst' but it's not installed. Please install the 'gettext' package." 1>&2;
                                      echo "On Mac OS X, you can run: 'brew install gettext && brew link --force gettext'" 1>&2 && exit 1; }
 }
@@ -101,6 +103,8 @@ function validate_config_store() {
     echo "GCS selected as config store."
   elif [ "$1" == "S3" ]; then
     echo "S3 selected as config store."
+  elif [ "$1" == "MINIO" ]; then
+    echo "MINIO selected as config store."
   else
     echo "Config store has to be one of GCS or S3" 1>&2
     return 1
@@ -143,13 +147,23 @@ function get_var() {
   fi
 }
 
-function prompt_user() {
-  get_var "Do you want to persist config data in S3 or GCS [defaults to S3]: " CONFIG_STORE validate_config_store "" "S3"
+  function prompt_user() {
+  get_var "Do you want to persist config data? (S3|GCS|MINIO) [defaults to S3]: " CONFIG_STORE validate_config_store "" "S3"
   get_var "${CONFIG_STORE} bucket to use [if blank, a bucket will be generated for you]: " ARMORY_CONF_STORE_BUCKET "" "" ""
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     export S3_ENABLED=true
     export GCS_ENABLED=false
-    get_var "Enter your AWS Profile [e.g. devprofile]: " AWS_PROFILE validate_profile
+    get_var "Enter your AWS Profile for $CONFIG_STORE [e.g. devprofile]: " AWS_PROFILE validate_profile
+  elif [[ "$CONFIG_STORE" == "MINIO" ]]; then
+    export S3_ENABLED=true
+    export GCS_ENABLED=false
+    export AWS_ACCESS_KEY_ID=""
+    export AWS_SECRET_ACCESS_KEY=""
+    get_var "Enter your minio access key: " AWS_ACCESS_KEY_ID
+    get_var "Enter your minio secret key: " AWS_SECRET_ACCESS_KEY
+    get_var "Enter your minio endpoint (ex. http://34.12.194.23:9000): " MINIO_ENDPOINT
+    #this is a bit of hack until this gets https://github.com/spinnaker/front50/pull/308, check description of PR
+    export ENDPOINT_PROPERTY="endpoint: ${MINIO_ENDPOINT}"
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
     export GCS_ENABLED=true
     export S3_ENABLED=false
@@ -177,25 +191,18 @@ function select_kubectl_context() {
   fi
 }
 
+function make_minio_bucket() {
+  echo "Creating Minio bucket to store configuration and persist data."
+  AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} aws s3 mb --endpoint-url ${MINIO_ENDPOINT} "s3://${ARMORY_CONF_STORE_BUCKET}"
+}
 function make_s3_bucket() {
   echo "Creating S3 bucket to store configuration and persist data."
-  export ARMORY_CONF_STORE_PREFIX=front50
-  if [ -z "${ARMORY_CONF_STORE_BUCKET}" ]; then
-    export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< armory-platform-$(uuidgen))
-    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 mb "s3://${ARMORY_CONF_STORE_BUCKET}"
-  else
-    echo "Using S3 bucket - ${ARMORY_CONF_STORE_BUCKET}"
-  fi
+  aws --profile "${AWS_PROFILE}" --region us-east-1 s3 mb "s3://${ARMORY_CONF_STORE_BUCKET}"
 }
 
 function make_gcs_bucket() {
   echo "Creating GCS bucket to store configuration and persist data."
-  if [ -z "${ARMORY_CONF_STORE_BUCKET}" ]; then
-    export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< armory-platform-$(uuidgen))
-    gsutil mb "gs://${ARMORY_CONF_STORE_BUCKET}/"
-  else
-    echo "Using GCS bucket - ${ARMORY_CONF_STORE_BUCKET}"
-  fi
+  gsutil mb "gs://${ARMORY_CONF_STORE_BUCKET}/"
 }
 
 function create_k8s_namespace() {
@@ -297,7 +304,9 @@ function encode_kubeconfig() {
 
 function encode_credentials() {
   if [[ "$CONFIG_STORE" == "S3" ]]; then
-      set_aws_vars
+    set_aws_vars
+  fi
+  if [[ "$CONFIG_STORE" == "S3" || "$CONFIG_STORE" == "MINIO" ]]; then
       export B64CREDENTIALS=$(base64 <<EOF
 [default]
 aws_access_key_id=${AWS_ACCESS_KEY_ID}
@@ -647,10 +656,13 @@ function main() {
   select_kubectl_context
   set_resources
   if [[ "$ARMORY_CONF_STORE_BUCKET" == "" ]]; then
-    if [[ "$CONFIG_STORE" == "S3" ]]; then
+    export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< armory-platform-$(uuidgen))
+    if [ "$CONFIG_STORE" == "S3" ]; then
       make_s3_bucket
-    else
+    elif [ "$CONFIG_STORE" == "GCS" ]; then
       make_gcs_bucket
+    elif [ "$CONFIG_STORE" == "MINIO" ]; then
+      make_minio_bucket
     fi
   else
     echo "Using existing bucket: $ARMORY_CONF_STORE_BUCKET"

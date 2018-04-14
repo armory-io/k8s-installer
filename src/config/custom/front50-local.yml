@@ -1,0 +1,3 @@
+spinnaker:
+  s3:
+    ${ENDPOINT_PROPERTY}
