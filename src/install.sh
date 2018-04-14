@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 cd "$(dirname "$0")"
 if [ ! -z "${ARMORY_DEBUG}" ]; then
   set -x
@@ -64,7 +64,6 @@ function check_prereqs() {
   if [[ "$CONFIG_STORE" == "GCS" ]]; then
     type gsutil >/dev/null 2>&1 || { echo "I require 'gsutil' but it's not installed. Ref: https://cloud.google.com/storage/docs/gsutil_install#sdk-install" 1>&2 && exit 1; }
   fi
-
   type envsubst >/dev/null 2>&1 || { echo "I require 'envsubst' but it's not installed. Please install the 'gettext' package." 1>&2;
                                      echo "On Mac OS X, you can run: 'brew install gettext && brew link --force gettext'" 1>&2 && exit 1; }
 }
@@ -147,13 +146,13 @@ function get_var() {
   fi
 }
 
-  function prompt_user() {
+function prompt_user() {
   get_var "Do you want to persist config data? (S3|GCS|MINIO) [defaults to S3]: " CONFIG_STORE validate_config_store "" "S3"
   get_var "${CONFIG_STORE} bucket to use [if blank, a bucket will be generated for you]: " ARMORY_CONF_STORE_BUCKET "" "" ""
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     export S3_ENABLED=true
     export GCS_ENABLED=false
-    get_var "Enter your AWS Profile for $CONFIG_STORE [e.g. devprofile]: " AWS_PROFILE validate_profile
+    get_var "Enter your AWS Profile [e.g. devprofile]: " AWS_PROFILE validate_profile
   elif [[ "$CONFIG_STORE" == "MINIO" ]]; then
     export S3_ENABLED=true
     export GCS_ENABLED=false
@@ -161,7 +160,7 @@ function get_var() {
     export AWS_SECRET_ACCESS_KEY=""
     get_var "Enter your minio access key: " AWS_ACCESS_KEY_ID
     get_var "Enter your minio secret key: " AWS_SECRET_ACCESS_KEY
-    get_var "Enter your minio endpoint (ex. http://34.12.194.23:9000): " MINIO_ENDPOINT
+    get_var "Enter your minio endpoint (ex: http://172.0.10.1:9000): " MINIO_ENDPOINT
     #this is a bit of hack until this gets https://github.com/spinnaker/front50/pull/308, check description of PR
     export ENDPOINT_PROPERTY="endpoint: ${MINIO_ENDPOINT}"
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
@@ -264,11 +263,14 @@ function create_k8s_custom_config() {
   # dump to a file to upload to S3. Used when we re-deploy
   kubectl ${KUBECTL_OPTIONS} get cm custom-config -o json > ${BUILD_DIR}/config/custom/custom-config.json
   local config_file="${BUILD_DIR}/config/custom/custom-config.json"
-  if [[ "${S3_ENABLED}" == "true" ]]; then
+  if [[ "${CONFIG_STORE}" == "AWS" ]]; then
     aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
       "${config_file}" \
       "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
-  elif [[ "${GCS_ENABLED}" == "true" ]]; then
+  elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
+    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
+      --endpoint-url=${MINIO_ENDPOINT} "${config_file}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
+  elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
     gsutil cp "${config_file}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
   fi
 }
@@ -304,8 +306,9 @@ function encode_kubeconfig() {
 
 function encode_credentials() {
   if [[ "$CONFIG_STORE" == "S3" ]]; then
-    set_aws_vars
+      set_aws_vars
   fi
+  #both MINIO and S3 can use the same credentials file since we'll use the S3 protocol
   if [[ "$CONFIG_STORE" == "S3" || "$CONFIG_STORE" == "MINIO" ]]; then
       export B64CREDENTIALS=$(base64 <<EOF
 [default]
