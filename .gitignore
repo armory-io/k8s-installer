@@ -3,3 +3,4 @@
 
 # vim tmp files
 *.swp 
+.DS_Store
