@@ -18,20 +18,24 @@ export KUBECTL_OPTIONS="--namespace=${NAMESPACE}"
 
 function describe_installer() {
   echo "
+
   This installer will launch the Armory Platform into your Kubernetes cluster.
   The following are required:
+    - An existing Kubernetes cluster.
+    - S3, GCS, or Minio
     If using AWS:
       - AWS Credentials File
-      - aws cli
+      - AWS CLI
     If using GCP:
       - GCP Credentials
       - gcloud sdk (gsutil in particular)
     - kubectl and kubeconfig file
-    - Docker
+
   The following will be created:
     - AWS S3 bucket to persist configuration (If using S3)
     - GCP bucket to persist configuration (If using GCP)
     - Kubernetes namespace '${NAMESPACE}'
+    - Service account in the Kubernetes cluster for redeploying the platform.
 
 Need help, advice, or just want to say hello during the installation?
 Chat with our eng. team at http://go.Armory.io/chat.
@@ -147,17 +151,62 @@ function get_var() {
 }
 
 function prompt_user() {
-  get_var "Do you want to persist config data? (S3|GCS|MINIO) [defaults to S3]: " CONFIG_STORE validate_config_store "" "S3"
+  cat <<EOF
+
+  *****************************************************************************
+  * Configuration for the Armory Platform needs to be persisted to either S3, *
+  * GCS, or Minio. This includes your pipeline configurations, deployment     *
+  * target accounts, etc. We can create a storage bucket for you or you can   *
+  * provide an already existing one.                                          *
+  *****************************************************************************
+
+EOF
+  get_var "Which would you like to use? (S3|GCS|MINIO) [defaults to S3]: " CONFIG_STORE validate_config_store "" "S3"
   get_var "${CONFIG_STORE} bucket to use [if blank, a bucket will be generated for you]: " ARMORY_CONF_STORE_BUCKET "" "" ""
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     export S3_ENABLED=true
     export GCS_ENABLED=false
+  cat <<EOF
+
+  *****************************************************************************
+  * We use an AWS profile from your ~/.aws/credentials file to access the S3  *
+  * bucket during this installation. The associated credentials for the       *
+  * profile will also be used to generate a secret in the k8s cluster called  *
+  * 'aws-s3-credentials'. The platform will use those credentials while       *
+  * running to persist data to S3.                                            *
+  *                                                                           *
+  * Notes:                                                                    *
+  * 1. If you would like to create an AWS user/role specifically for this     *
+  *    task, you can replace the k8s secret after the installation is         *
+  *    complete.                                                              *
+  * 2. The secret is formatted as a normal AWS credentials file.              *
+  * 3. If the profile you specify is using assume role, the associated keys   *
+  *    will expire. In that case please create a user/role and replace the    *
+  *    secret.                                                                *
+  *****************************************************************************
+
+EOF
     get_var "Enter your AWS Profile [e.g. devprofile]: " AWS_PROFILE validate_profile
   elif [[ "$CONFIG_STORE" == "MINIO" ]]; then
     export S3_ENABLED=true
     export GCS_ENABLED=false
     export AWS_ACCESS_KEY_ID=""
     export AWS_SECRET_ACCESS_KEY=""
+  cat <<EOF
+
+  *****************************************************************************
+  * Minio access key ID and secret access key are used to access the bucket   *
+  * during the installation. The keys will be combined into a profile and     *
+  * added to a secret in the k8s cluster called 'aws-s3-credentials'.         *
+  *                                                                           *
+  * Notes:                                                                    *
+  * 1. If you would like to create a Minio user specifically for this         *
+  *    task, you can replace the k8s secret after the installation is         *
+  *    complete.                                                              *
+  * 2. The secret is formatted as a normal AWS credentials file.              *
+  *****************************************************************************
+
+EOF
     get_var "Enter your minio access key: " AWS_ACCESS_KEY_ID
     get_var "Enter your minio secret key: " AWS_SECRET_ACCESS_KEY
     get_var "Enter your minio endpoint (ex: http://172.0.10.1:9000): " MINIO_ENDPOINT
@@ -169,6 +218,16 @@ function prompt_user() {
     export GCP_CREDS_MNT_PATH="/root/.gcp/gcp.json"
     # get_var "Enter path to GCP service account creds: " GCP_CREDS validate_gcp_creds
   fi
+  cat <<EOF
+
+  *****************************************************************************
+  * A kubeconfig file is needed to identify a k8s cluster and to provide      *
+  * access. The kubeconfig is only used during the installation. After the    *
+  * installation, the Armory Platform will use a k8s service account to gain  *
+  * access to the cluster and namespace in which it is installed.             *
+  *****************************************************************************
+
+EOF
   get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
 
 }
@@ -180,6 +239,7 @@ function select_kubectl_context() {
       echo "https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/"  1>&2
       exit 1
   else
+    echo ""
     echo "Found the following K8s context(s) in you KUBECONFIG file: "
     PS3='Please select the one you want to use: '
     select opt in "${options[@]}"
@@ -195,6 +255,17 @@ function select_gcp_service_account_and_encode_creds() {
   export SERVICE_ACCOUNT_NAME="$(mktemp -u armory-svc-acct-XXXXXXXXXXXX | tr '[:upper:]' '[:lower:]')"
   mkdir -p ${BUILD_DIR}/credentials
   export GCP_CREDS="${BUILD_DIR}/credentials/service-account.json"
+
+  cat <<EOF
+
+  *****************************************************************************
+  * During the installation the active GCP settings/account are used to       *
+  * create and/or access the GCS bucket. After the installation, a GCP service*
+  * account is used. If you already have a service account with access to the *
+  * bucket, we can use it. Alternatively, we can create one for you.          *
+  *****************************************************************************
+
+EOF
 
   echo "Would you like to use an existing service account or create a new one?"
   PS3='Enter choice: '
@@ -229,10 +300,10 @@ function select_gcp_service_account_and_encode_creds() {
               --display-name "Armory GCS service account"
             gcloud projects add-iam-policy-binding ${PROJECT_ID} \
               --member="serviceAccount:${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
-              --role='roles/storage.admin'
+              --role='roles/storage.admin' > /dev/null 2>&1
             gcloud iam service-accounts keys create \
               --iam-account "${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
-              ${GCP_CREDS}
+              ${GCP_CREDS} > /dev/null 2>&1
             export B64CREDENTIALS=$(base64 -i "$GCP_CREDS")
             break
             ;;
@@ -247,7 +318,7 @@ function make_minio_bucket() {
   AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} aws s3 mb --endpoint-url ${MINIO_ENDPOINT} "s3://${ARMORY_CONF_STORE_BUCKET}"
 }
 function make_s3_bucket() {
-  echo "Creating S3 bucket to store configuration and persist data."
+  echo "Creating S3 bucket '${ARMORY_CONF_STORE_BUCKET}' to store configuration and persist data."
   aws --profile "${AWS_PROFILE}" --region us-east-1 s3 mb "s3://${ARMORY_CONF_STORE_BUCKET}"
 }
 
@@ -257,7 +328,7 @@ function make_gcs_bucket() {
 }
 
 function create_k8s_namespace() {
-  kubectl ${KUBECTL_OPTIONS} create namespace ${NAMESPACE}
+  kubectl ${KUBECTL_OPTIONS} create namespace ${NAMESPACE} || { echo "If this is not the first time you have ran this installer, a previous run might have created a namespace. If so, please manually delete it by running 'kubectl delete namespace ${NAMESPACE}'. " 1>&2 && exit 1; }
 }
 
 function create_k8s_gate_load_balancer() {
@@ -293,6 +364,14 @@ function create_k8s_deck_load_balancer() {
 }
 
 function create_k8s_svcs_and_rs() {
+  cat <<EOF
+
+  *****************************************************************************
+  * Creating k8s resources. This includes 'deployments', 'services',          *
+  * 'config-maps' and 'secrets.                                               *
+  *****************************************************************************
+
+EOF
   for filename in manifests/*.json; do
     envsubst < "$filename" > "$BUILD_DIR/$(basename $filename)"
   done
@@ -380,10 +459,28 @@ Installation complete. You can access The Armory Platform via:
 
   http://${DECK_IP}
 
+Your configuration has been stored in the ${CONFIG_STORE} bucket:
+
+  ${ARMORY_CONF_STORE_BUCKET}
+
 EOF
 }
 
 function create_upgrade_pipeline() {
+
+  cat <<EOF
+
+  *****************************************************************************
+  * After the installation is complete, a re-deploy pipeline will be provided *
+  * You can find it by navigating the Web UI URL (provided later), selecting  *
+  * 'Applications' from the top navigation bar, click on 'armory', then click *
+  * on 'Pipelines'. You should see a pipeline called 'Deploy'. It can be used *
+  * to both upgrade and redeploy after a configuration change.                *
+  *****************************************************************************
+
+EOF
+  echo "Creating..."
+
   export packager_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'packager_version\']})
   export armoryspinnaker_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'armoryspinnaker_version\']})
   export fiat_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'fiat_version\']})
@@ -409,7 +506,6 @@ function create_upgrade_pipeline() {
     envsubst < "$filename" > "$BUILD_DIR/pipeline/pipeline-$(basename $filename)"
   done
 
-  # TODO: the s3/gcs substitutions below are probably wrong.
   if [[ "${S3_ENABLED}" == "true" ]]; then
     export ARTIFACT_URI=s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json
     export ARTIFACT_KIND=s3
@@ -716,20 +812,28 @@ function set_profile_large() {
 }
 
 function set_resources() {
-  echo "The following resource allocation profiles available: "
+  cat <<EOF
+
+  *****************************************************************************
+  * The Armory Platform can be installed with 3 different resource            *
+  * configurations. Which one you choose will be dependent on your expected   *
+  * load.                                                                     *
+  *****************************************************************************
+
+EOF
   echo ""
-  echo "  'small'"
+  echo "  'Small'"
   echo "       CPU: 100m per microservice"
   echo "       MEMORY: 128Mi per microservice"
   echo ""
-  echo "  'medium'"
+  echo "  'Medium'"
   echo "       CPU: 500m for deck, echo, front50, gate, igor, lighthouse, redis & rosco"
   echo "            1000m for clouddriver & orca"
   echo "       MEMORY: 521Mi for deck, echo, lighthouse & rosco"
   echo "               1Gi for front50, gate, igor & rosco"
   echo "               2Gi for orca & redis"
   echo ""
-  echo "  'large'"
+  echo "  'Large'"
   echo "       CPU: 500m for lighthouse"
   echo "            1000m for deck, echo, front50, gate, igor, redis & rosco"
   echo "            2000m for clouddriver & orca"
@@ -740,22 +844,22 @@ function set_resources() {
   echo "               16Gi for redis"
   echo ""
 
-  options=("small" "medium" "large")
+  options=("Small" "Medium" "Large")
   PS3='Which profile would you like to use: '
   select opt in "${options[@]}"
   do
     case $opt in
-        "small")
+        "Small")
             echo "Using profile: 'small'"
             set_profile_small
             break
             ;;
-        "medium")
+        "Medium")
             echo "Using profile: 'medium'"
             set_profile_medium
             break
             ;;
-        "large")
+        "Large")
             echo "Using profile: 'large'"
             set_profile_large
             break
@@ -766,6 +870,17 @@ function set_resources() {
 }
 
 function set_lb_type() {
+  cat <<EOF
+
+  *****************************************************************************
+  * When the Armory Platform runs it uses two load balancers. One for the API *
+  * gateway and one to serve the Web UI. Depending on how your network is     *
+  * configured, you will want these load balancers to either be 'internal' or *
+  * 'external'. After installation, it is also recommended that you configure *
+  * a firewall rule or security group to only allow access to whitelisted IPs.*
+  *****************************************************************************
+
+EOF
   echo "Load balancer types [defaults to 'Internal']: "
   options=("Internal" "External")
   PS3='Select the LB type you want to use: '
