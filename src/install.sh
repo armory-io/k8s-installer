@@ -196,27 +196,27 @@ function select_gcp_service_account_and_encode_creds() {
   mkdir -p ${BUILD_DIR}/credentials
   export GCP_CREDS="${BUILD_DIR}/credentials/service-account.json"
 
-  echo "Would you like to use an existing service account or create a new one?: "
+  echo "Would you like to use an existing service account or create a new one?"
   PS3='Enter choice: '
   options=("Use existing" "Create new")
   select opt in "${options[@]}"
   do
     case $opt in
         "Use existing")
-            options=($(gcloud iam service-accounts list | awk '{print $NF}' | grep -v EMAIL))
-            if [ ${#options[@]} -eq 0 ]; then
+            accts=($(gcloud iam service-accounts list | awk '{print $NF}' | grep -v EMAIL))
+            if [ ${#accts[@]} -eq 0 ]; then
                 echo "Could not find any existing service account(s)" 1>&2
                 exit 1
             else
               echo "Found the following service account(s):"
               PS3='Please select the one you want to use: '
-              select opt in "${options[@]}"
+              select acct in "${accts[@]}"
               do
-                if [ -z "$opt" ]; then
+                if [ -z "$acct" ]; then
                   echo "Invalid option"
                 else
                   gcloud iam service-accounts keys create \
-                    --iam-account "$opt" ${GCP_CREDS}
+                    --iam-account "$acct" ${GCP_CREDS}
                   export B64CREDENTIALS=$(base64 -i "$GCP_CREDS")
                   break
                 fi
