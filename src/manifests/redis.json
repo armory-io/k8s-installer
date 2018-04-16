@@ -23,7 +23,7 @@
         "maxSurge": 3
       }
     },
-    "replicas": 1,
+    "replicas": 3,
     "selector": {
       "matchLabels": {
         "app": "redis"
@@ -73,6 +73,34 @@
                 "mountPath": "/opt/spinnaker/config/custom"
               }
             ]
+          },
+          {
+            "name": "redis-sentinel",
+            "image": "redis",
+            "resources": {
+              "requests": {
+                "memory": "1024Mi",
+                "cpu": "1000m"
+              }
+            },
+            "command": [
+              "bash", "-c", "touch sentinel.conf && redis-sentinel sentinel.conf"
+            ],
+            "ports": [
+              {
+                "name": "redis",
+                "containerPort": 26379
+              }
+            ]
+          },
+          {
+            "name": "redis-sidecar",
+            "image": "armory/k8s-redis:latest",
+            "resources": {
+              "limits": {
+                "cpu": "200m"
+              }
+            }
           }
         ],
         "volumes": [

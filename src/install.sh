@@ -275,7 +275,9 @@ function make_gcs_bucket() {
 }
 
 function create_k8s_namespace() {
-  kubectl ${KUBECTL_OPTIONS} create namespace ${NAMESPACE}
+  if [ -z "$(kubectl ${KUBECTL_OPTIONS} get namespace ${NAMESPACE})" ]; then
+    kubectl ${KUBECTL_OPTIONS} create namespace ${NAMESPACE}
+  fi
 }
 
 function create_k8s_gate_load_balancer() {
@@ -318,6 +320,7 @@ function create_k8s_svcs_and_rs() {
     echo "Applying $filename..."
     kubectl ${KUBECTL_OPTIONS} apply -f "$filename"
   done
+  sleep 10
 }
 
 function create_k8s_default_config() {
@@ -343,6 +346,7 @@ function create_k8s_custom_config() {
   elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
     gsutil cp "${config_file}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
   fi
+  rm ${BUILD_DIR}/config/custom/custom-config.json
 }
 
 function create_k8s_resources() {
@@ -645,10 +649,14 @@ EOF
   counter=0
   while true; do
         if [ `curl -s -m 3 http://${GATE_IP}:8084/applications` ]; then
-          #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
-          http_code=$(curl -s -o /dev/null -w %{http_code} -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${GATE_IP}:8084/pipelines")
+          output=$(curl -s -w %{http_code} -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${GATE_IP}:8084/pipelines")
+          http_code=$(echo $output | tail -n 1 | grep -Eo '[0-9]+$')
+
           if [[ "$http_code" -lt "200" || "$http_code" -gt "399" ]]; then
             echo "Received a error code from pipeline curl request: $http_code"
+            echo "Full output:"
+            echo "============"
+            echo $output
             exit 10
           else
             break
