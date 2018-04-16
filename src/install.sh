@@ -147,7 +147,7 @@ function get_var() {
 }
 
 function prompt_user() {
-  get_var "Do you want to persist config data? (S3|GCS|MINIO) [defaults to S3]: " CONFIG_STORE validate_config_store "" "S3"
+  prompt_user_for_config_store
   get_var "${CONFIG_STORE} bucket to use [if blank, a bucket will be generated for you]: " ARMORY_CONF_STORE_BUCKET "" "" ""
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     export S3_ENABLED=true
@@ -172,6 +172,24 @@ function prompt_user() {
   get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
 
 }
+
+function prompt_user_for_config_store() {
+  options=("S3" "GCS" "MINIO")
+  echo "Which backing object store would you like to use for storing Spinnaker configs: "
+  PS3='Enter choice: '
+  select opt in "${options[@]}"
+  do
+    case $opt in
+        "S3"|"GCS"|"MINIO")
+            echo "Using $opt"
+            export CONFIG_STORE="$opt"
+            break
+            ;;
+        *) echo "Invalid option";;
+    esac
+  done
+}
+
 
 function select_kubectl_context() {
   options=($(kubectl config get-contexts | awk '{print $2}' | grep -v NAME))
@@ -772,14 +790,9 @@ function set_lb_type() {
   select opt in "${options[@]}"
   do
     case $opt in
-        "Internal")
-            export LB_TYPE="Internal"
-            echo "Using LB type: 'Internal'"
-            break
-            ;;
-        "External")
-            export LB_TYPE="External"
-            echo "Using LB type: 'External'"
+        "Internal"|"External")
+            export LB_TYPE="$opt"
+            echo "Using LB type: $opt"
             break
             ;;
         *) echo "Invalid option";;
