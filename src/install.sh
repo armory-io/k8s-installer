@@ -190,6 +190,58 @@ function select_kubectl_context() {
   fi
 }
 
+function select_gcp_service_account_and_encode_creds() {
+  export PROJECT_ID=$(gcloud config get-value core/project)
+  export SERVICE_ACCOUNT_NAME="$(mktemp -u armory-svc-acct-XXXXXXXXXXXX | tr '[:upper:]' '[:lower:]')"
+  mkdir -p ${BUILD_DIR}/credentials
+  export GCP_CREDS="${BUILD_DIR}/credentials/service-account.json"
+
+  echo "Would you like to use an existing service account or create a new one?"
+  PS3='Enter choice: '
+  options=("Use existing" "Create new")
+  select opt in "${options[@]}"
+  do
+    case $opt in
+        "Use existing")
+            accts=($(gcloud iam service-accounts list | awk '{print $NF}' | grep -v EMAIL))
+            if [ ${#accts[@]} -eq 0 ]; then
+                echo "Could not find any existing service account(s)" 1>&2
+                exit 1
+            else
+              echo "Found the following service account(s):"
+              PS3='Please select the one you want to use: '
+              select acct in "${accts[@]}"
+              do
+                if [ -z "$acct" ]; then
+                  echo "Invalid option"
+                else
+                  gcloud iam service-accounts keys create \
+                    --iam-account "$acct" ${GCP_CREDS}
+                  export B64CREDENTIALS=$(base64 -i "$GCP_CREDS")
+                  break
+                fi
+              done
+            fi
+            break
+            ;;
+        "Create new")
+            gcloud iam service-accounts create ${SERVICE_ACCOUNT_NAME} \
+              --display-name "Armory GCS service account"
+            gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+              --member="serviceAccount:${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
+              --role='roles/storage.admin'
+            gcloud iam service-accounts keys create \
+              --iam-account "${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
+              ${GCP_CREDS}
+            export B64CREDENTIALS=$(base64 -i "$GCP_CREDS")
+            break
+            ;;
+        *) echo "Invalid option";;
+    esac
+  done
+}
+
+
 function make_minio_bucket() {
   echo "Creating Minio bucket to store configuration and persist data."
   AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} aws s3 mb --endpoint-url ${MINIO_ENDPOINT} "s3://${ARMORY_CONF_STORE_BUCKET}"
@@ -317,19 +369,7 @@ aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
 EOF
 )
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
-    export PROJECT_ID=$(gcloud config get-value core/project)
-    export SERVICE_ACCOUNT_NAME="$(mktemp -u armory-svc-acct-XXXXXXXXXXXX | tr '[:upper:]' '[:lower:]')"
-    mkdir -p ${BUILD_DIR}/credentials
-    export GCP_CREDS="${BUILD_DIR}/credentials/service-account.json"
-    gcloud iam service-accounts create ${SERVICE_ACCOUNT_NAME} \
-      --display-name "Armory GCS service account"
-    gcloud projects add-iam-policy-binding ${PROJECT_ID} \
-      --member="serviceAccount:${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
-      --role='roles/storage.admin'
-    gcloud iam service-accounts keys create \
-      --iam-account "${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
-      ${GCP_CREDS}
-    export B64CREDENTIALS=$(base64 -i "$GCP_CREDS")
+    select_gcp_service_account_and_encode_creds
   fi
 }
 
