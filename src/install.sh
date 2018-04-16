@@ -368,7 +368,7 @@ function create_k8s_svcs_and_rs() {
 
   *****************************************************************************
   * Creating k8s resources. This includes 'deployments', 'services',          *
-  * 'config-maps' and 'secrets.                                               *
+  * 'config-maps' and 'secrets'.                                              *
   *****************************************************************************
 
 EOF
