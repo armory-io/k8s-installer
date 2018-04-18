@@ -871,7 +871,7 @@ function set_resources() {
   cat <<EOF
 
   ******************************************************************************************
-  * The Armory Platform can be installed with 3 different resource                         *
+  * The Armory Platform can be installed with 4 different resource                         *
   * configurations. Which one you choose will be dependent on your expected                *
   * load. For explanation of the units for CPU & MEMORY, please refer to:                  *
   * https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/  *
