@@ -794,7 +794,7 @@ function set_profile_medium() {
   export ORCA_CPU="1000m"
   export REDIS_CPU="500m"
   export ROSCO_CPU="500m"
-  export CLOUDDRIVER_MEMORY="128Mi"
+  export CLOUDDRIVER_MEMORY="2Gi"
   export DECK_MEMORY="512Mi"
   export ECHO_MEMORY="512Mi"
   export FRONT50_MEMORY="1Gi"
@@ -829,27 +829,72 @@ function set_profile_large() {
   export ROSCO_MEMORY="1Gi"
 }
 
+function set_custom_profile() {
+  cpu_vars=("CLOUDDRIVER_CPU" "DECK_CPU" "ECHO_CPU" "FRONT50_CPU" "GATE_CPU" "IGOR_CPU" "LIGHTHOUSE_CPU" "ORCA_CPU" "REDIS_CPU" "ROSCO_CPU")
+  for v in "${cpu_vars[@]}"; do
+    echo "What allocation would you like for $v?"
+    options=("500m" "1000m" "1500m" "2000m" "2500m")
+    PS3="Enter choice: "
+    select opt in "${options[@]}"
+    do
+      case $opt in
+          "500m"|"1000m"|"1500m"|"2000m"|"2500m")
+              echo "Setting $v to $opt"
+              export "$v"="$opt"
+              break
+              ;;
+          *) echo "Invalid option";;
+      esac
+    done
+  done
+  mem_vars=("CLOUDDRIVER_MEMORY" "DECK_MEMORY" "ECHO_MEMORY" "FRONT50_MEMORY" "GATE_MEMORY" "IGOR_MEMORY" "LIGHTHOUSE_MEMORY" "ORCA_MEMORY" "REDIS_MEMORY" "ROSCO_MEMORY")
+  for v in "${mem_vars[@]}"; do
+    echo "What allocation would you like for $v?"
+    options=("512Mi" "1Gi" "2Gi" "4Gi" "8Gi" "16Gi")
+    PS3="Enter choice: "
+    select opt in "${options[@]}"
+    do
+      case $opt in
+          "512Mi"|"1Gi"|"2Gi"|"4Gi"|"8Gi"|"16Gi")
+              echo "Setting $v to $opt"
+              export "$v"="$opt"
+              break
+              ;;
+          *) echo "Invalid option";;
+      esac
+    done
+  done
+}
+
+
 function set_resources() {
   cat <<EOF
 
-  *****************************************************************************
-  * The Armory Platform can be installed with 3 different resource            *
-  * configurations. Which one you choose will be dependent on your expected   *
-  * load.                                                                     *
-  *****************************************************************************
+  ******************************************************************************************
+  * The Armory Platform can be installed with 3 different resource                         *
+  * configurations. Which one you choose will be dependent on your expected                *
+  * load. For explanation of the units for CPU & MEMORY, please refer to:                  *
+  * https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/  *
+  * NOTE: the cluster should have nodes with enough resources to accommodate each          *
+  * microservice's CPU/MEMORY requirements, else the pods might become "unschedulable"     *
+  ******************************************************************************************
 
 EOF
   echo ""
   echo "  'Small'"
   echo "       CPU: 100m per microservice"
   echo "       MEMORY: 128Mi per microservice"
+  echo "       Total CPU: 1600m (1.6 vCPUs)"
+  echo "       Total MEMROY: 2048Mi (~2 GB)"
   echo ""
   echo "  'Medium'"
   echo "       CPU: 500m for deck, echo, front50, gate, igor, lighthouse, redis & rosco"
   echo "            1000m for clouddriver & orca"
-  echo "       MEMORY: 521Mi for deck, echo, lighthouse & rosco"
+  echo "       MEMORY: 512Mi for deck, echo, lighthouse & rosco"
   echo "               1Gi for front50, gate, igor & rosco"
-  echo "               2Gi for orca & redis"
+  echo "               2Gi for clouddriver, orca & redis"
+  echo "       Total CPU: 10000m (10 vCPUs)"
+  echo "       Total MEMROY: 18.5Gi (~19.86 GB)"
   echo ""
   echo "  'Large'"
   echo "       CPU: 500m for lighthouse"
@@ -860,26 +905,36 @@ EOF
   echo "               2Gi for front50, gate & igor"
   echo "               4Gi for orca"
   echo "               16Gi for redis"
+  echo "       Total CPU: 19500m (19.5 vCPUs)"
+  echo "       Total MEMROY: 28.5Gi (~30.6 GB)"
+  echo ""
+  echo "  'Custom'"
+  echo "       You enter the CPU/MEMORY for each microservice"
   echo ""
 
-  options=("Small" "Medium" "Large")
+  options=("Small" "Medium" "Large" "Custom")
   PS3='Which profile would you like to use: '
   select opt in "${options[@]}"
   do
     case $opt in
         "Small")
-            echo "Using profile: 'small'"
+            echo "Using profile: 'Small'"
             set_profile_small
             break
             ;;
         "Medium")
-            echo "Using profile: 'medium'"
+            echo "Using profile: 'Medium'"
             set_profile_medium
             break
             ;;
         "Large")
-            echo "Using profile: 'large'"
+            echo "Using profile: 'Large'"
             set_profile_large
+            break
+            ;;
+        "Custom")
+            echo "Using profile: 'Custom'"
+            set_custom_profile
             break
             ;;
         *) echo "Invalid option";;
