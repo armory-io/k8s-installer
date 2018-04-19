@@ -7,7 +7,7 @@ fi
 
 export NAMESPACE=${NAMESPACE:-armory}
 export KUBECTL_OPTIONS="--namespace=${NAMESPACE}"
-export LIGHTHOUSE_URL="http://spinnaker.dev.armory.io:5000"
+
 
 function error() {
   >&2 echo $1
@@ -58,6 +58,12 @@ function generate_kubeconfig() {
   ./create-kubeconfig "$SERVICE_ACCOUNT_NAME" "$KUBECTL_OPTIONS" > "$KUBE_CONF"
 }
 
+function post_kubeconfig_to_lighthouse() {
+  get_var "Enter URL for your spinnaker install (eg: http://spinnaker.company.com): " SPINNAKER_URL
+  curl -X POST "$SPINNAKER_URL":8084/armory/v1/configs/accounts/kubernetes -d @"$KUBE_CONF"
+  rm -rf "$KUBE_CONF"
+}
+
 function main() {
   cat <<EOF
 
@@ -70,8 +76,7 @@ function main() {
 EOF
   create_service_acct
   generate_kubeconfig
-  curl -X POST "$LIGHTHOUSE_URL"/v1/configs/accounts/kubernetes -d @"$KUBE_CONF"
-  rm -rf "$KUBE_CONF"
+  post_kubeconfig_to_lighthouse
 }
 
 main
