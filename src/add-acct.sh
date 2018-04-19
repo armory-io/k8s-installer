@@ -42,7 +42,7 @@ function create_service_acct() {
     KUBECTL_OPTIONS="--certificate-authority=$CERT_PATH $KUBECTL_OPTIONS"
   fi
   get_var "Enter path to client certificate file for TLS: " CLIENT_CERT
-  if [ ! -z "$CLIENT_KEY" ]; then
+  if [ ! -z "$CLIENT_CERT" ]; then
     KUBECTL_OPTIONS="--client-certificate=$CLIENT_CERT $KUBECTL_OPTIONS"
   fi
   get_var "Enter path to client key file for TLS: " CLIENT_KEY
@@ -70,7 +70,7 @@ function main() {
   *****************************************************************************
   * This script will create a service account in the K8s cluster where apps   *
   * will be deployed, generate a kubconfig file using that service account    *
-  * and post the file and the namespace to lighthouse                         *
+  * and post the file and the namespace to the armory platform                *
   *****************************************************************************
 
 EOF
