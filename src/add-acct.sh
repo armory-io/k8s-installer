@@ -59,8 +59,8 @@ function generate_kubeconfig() {
 }
 
 function post_kubeconfig_to_lighthouse() {
-  get_var "Enter URL for your spinnaker install (eg: http://spinnaker.company.com): " SPINNAKER_URL
-  curl -X POST "$SPINNAKER_URL":8084/armory/v1/configs/accounts/kubernetes -d @"$KUBE_CONF"
+  get_var "Enter gate URL for your spinnaker install (eg: http://spinnaker.company.com:8084): " GATE_URL
+  curl -X POST "$GATE_URL"/armory/v1/configs/accounts/kubernetes -d @"$KUBE_CONF"
   rm -rf "$KUBE_CONF"
 }
 
