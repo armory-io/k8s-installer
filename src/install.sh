@@ -412,7 +412,6 @@ function create_k8s_custom_config() {
   # dump to a file to upload to S3. Used when we re-deploy
   kubectl ${KUBECTL_OPTIONS} get cm custom-config -o json > ${BUILD_DIR}/config/custom/custom-config.json
   local config_file="${BUILD_DIR}/config/custom/custom-config.json"
-  local credentials_manifest="${BUILD_DIR}/manifests/custom-credentials.json"
   if [[ "${CONFIG_STORE}" == "S3" ]]; then
     aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
       "${config_file}" \
