@@ -43,7 +43,7 @@ function create_service_acct() {
   fi
   get_var "Enter path to client certificate file for TLS: " CLIENT_CERT
   if [ ! -z "$CLIENT_KEY" ]; then
-    KUBECTL_OPTIONS="--client-key=$CLIENT_CERT $KUBECTL_OPTIONS"
+    KUBECTL_OPTIONS="--client-certificate=$CLIENT_CERT $KUBECTL_OPTIONS"
   fi
   get_var "Enter path to client key file for TLS: " CLIENT_KEY
   if [ ! -z "$CLIENT_KEY" ]; then
