@@ -137,7 +137,7 @@
           {
             "name": "custom-credentials",
             "secret": {
-              "secretName": "custom-credentials"
+              "secretName": "${custom_credentials_secret_name}"
             }
           },
           {
