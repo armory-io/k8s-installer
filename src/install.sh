@@ -390,6 +390,7 @@ function create_k8s_svcs_and_rs() {
   *****************************************************************************
 
 EOF
+  export custom_credentials_secret_name="custom-credentials"
   for filename in manifests/*.json; do
     envsubst < "$filename" > "$BUILD_DIR/$(basename $filename)"
   done
@@ -533,7 +534,7 @@ EOF
   export echo_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'echo_version\']})
   export deck_armory_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'deck_armory_version\']})
   export deck_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'deck_version\']})
-
+  export custom_credentials_secret_name=$(echo -ne \${\#stage\(\'Deploy Credentials\'\)[\'context\'][\'artifacts\'][0][\'reference\']})
   mkdir -p ${BUILD_DIR}/pipeline
   for filename in manifests/*-deployment.json; do
     envsubst < "$filename" > "$BUILD_DIR/pipeline/pipeline-$(basename $filename)"
