@@ -6,9 +6,7 @@ fi
 
 source version.manifest
 
-export TMP_DIR=$(mktemp -d)
 export NAMESPACE=${NAMESPACE:-armory}
-# export BUILD_DIR=$TMP_DIR/build/
 export BUILD_DIR=build/
 export ARMORY_CONF_STORE_PREFIX=front50
 # Start from a fresh build dir
