@@ -424,6 +424,21 @@ function create_k8s_custom_config() {
   fi
 }
 
+function upload_custom_credentials() {
+  local credentials_manifest="${BUILD_DIR}/custom-credentials.json"
+  if [[ "${CONFIG_STORE}" == "S3" ]]; then
+    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+      "${credentials_manifest}" \
+      "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
+  elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
+    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
+      --endpoint-url=${MINIO_ENDPOINT} "${credentials_manifest}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
+  elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
+    gsutil cp "${credentials_manifest}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
+  fi
+}
+
+
 function create_k8s_resources() {
   create_k8s_namespace
   create_k8s_gate_load_balancer
@@ -993,6 +1008,7 @@ function main() {
   encode_credentials
   encode_kubeconfig
   create_k8s_resources
+  upload_custom_credentials
   create_upgrade_pipeline
   output_results
 }
