@@ -71,11 +71,12 @@ function post_kubeconfig_to_lighthouse() {
 
   DATA="{
     \"kubeconfig\": \"$(cat $B64_KUBE_CONF)\",
-    \"namespace\": [\"$NAMESPACE\"],
-    \"name\": \"$CLUSTER\"
+    \"namespaces\": [\"$NAMESPACE\"],
+    \"account_name\": \"$CLUSTER\",
+    \"is_service_account\": true
   }"
 
-  curl -X POST "$GATE_URL"/armory/v1/configs/accounts/kubernetes -d "$DATA"
+  curl -X POST -H "Content-Type: application/json" "$GATE_URL"/armory/v1/configs/accounts/kubernetes -d "$DATA"
   rm -rf "$B64_KUBE_CONF"
 }
 
