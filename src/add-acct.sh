@@ -74,8 +74,7 @@ function post_kubeconfig_to_lighthouse() {
     \"namespace\": [\"$NAMESPACE\"],
     \"name\": \"$CLUSTER\"
   }"
-  echo "Posting: $DATA"
-  set -x
+
   curl -X POST "$GATE_URL"/armory/v1/configs/accounts/kubernetes -d "$DATA"
   rm -rf "$B64_KUBE_CONF"
 }
