@@ -58,18 +58,26 @@ function create_service_acct() {
 }
 
 function generate_kubeconfig() {
-  export KUBE_CONF="$(mktemp -u kubeconf-XXXXXXX)"  # DO NOT call this var KUBECONFIG!!
+  export B64_KUBE_CONF="$(mktemp -u kubeconf-XXXXXXX)"
   get_var "Enter the K8s context you want to use: " CONTEXT
   get_var "Enter the K8s cluster you want to use: " CLUSTER
   if [ ! -z "$CONTEXT" ]; then
-    ./create-kubeconfig "$SERVICE_ACCOUNT_NAME" "$CONTEXT" "$CLUSTER" "$KUBECTL_OPTIONS" > "$KUBE_CONF"
+    ./create-kubeconfig "$SERVICE_ACCOUNT_NAME" "$CONTEXT" "$CLUSTER" "$KUBECTL_OPTIONS" | base64 > "$B64_KUBE_CONF"
   fi
 }
 
 function post_kubeconfig_to_lighthouse() {
   get_var "Enter gate URL for your spinnaker install (eg: http://spinnaker.company.com:8084): " GATE_URL
-  curl -X POST "$GATE_URL"/armory/v1/configs/accounts/kubernetes -d @"$KUBE_CONF"
-  rm -rf "$KUBE_CONF"
+
+  DATA="{
+    \"kubeconfig\": \"$(cat $B64_KUBE_CONF)\",
+    \"namespace\": [\"$NAMESPACE\"],
+    \"name\": \"$CLUSTER\"
+  }"
+  echo "Posting: $DATA"
+  set -x
+  curl -X POST "$GATE_URL"/armory/v1/configs/accounts/kubernetes -d "$DATA"
+  rm -rf "$B64_KUBE_CONF"
 }
 
 function main() {
