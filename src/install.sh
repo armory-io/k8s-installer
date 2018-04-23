@@ -339,8 +339,20 @@ function make_s3_bucket() {
 }
 
 function make_gcs_bucket() {
+  echo "Found the following gcloud projects: "
+  options=($(gcloud projects list | grep -v PROJECT_ID | awk '{print $1}'))
+  PS3='Please select the project where you want to create the bucket: '
+  select opt in "${options[@]}"
+  do
+    if [ ! -z "$opt" ]; then
+      break
+    else
+      echo "Invalid Choice"
+    fi
+  done
+
   echo "Creating GCS bucket to store configuration and persist data."
-  gsutil mb "gs://${ARMORY_CONF_STORE_BUCKET}/"
+  gsutil mb -p "$opt" "gs://${ARMORY_CONF_STORE_BUCKET}/"
 }
 
 function create_k8s_namespace() {
