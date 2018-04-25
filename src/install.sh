@@ -66,8 +66,8 @@ function check_prereqs() {
   if [[ "$CONFIG_STORE" == "GCS" ]]; then
     type gsutil >/dev/null 2>&1 || { echo "I require 'gsutil' but it's not installed. Ref: https://cloud.google.com/storage/docs/gsutil_install#sdk-install" 1>&2 && exit 1; }
   fi
-  type envsubst >/dev/null 2>&1 || { echo "I require 'envsubst' but it's not installed. Please install the 'gettext' package." 1>&2;
-                                     echo "On Mac OS X, you can run: 'brew install gettext && brew link --force gettext'" 1>&2 && exit 1; }
+  type envsubst >/dev/null 2>&1 || { echo -e "I require 'envsubst' but it's not installed. Please install the 'gettext' package." 1>&2;
+                                     echo -e "On Mac OS X, you can run:\n   brew install gettext && brew link --force gettext" 1>&2 && exit 1; }
 }
 
 function validate_profile() {
