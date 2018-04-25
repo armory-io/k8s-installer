@@ -5,6 +5,8 @@ node {
 
   stage('Testing') {
     print('Nothing to test yet.')
+    sh('echo muahahaha')
+    print('WHAAHAHHHHA')
   }
 
   if (env.BRANCH_NAME == 'master') {
