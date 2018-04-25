@@ -9,6 +9,7 @@ node {
 
   if (env.BRANCH_NAME == 'master') {
     stage('Upload version info to S3') {
+      sh('echo muahahaha')
       sh('arm build')
     }
   }
