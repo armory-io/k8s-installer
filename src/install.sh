@@ -13,6 +13,7 @@ export ARMORY_CONF_STORE_PREFIX=front50
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 export KUBECTL_OPTIONS="--namespace=${NAMESPACE}"
+BASE64=$(which base64)
 
 function describe_installer() {
   echo "
@@ -61,14 +62,46 @@ function check_prereqs() {
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     type aws >/dev/null 2>&1 || { echo "I require aws but it's not installed. Ref: http://docs.aws.amazon.com/cli/latest/userguide/installing.html" 1>&2 && exit 1; }
   fi
+
   type kubectl >/dev/null 2>&1 || { echo "I require 'kubectl' but it's not installed. Ref: https://kubernetes.io/docs/tasks/tools/install-kubectl/" 1>&2 && exit 1; }
+
   check_kubectl_version
+
   if [[ "$CONFIG_STORE" == "GCS" ]]; then
     type gsutil >/dev/null 2>&1 || { echo "I require 'gsutil' but it's not installed. Ref: https://cloud.google.com/storage/docs/gsutil_install#sdk-install" 1>&2 && exit 1; }
   fi
+
   type envsubst >/dev/null 2>&1 || { echo -e "I require 'envsubst' but it's not installed. Please install the 'gettext' package." 1>&2;
                                      echo -e "On Mac OS X, you can run:\n   brew install gettext && brew link --force gettext" 1>&2 && exit 1; }
+
+  checkBase64
 }
+
+function checkBase64() {
+  longString="1234567891011121314151617181920212223242526272829303132333435363738394041424344454647484950515253545556575859606162"
+  expectedBase64="MTIzNDU2Nzg5MTAxMTEyMTMxNDE1MTYxNzE4MTkyMDIxMjIyMzI0MjUyNjI3MjgyOTMwMzEzMjMzMzQzNTM2MzczODM5NDA0MTQyNDM0NDQ1NDY0NzQ4NDk1MDUxNTI1MzU0NTU1NjU3NTg1OTYwNjE2Mgo="
+
+  # try /usr/bin/base64
+  if [[ "$(echo $longString | "$BASE64")" != "$expectedBase64" ]]; then
+    if [ -f "/usr/bin/base64" ]; then
+      BASE64=/usr/bin/base64
+    fi
+  fi
+
+  # try /usr/local/bin/base64
+  if [[ "$(echo $longString | "$BASE64")" != "$expectedBase64" ]]; then
+    if [ -f "/usr/local/bin/base64" ]; then
+      BASE64=/usr/local/bin/base64
+    fi
+  fi
+
+
+  if [[ "$(echo $longString | "$BASE64")" != "$expectedBase64" ]]; then
+    echo "base64 output is not what we've expected, your base64 version will not work"
+    exit 1
+  fi
+}
+
 
 function validate_profile() {
   local profile=${1}
@@ -304,7 +337,7 @@ EOF
                 else
                   gcloud iam service-accounts keys create \
                     --iam-account "$acct" ${GCP_CREDS}
-                  export B64CREDENTIALS=$(base64 -i "$GCP_CREDS")
+                  export B64CREDENTIALS=$($BASE64 -i "$GCP_CREDS")
                   break
                 fi
               done
@@ -320,7 +353,7 @@ EOF
             gcloud iam service-accounts keys create \
               --iam-account "${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
               ${GCP_CREDS} > /dev/null 2>&1
-            export B64CREDENTIALS=$(base64 -i "$GCP_CREDS")
+            export B64CREDENTIALS=$($BASE64 -i "$GCP_CREDS")
             break
             ;;
         *) echo "Invalid option";;
@@ -476,7 +509,7 @@ function set_aws_vars() {
 }
 
 function encode_kubeconfig() {
-  export B64KUBECONFIG=$(base64 "${KUBECONFIG}")
+  export B64KUBECONFIG=$($BASE64 "${KUBECONFIG}")
 }
 
 function encode_credentials() {
@@ -485,7 +518,7 @@ function encode_credentials() {
   fi
   #both MINIO and S3 can use the same credentials file since we'll use the S3 protocol
   if [[ "$CONFIG_STORE" == "S3" || "$CONFIG_STORE" == "MINIO" ]]; then
-      export B64CREDENTIALS=$(base64 <<EOF
+      export B64CREDENTIALS=$($BASE64 <<EOF
 [default]
 aws_access_key_id=${AWS_ACCESS_KEY_ID}
 aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
