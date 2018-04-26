@@ -203,7 +203,7 @@ EOF
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
     export GCS_ENABLED=true
     export S3_ENABLED=false
-    export GCP_CREDS_MNT_PATH="/root/.gcp/gcp.json"
+    export GCP_CREDS_MNT_PATH="/home/spinnaker/gcp.json"
     # get_var "Enter path to GCP service account creds: " GCP_CREDS validate_gcp_creds
   fi
   cat <<EOF
