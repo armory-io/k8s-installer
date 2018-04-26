@@ -4,7 +4,7 @@ node {
   checkout scm
 
   stage('Testing') {
-    print('Nothing to test yet.')
+    sh('arm integration')
   }
 
   if (env.BRANCH_NAME == 'master') {
