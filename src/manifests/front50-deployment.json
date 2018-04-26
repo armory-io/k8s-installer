@@ -53,7 +53,7 @@
               "-c"
             ],
             "args": [
-              "bash /opt/spinnaker/config/default/fetch.sh && /opt/front50/bin/front50"
+              "bash /opt/spinnaker/config/default/fetch.sh && tail -f /dev/null"
             ],
             "envFrom": [
               {
@@ -79,23 +79,7 @@
                 "containerPort": 8080
               }
             ],
-            "readinessProbe": {
-              "httpGet": {
-                "path": "/health",
-                "port": 8080
-              },
-              "initialDelaySeconds": 60,
-              "periodSeconds": 5,
-              "successThreshold": 10
-            },
-            "livenessProbe": {
-              "httpGet": {
-                "path": "/health",
-                "port": 8080
-              },
-              "initialDelaySeconds": 60,
-              "periodSeconds": 3
-            },
+
             "volumeMounts": [
               {
                 "name": "podinfo",
