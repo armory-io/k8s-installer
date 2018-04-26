@@ -108,7 +108,7 @@
               },
               {
                 "name": "gcp-credentials",
-                "mountPath": "/home/spinnaker"
+                "mountPath": "/home/spinnaker/.gcp"
               },
               {
                 "name": "default-config",
