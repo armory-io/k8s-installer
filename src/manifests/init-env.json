@@ -14,7 +14,7 @@
     "ARMORYSPINNAKER_CONF_STORE_PREFIX": "front50",
     "SPINNAKER_GOOGLE_PROJECT_CREDENTIALS_PATH": "${GCP_CREDS_MNT_PATH}",
     "REDIS_HOST": "redis",
-    "API_HOST": "http://${NGINX_IP}",
+    "API_HOST": "http://${NGINX_IP}/api",
     "DECK_HOST": "http://${NGINX_IP}",
     "AUTH_ENABLED": "false",
     "SERVER_ADDRESS": "0.0.0.0",

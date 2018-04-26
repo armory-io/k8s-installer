@@ -361,7 +361,7 @@ function create_k8s_namespace() {
 
 function create_k8s_nginx_load_balancer() {
   echo "Creating load balancer for the Web UI."
-  envsubst < manifests/deck-svc.json > ${BUILD_DIR}/nginx-svc.json
+  envsubst < manifests/nginx-svc.json > ${BUILD_DIR}/nginx-svc.json
   # Wait for IP
   kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/nginx-svc.json
   local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep nginx | awk '{ print $4 }')
@@ -786,9 +786,9 @@ EOF
   echo "Waiting for the API gateway to become ready. This may take several minutes."
   counter=0
   while true; do
-        if [ `curl -s -m 3 http://${GATE_IP}:8084/applications` ]; then
+        if [ `curl -s -m 3 http://${NGINX_IP}/api/applications` ]; then
           #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
-          http_code=$(curl -s -o /dev/null -w %{http_code} -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${GATE_IP}:8084/pipelines")
+          http_code=$(curl -s -o /dev/null -w %{http_code} -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${NGINX_IP}/api/pipelines")
           if [[ "$http_code" -lt "200" || "$http_code" -gt "399" ]]; then
             echo "Received a error code from pipeline curl request: $http_code"
             exit 10
@@ -797,7 +797,7 @@ EOF
           fi
         fi
         if [ "$counter" -gt 200 ]; then
-            echo "ERROR: Timeout occurred waiting for http://${GATE_IP}:8084/applications to become available"
+            echo "ERROR: Timeout occurred waiting for http://NGINX_IP/api/applications to become available"
             exit 2
         fi
         counter=$((counter+1))
