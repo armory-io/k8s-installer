@@ -1,0 +1,74 @@
+{
+    "apiVersion": "extensions/v1beta1",
+    "kind": "Deployment",
+    "metadata": {
+        "annotations": {
+            "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
+            "artifact.spinnaker.io/name": "\"armory-nginx\"",
+            "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
+            "moniker.spinnaker.io/application": "\"armory\"",
+            "moniker.spinnaker.io/cluster": "\"nginx\""
+        },
+        "name": "nginx",
+        "namespace": "${NAMESPACE}",
+        "labels": {
+            "app": "nginx"
+        }
+    },
+    "spec": {
+        "strategy": {
+            "type": "RollingUpdate",
+            "rollingUpdate": {
+                "maxUnavailable": 0,
+                "maxSurge": 3
+            }
+        },
+        "replicas": 2,
+        "selector": {
+            "matchLabels": {
+                "app": "nginx"
+            }
+        },
+        "template": {
+            "metadata": {
+                "annotations": {
+                    "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
+                    "artifact.spinnaker.io/name": "\"armory-nginx\"",
+                    "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
+                    "moniker.spinnaker.io/application": "\"armory\"",
+                    "moniker.spinnaker.io/cluster": "\"nginx\""
+                },
+                "labels": {
+                    "app": "nginx"
+                }
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "name": "nginx",
+                        "image": "nginx",
+                        "ports": [
+                            {
+                                "containerPort": 80
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "name": "nginx-config",
+                                "mountPath": "/etc/nginx/conf.d"
+                            }
+                        ]
+                    }
+                ],
+                "volumes": [
+                    {
+                        "name": "nginx-config",
+                        "configMap": {
+                            "name": "nginx-config"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

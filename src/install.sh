@@ -359,36 +359,20 @@ function create_k8s_namespace() {
   kubectl ${KUBECTL_OPTIONS} create namespace ${NAMESPACE} || { echo "If this is not the first time you have ran this installer, a previous run might have created a namespace. If so, please manually delete it by running 'kubectl delete namespace ${NAMESPACE}'. " 1>&2 && exit 1; }
 }
 
-function create_k8s_gate_load_balancer() {
-  echo "Creating load balancer for the API Gateway."
-  envsubst < manifests/gate-svc.json > ${BUILD_DIR}/gate-svc.json
-  # Wait for IP
-  kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/gate-svc.json
-  local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep gate | awk '{ print $4 }')
-  echo -n "Waiting for load balancer to receive an IP..."
-  while [ "$IP" == "<pending>" ] || [ -z "$IP" ]; do
-    sleep 5
-    local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep gate | awk '{ print $4 }')
-    echo -n "."
-  done
-  echo "Found IP $IP"
-  export GATE_IP=$IP
-}
-
-function create_k8s_deck_load_balancer() {
+function create_k8s_nginx_load_balancer() {
   echo "Creating load balancer for the Web UI."
-  envsubst < manifests/deck-svc.json > ${BUILD_DIR}/deck-svc.json
+  envsubst < manifests/deck-svc.json > ${BUILD_DIR}/nginx-svc.json
   # Wait for IP
-  kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/deck-svc.json
-  local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep deck | awk '{ print $4 }')
+  kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/nginx-svc.json
+  local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep nginx | awk '{ print $4 }')
   echo -n "Waiting for load balancer to receive an IP..."
   while [ "$IP" == "<pending>" ] || [ -z "$IP" ]; do
     sleep 5
-    local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep deck | awk '{ print $4 }')
+    local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep nginx | awk '{ print $4 }')
     echo -n "."
   done
   echo "Found IP $IP"
-  export DECK_IP=$IP
+  export NGINX_IP=$IP
 }
 
 function create_k8s_svcs_and_rs() {
@@ -412,6 +396,7 @@ EOF
 
 function create_k8s_default_config() {
   kubectl ${KUBECTL_OPTIONS} create configmap default-config --from-file=$(pwd)/config/default
+  kubectl ${KUBECTL_OPTIONS} create configmap nginx-config --from-file=$(pwd)/config/nginx
 }
 
 function create_k8s_custom_config() {
@@ -449,11 +434,9 @@ function upload_custom_credentials() {
   fi
 }
 
-
 function create_k8s_resources() {
   create_k8s_namespace
-  create_k8s_gate_load_balancer
-  create_k8s_deck_load_balancer
+  create_k8s_nginx_load_balancer
   create_k8s_default_config
   create_k8s_custom_config
   create_k8s_svcs_and_rs
@@ -501,7 +484,7 @@ cat <<EOF
 
 Installation complete. You can access The Armory Platform via:
 
-  http://${DECK_IP}
+  http://${NGINX_IP}
 
 Your configuration has been stored in the ${CONFIG_STORE} bucket:
 
