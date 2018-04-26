@@ -7,17 +7,18 @@ cd "$(dirname "$0")"/../
 #this allows for integration tests to be restarted if the namespace is the same
 
 OS=$(uname)
-if [ OS == "Darwin"]; then
+if [ "$OS" == "Darwin" ]; then
   uuid=$(uuidgen)
 else
   uuid=$(dbus-uuidgen)
 fi
+
 if [ -z ${NAMESPACE} ]; then
-  export NAMESPACE=$(awk '{print tolower($0) }' <<< integration-$uuid
+  export NAMESPACE=$(awk '{print tolower($0) }' <<< integration-$uuid)
 fi
 
 if [ -z ${ARMORY_CONF_STORE_BUCKET} ]; then
-  export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< k8s-installer-$uuid
+  export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< k8s-installer-$uuid)
 fi
 
 export ARMORY_DEBUG=true
