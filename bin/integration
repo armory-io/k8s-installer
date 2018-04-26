@@ -22,6 +22,7 @@ KUBECTL_CMD="kubectl -n $NAMESPACE"
 src/install.sh
 
 result=$(${KUBECTL_CMD} get svc | grep gate | awk '{print $4}')
+
 kubectl delete ns $NAMESPACE
 aws --profile "${AWS_PROFILE}" --region us-east-1 s3 rm "s3://${ARMORY_CONF_STORE_BUCKET}"
 

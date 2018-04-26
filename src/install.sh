@@ -225,7 +225,7 @@ EOF
 }
 
 function prompt_user_for_config_store() {
-  if [ ! -z CONFIG_STORE ]; then
+  if [ ! -z $CONFIG_STORE ]; then
     return
   fi
 
