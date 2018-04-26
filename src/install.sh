@@ -2,6 +2,7 @@
 cd "$(dirname "$0")"
 if [ ! -z "${ARMORY_DEBUG}" ]; then
   set -x
+  set +e
 fi
 
 source version.manifest
@@ -15,6 +16,9 @@ mkdir -p "$BUILD_DIR"
 export KUBECTL_OPTIONS="--namespace=${NAMESPACE}"
 
 function describe_installer() {
+  if [ ! -z "${NOPROMPT}" ]; then
+    return
+  fi
   echo "
 
   This installer will launch the Armory Platform into your Kubernetes cluster.
@@ -221,6 +225,10 @@ EOF
 }
 
 function prompt_user_for_config_store() {
+  if [ ! -z CONFIG_STORE ]; then
+    return
+  fi
+
   cat <<EOF
 
   *****************************************************************************
@@ -249,6 +257,11 @@ EOF
 
 
 function select_kubectl_context() {
+  if [ ! -z $KUBE_CONTEXT ]; then
+      kubectl config use-context "${KUBE_CONTEXT}"
+      return
+  fi
+
   options=($(kubectl config get-contexts | awk '{print $2}' | grep -v NAME))
   if [ ${#options[@]} -eq 0 ]; then
       echo "It appears you do not have any K8s contexts in your KUBECONFIG file. Please refer to the docs to setup access to clusters:" 1>&2
@@ -356,6 +369,10 @@ function make_gcs_bucket() {
 }
 
 function create_k8s_namespace() {
+  if [ ! -z $SKIP_CREATE_NS ]; then
+    return
+  fi
+
   kubectl ${KUBECTL_OPTIONS} create namespace ${NAMESPACE} || { echo "If this is not the first time you have ran this installer, a previous run might have created a namespace. If so, please manually delete it by running 'kubectl delete namespace ${NAMESPACE}'. " 1>&2 && exit 1; }
 }
 
@@ -931,6 +948,11 @@ function set_custom_profile() {
 
 
 function set_resources() {
+  if [ ! -z ${NOPROMPT} ]; then
+    set_profile_medium
+    return
+  fi
+
   cat <<EOF
 
   ******************************************************************************************
@@ -1006,6 +1028,9 @@ EOF
 }
 
 function set_lb_type() {
+  if [ ! -z $LB_TYPE ]; then
+    return
+  fi
   cat <<EOF
 
   *****************************************************************************

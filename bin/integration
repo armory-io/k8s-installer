@@ -1,0 +1,28 @@
+#!/bin/bash -e -x
+cd "$(dirname "$0")"/../
+
+#this allows for integration tests to be restarted if the namespace is the same
+if [ -z ${NAMESPACE} ]; then
+  export NAMESPACE=$(awk '{print tolower($0) }' <<< integration-$(uuidgen))
+fi
+
+if [ -z ${ARMORY_CONF_STORE_BUCKET} ]; then
+  export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< k8s-installer-$(uuidgen))
+fi
+
+export ARMORY_DEBUG=true
+export NOPROMPT=true
+export AWS_PROFILE=dev
+export CONFIG_STORE=S3
+export KUBECONFIG="${HOME}/.kube/config"
+export KUBE_CONTEXT=gke_cloud-armory_us-east1-c_cos-test
+export LB_TYPE=external
+
+KUBECTL_CMD="kubectl -n $NAMESPACE"
+src/install.sh
+
+result=$(${KUBECTL_CMD} get svc | grep gate | awk '{print $4}')
+kubectl delete ns $NAMESPACE
+aws --profile "${AWS_PROFILE}" --region us-east-1 s3 rm "s3://${ARMORY_CONF_STORE_BUCKET}"
+
+#TODO: Run more tests!
