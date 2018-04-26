@@ -2,14 +2,16 @@
 
 rm -f /opt/spinnaker/config/*.yml
 
+mkdir -p ${HOME}/.spinnaker
+
 # Setup the default configuration that comes with a distribution
 for filename in /opt/spinnaker/config/default/*.yml; do
-    cp $filename /opt/spinnaker/config/
+    cp $filename ${HOME}/.spinnaker/
 done
 
 # User specific config
 for filename in /opt/spinnaker/config/custom/*.yml; do
-    cp $filename /opt/spinnaker/config/
+    cp $filename ${HOME}/.spinnaker/
 done
 
 # if CA exists, mount it into the default JKS store
