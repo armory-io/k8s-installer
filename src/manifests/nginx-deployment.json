@@ -45,6 +45,12 @@
             "spec": {
                 "containers": [
                     {
+                        "resources": {
+                            "requests": {
+                                "cpu": "${NGINX_CPU}",
+                                "memory": "${NGINX_MEMORY}"
+                            }
+                        },
                         "name": "nginx",
                         "image": "nginx",
                         "ports": [

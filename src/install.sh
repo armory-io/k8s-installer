@@ -817,6 +817,7 @@ function set_profile_small() {
   export ORCA_CPU="100m"
   export REDIS_CPU="100m"
   export ROSCO_CPU="100m"
+  export NGINX_CPU="100m"
   export CLOUDDRIVER_MEMORY="128Mi"
   export DECK_MEMORY="128Mi"
   export ECHO_MEMORY="128Mi"
@@ -827,6 +828,7 @@ function set_profile_small() {
   export ORCA_MEMORY="128Mi"
   export REDIS_MEMORY="128Mi"
   export ROSCO_MEMORY="128Mi"
+  export NGINX_MEMORY="64Mi"
 }
 
 function set_profile_medium() {
@@ -840,6 +842,7 @@ function set_profile_medium() {
   export ORCA_CPU="1000m"
   export REDIS_CPU="500m"
   export ROSCO_CPU="500m"
+  export NGINX_CPU="200m"
   export CLOUDDRIVER_MEMORY="2Gi"
   export DECK_MEMORY="512Mi"
   export ECHO_MEMORY="512Mi"
@@ -850,6 +853,7 @@ function set_profile_medium() {
   export ORCA_MEMORY="2Gi"
   export REDIS_MEMORY="2Gi"
   export ROSCO_MEMORY="1Gi"
+  export NGINX_MEMORY="128Mi"
 }
 
 function set_profile_large() {
@@ -863,6 +867,7 @@ function set_profile_large() {
   export ORCA_CPU="2000m"
   export REDIS_CPU="1000m"
   export ROSCO_CPU="1000m"
+  export NGINX_CPU="500m"
   export CLOUDDRIVER_MEMORY="8Gi"
   export DECK_MEMORY="512Mi"
   export ECHO_MEMORY="1Gi"
@@ -873,6 +878,7 @@ function set_profile_large() {
   export ORCA_MEMORY="4Gi"
   export REDIS_MEMORY="16Gi"
   export ROSCO_MEMORY="1Gi"
+  export NGINX_MEMORY="256Mi"
 }
 
 function set_custom_profile() {
