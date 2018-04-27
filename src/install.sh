@@ -2,6 +2,7 @@
 cd "$(dirname "$0")"
 if [ ! -z "${ARMORY_DEBUG}" ]; then
   set -x
+  set +e
 fi
 
 source version.manifest
@@ -356,7 +357,8 @@ function make_gcs_bucket() {
 }
 
 function create_k8s_namespace() {
-  kubectl ${KUBECTL_OPTIONS} create namespace ${NAMESPACE} || { echo "If this is not the first time you have ran this installer, a previous run might have created a namespace. If so, please manually delete it by running 'kubectl delete namespace ${NAMESPACE}'. " 1>&2 && exit 1; }
+  kubectl ${KUBECTL_OPTIONS} create namespace ${NAMESPACE}
+  #|| { echo "If this is not the first time you have ran this installer, a previous run might have created a namespace. If so, please manually delete it by running 'kubectl delete namespace ${NAMESPACE}'. " 1>&2 && exit 1; }
 }
 
 function create_k8s_gate_load_balancer() {
