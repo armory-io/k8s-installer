@@ -53,7 +53,7 @@
               "-c"
             ],
             "args": [
-              "bash /opt/spinnaker/config/default/fetch.sh && /opt/orca/bin/orca"
+              "bash /opt/spinnaker/config/default/fetch.sh && cd /home/spinnaker/.spinnaker && /opt/orca/bin/orca"
             ],
             "envFrom": [
               {

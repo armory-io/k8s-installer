@@ -59,7 +59,7 @@
               "-c"
             ],
             "args": [
-              "bash /opt/spinnaker/config/default/fetch.sh && /entrypoint.sh"
+              "bash /opt/spinnaker/config/default/fetch.sh && cd /root/.spinnaker && /entrypoint.sh"
             ],
             "resources": {
               "requests": {
