@@ -47,6 +47,10 @@
           {
             "name": "deck",
             "image": "docker.io/armory/deck-armory:${deck_armory_version}",
+            "env": [{
+                "name": "SPINNAKER_CONFIG_DIR",
+                "value": "/root/.spinnaker"
+            }],
             "envFrom": [
               {
                 "configMapRef": {
