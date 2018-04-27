@@ -1,7 +1,6 @@
 #!/bin/bash
-
-set -e
 set -x
+
 cd "$(dirname "$0")"/../
 
 #this allows for integration tests to be restarted if the namespace is the same
@@ -21,7 +20,6 @@ if [ -z ${ARMORY_CONF_STORE_BUCKET} ]; then
   export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< k8s-installer-$uuid)
 fi
 
-export ARMORY_DEBUG=true
 export NOPROMPT=true
 export AWS_PROFILE=dev
 export CONFIG_STORE=S3
@@ -30,7 +28,7 @@ export KUBE_CONTEXT=gke_cloud-armory_us-central1-c_armory-kube
 export LB_TYPE=external
 
 KUBECTL_CMD="kubectl -n $NAMESPACE"
-src/install.sh
+bash -x src/install.sh
 
 result=$(${KUBECTL_CMD} get svc | grep gate | awk '{print $4}')
 

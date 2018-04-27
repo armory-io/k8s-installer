@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 cd "$(dirname "$0")"
 
 function generate_json_with_trailing_comma() {
