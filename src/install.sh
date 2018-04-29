@@ -69,6 +69,9 @@ function check_prereqs() {
   fi
   type envsubst >/dev/null 2>&1 || { echo -e "I require 'envsubst' but it's not installed. Please install the 'gettext' package." 1>&2;
                                      echo -e "On Mac OS X, you can run:\n   brew install gettext && brew link --force gettext" 1>&2 && exit 1; }
+
+  type jq >/dev/null 2>&1 || { echo -e "I require 'jq' but it's not installed. Please install the 'jq' package: https://stedolan.github.io/jq/download/" 1>&2;
+                                     echo -e "On Mac OS X, you can run:\n   brew install jq && brew link --force jq" 1>&2 && exit 1; }
 }
 
 function validate_profile() {
@@ -421,9 +424,15 @@ function create_k8s_custom_config() {
   for filename in config/custom/*.yml; do
     envsubst < $filename > ${BUILD_DIR}/config/custom/$(basename $filename)
   done
-  kubectl ${KUBECTL_OPTIONS} create configmap custom-config --from-file=${BUILD_DIR}/config/custom
-  # dump to a file to upload to S3. Used when we re-deploy
-  kubectl ${KUBECTL_OPTIONS} get cm custom-config -o json > ${BUILD_DIR}/config/custom/custom-config.json
+  # dump to a file to upload to S3. Used when we deploy, we use dry-run to accomplish this
+  kubectl ${KUBECTL_OPTIONS} create configmap custom-config \
+    -o json \
+    --dry-run \
+    --from-file=${BUILD_DIR}/config/custom | jq '. + {kind:"ConfigMap",apiVersion:"v1" }' \
+    > ${BUILD_DIR}/config/custom/custom-config.json
+
+  kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/config/custom/custom-config.json
+
   local config_file="${BUILD_DIR}/config/custom/custom-config.json"
   if [[ "${CONFIG_STORE}" == "S3" ]]; then
     aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
@@ -526,7 +535,7 @@ function create_upgrade_pipeline() {
 
 EOF
   echo "Creating..."
-
+  
   export packager_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'packager_version\']})
   export armoryspinnaker_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'armoryspinnaker_version\']})
   export fiat_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'fiat_version\']})
@@ -547,6 +556,7 @@ EOF
   export deck_armory_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'deck_armory_version\']})
   export deck_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'deck_version\']})
   export custom_credentials_secret_name=$(echo -ne \${\#stage\(\'Deploy Credentials\'\)[\'context\'][\'artifacts\'][0][\'reference\']})
+
   mkdir -p ${BUILD_DIR}/pipeline
   for filename in manifests/*-deployment.json; do
     envsubst < "$filename" > "$BUILD_DIR/pipeline/pipeline-$(basename $filename)"

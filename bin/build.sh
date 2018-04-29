@@ -1,6 +1,7 @@
-#!/bin/sh
+#!/bin/bash -x
 cd "$(dirname "$0")"
 
+PROFILE=${PROFILE:-default}
 function generate_json_with_trailing_comma() {
   source ../src/version.manifest
   fields=$(cat ../src/version.manifest | cut -d' ' -f2 | cut -d'=' -f1)
@@ -19,7 +20,7 @@ function generate_json() {
 
 function upload_version_info() {
   generate_json > versions.tmp.json
-  aws s3 cp versions.tmp.json s3://armory-web/k8s-latest.json
+  aws s3 cp versions.tmp.json s3://armory-web/k8s-latest.json --profile=${PROFILE}
   rm versions.tmp.json
 }
 

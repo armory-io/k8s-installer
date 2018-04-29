@@ -15,7 +15,8 @@ for filename in /opt/spinnaker/config/custom/*.yml; do
 done
 
 # if CA exists, mount it into the default JKS store
-ca_cert_path="/opt/spinnaker/certs/ca.crt"
+config_location=${SPINNAKER_CONFIG_DIR:-"/opt/spinnaker/"}
+ca_cert_path="${config_location}/certs/ca.crt"
 jks_path="/etc/ssl/certs/java/cacerts"
 if [  -f ${ca_cert_path} ]; then
     echo "Loading CA cert into the Java Keystore located at ${jks_path}"
