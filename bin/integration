@@ -27,6 +27,11 @@ export KUBECONFIG="${HOME}/.kube/config"
 export KUBE_CONTEXT=gke_cloud-armory_us-central1-c_armory-kube
 export LB_TYPE=external
 
+# testing
+echo "TESTING"
+kubectl get namespaces
+
+aws --profile "${AWS_PROFILE}" --region us-east-1 s3 mb "${ARMORY_CONF_STORE_BUCKET}"
 KUBECTL_CMD="kubectl -n $NAMESPACE"
 bash -x src/install.sh
 
