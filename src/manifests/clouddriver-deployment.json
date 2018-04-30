@@ -98,7 +98,7 @@
               },
               {
                 "name": "aws-s3-credentials",
-                "mountPath": "/root/.aws"
+                "mountPath": "/home/spinnaker/.aws"
               },
               {
                 "name": "custom-credentials",
