@@ -1,0 +1,38 @@
+#!/bin/bash
+set -x
+
+cd "$(dirname "$0")"/../
+
+#this allows for integration tests to be restarted if the namespace is the same
+
+OS=$(uname)
+if [ "$OS" == "Darwin" ]; then
+  uuid=$(uuidgen)
+else
+  uuid=$(dbus-uuidgen)
+fi
+
+if [ -z ${NAMESPACE} ]; then
+  export NAMESPACE=$(awk '{print tolower($0) }' <<< integration-$uuid)
+fi
+
+if [ -z ${ARMORY_CONF_STORE_BUCKET} ]; then
+  export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< k8s-installer-$uuid)
+fi
+
+export NOPROMPT=true
+export AWS_PROFILE=dev
+export CONFIG_STORE=S3
+export KUBECONFIG="${HOME}/.kube/config"
+export KUBE_CONTEXT=gke_cloud-armory_us-central1-c_armory-kube
+export LB_TYPE=external
+
+KUBECTL_CMD="kubectl -n $NAMESPACE"
+bash -x src/install.sh
+
+result=$(${KUBECTL_CMD} get svc | grep gate | awk '{print $4}')
+
+kubectl delete ns $NAMESPACE
+aws --profile "${AWS_PROFILE}" --region us-east-1 s3 rm "s3://${ARMORY_CONF_STORE_BUCKET}"
+
+#TODO: Run more tests!

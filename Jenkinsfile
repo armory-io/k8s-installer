@@ -4,7 +4,7 @@ node {
   checkout scm
 
   stage('Testing') {
-    print('Nothing to test yet.')
+    sh('arm integration')
   }
 
   stage('Upload version info to S3') {
