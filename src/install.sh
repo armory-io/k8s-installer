@@ -2,6 +2,7 @@
 cd "$(dirname "$0")"
 if [ ! -z "${ARMORY_DEBUG}" ]; then
   set -x
+  set +e
 fi
 
 source version.manifest
@@ -68,6 +69,9 @@ function check_prereqs() {
   fi
   type envsubst >/dev/null 2>&1 || { echo -e "I require 'envsubst' but it's not installed. Please install the 'gettext' package." 1>&2;
                                      echo -e "On Mac OS X, you can run:\n   brew install gettext && brew link --force gettext" 1>&2 && exit 1; }
+
+  type jq >/dev/null 2>&1 || { echo -e "I require 'jq' but it's not installed. Please install the 'jq' package: https://stedolan.github.io/jq/download/" 1>&2;
+                                     echo -e "On Mac OS X, you can run:\n   brew install jq && brew link --force jq" 1>&2 && exit 1; }
 }
 
 function validate_profile() {
@@ -203,7 +207,7 @@ EOF
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
     export GCS_ENABLED=true
     export S3_ENABLED=false
-    export GCP_CREDS_MNT_PATH="/root/.gcp/gcp.json"
+    export GCP_CREDS_MNT_PATH="/home/spinnaker/.gcp/gcp.json"
     # get_var "Enter path to GCP service account creds: " GCP_CREDS validate_gcp_creds
   fi
   cat <<EOF
@@ -404,9 +408,15 @@ function create_k8s_custom_config() {
   for filename in config/custom/*.yml; do
     envsubst < $filename > ${BUILD_DIR}/config/custom/$(basename $filename)
   done
-  kubectl ${KUBECTL_OPTIONS} create configmap custom-config --from-file=${BUILD_DIR}/config/custom
-  # dump to a file to upload to S3. Used when we re-deploy
-  kubectl ${KUBECTL_OPTIONS} get cm custom-config -o json > ${BUILD_DIR}/config/custom/custom-config.json
+  # dump to a file to upload to S3. Used when we deploy, we use dry-run to accomplish this
+  kubectl ${KUBECTL_OPTIONS} create configmap custom-config \
+    -o json \
+    --dry-run \
+    --from-file=${BUILD_DIR}/config/custom | jq '. + {kind:"ConfigMap",apiVersion:"v1" }' \
+    > ${BUILD_DIR}/config/custom/custom-config.json
+
+  kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/config/custom/custom-config.json
+
   local config_file="${BUILD_DIR}/config/custom/custom-config.json"
   if [[ "${CONFIG_STORE}" == "S3" ]]; then
     aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
@@ -528,6 +538,7 @@ EOF
   export deck_armory_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'deck_armory_version\']})
   export deck_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'deck_version\']})
   export custom_credentials_secret_name=$(echo -ne \${\#stage\(\'Deploy Credentials\'\)[\'context\'][\'artifacts\'][0][\'reference\']})
+
   mkdir -p ${BUILD_DIR}/pipeline
   for filename in manifests/*-deployment.json; do
     envsubst < "$filename" > "$BUILD_DIR/pipeline/pipeline-$(basename $filename)"
@@ -1022,13 +1033,7 @@ EOF
   done
 }
 
-function main() {
-  describe_installer
-  prompt_user
-  check_prereqs
-  select_kubectl_context
-  set_lb_type
-  set_resources
+function make_bucket() {
   if [[ "$ARMORY_CONF_STORE_BUCKET" == "" ]]; then
     export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< armory-platform-$(uuidgen))
     if [ "$CONFIG_STORE" == "S3" ]; then
@@ -1041,7 +1046,16 @@ function main() {
   else
     echo "Using existing bucket: $ARMORY_CONF_STORE_BUCKET"
   fi
+}
 
+function main() {
+  describe_installer
+  prompt_user
+  check_prereqs
+  select_kubectl_context
+  set_lb_type
+  set_resources
+  make_bucket
   encode_credentials
   encode_kubeconfig
   create_k8s_resources
