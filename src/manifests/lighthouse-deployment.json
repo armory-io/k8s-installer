@@ -63,6 +63,10 @@
             ],
             "env": [
               {
+                  "name": "SPINNAKER_HOME",
+                  "value": "/home/spinnaker"
+              },
+              {
                 "name": "LIGHTHOUSE_PORT_MAPPING",
                 "value": "-5000:5000"
               },
@@ -110,7 +114,7 @@
               },
               {
                 "name": "gcp-credentials",
-                "mountPath": "/root/.gcp"
+                "mountPath": "/home/spinnaker/.gcp"
               },
               {
                 "name": "custom-config",

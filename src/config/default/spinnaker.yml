@@ -110,7 +110,7 @@ services:
     bucket_root: front50
 
     cassandra:
-      enabled: true
+      enabled: false
     redis:
       enabled: false
     gcs:
