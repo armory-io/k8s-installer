@@ -1,8 +1,7 @@
-#!/bin/bash -x
+#!/bin/sh
 cd "$(dirname "$0")"
 
 PROFILE=${PROFILE:-default}
-function generate_json_with_trailing_comma() {
 S3_PREFIX="${S3_PREFIX:-dev/}"
 
 generate_json_with_trailing_comma() {
