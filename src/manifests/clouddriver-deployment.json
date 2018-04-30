@@ -53,7 +53,7 @@
               "-c"
             ],
             "args": [
-              "bash /opt/spinnaker/config/default/fetch.sh && /opt/clouddriver/bin/clouddriver"
+              "bash /opt/spinnaker/config/default/fetch.sh && cd /home/spinnaker/config && /opt/clouddriver/bin/clouddriver"
             ],
             "envFrom": [
               {
@@ -98,7 +98,7 @@
               },
               {
                 "name": "aws-s3-credentials",
-                "mountPath": "/root/.aws"
+                "mountPath": "/home/spinnaker/.aws"
               },
               {
                 "name": "custom-credentials",
