@@ -4,7 +4,7 @@ node {
   checkout scm
 
   stage('Testing') {
-    sh('arm integration')
+    sh('bin/jenkins-test-runner.sh')
   }
 
   stage('Upload version info to S3') {
