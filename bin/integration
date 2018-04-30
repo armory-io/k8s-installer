@@ -9,7 +9,7 @@ OS=$(uname)
 if [ "$OS" == "Darwin" ]; then
   uuid=$(uuidgen)
 else
-  uuid=$(dbus-uuidgen)
+  uuid=$(uuidgen || dbus-uuidgen)
 fi
 
 if [ -z ${NAMESPACE} ]; then
