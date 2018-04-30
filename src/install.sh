@@ -363,36 +363,20 @@ function create_k8s_namespace() {
   kubectl ${KUBECTL_OPTIONS} create namespace ${NAMESPACE} || { echo "If this is not the first time you have ran this installer, a previous run might have created a namespace. If so, please manually delete it by running 'kubectl delete namespace ${NAMESPACE}'. " 1>&2 && exit 1; }
 }
 
-function create_k8s_gate_load_balancer() {
-  echo "Creating load balancer for the API Gateway."
-  envsubst < manifests/gate-svc.json > ${BUILD_DIR}/gate-svc.json
-  # Wait for IP
-  kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/gate-svc.json
-  local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep gate | awk '{ print $4 }')
-  echo -n "Waiting for load balancer to receive an IP..."
-  while [ "$IP" == "<pending>" ] || [ -z "$IP" ]; do
-    sleep 5
-    local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep gate | awk '{ print $4 }')
-    echo -n "."
-  done
-  echo "Found IP $IP"
-  export GATE_IP=$IP
-}
-
-function create_k8s_deck_load_balancer() {
+function create_k8s_nginx_load_balancer() {
   echo "Creating load balancer for the Web UI."
-  envsubst < manifests/deck-svc.json > ${BUILD_DIR}/deck-svc.json
+  envsubst < manifests/nginx-svc.json > ${BUILD_DIR}/nginx-svc.json
   # Wait for IP
-  kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/deck-svc.json
-  local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep deck | awk '{ print $4 }')
+  kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/nginx-svc.json
+  local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep nginx | awk '{ print $4 }')
   echo -n "Waiting for load balancer to receive an IP..."
   while [ "$IP" == "<pending>" ] || [ -z "$IP" ]; do
     sleep 5
-    local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep deck | awk '{ print $4 }')
+    local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep nginx | awk '{ print $4 }')
     echo -n "."
   done
   echo "Found IP $IP"
-  export DECK_IP=$IP
+  export NGINX_IP=$IP
 }
 
 function create_k8s_svcs_and_rs() {
@@ -416,6 +400,7 @@ EOF
 
 function create_k8s_default_config() {
   kubectl ${KUBECTL_OPTIONS} create configmap default-config --from-file=$(pwd)/config/default
+  kubectl ${KUBECTL_OPTIONS} create configmap nginx-config --from-file=$(pwd)/config/nginx
 }
 
 function create_k8s_custom_config() {
@@ -459,11 +444,9 @@ function upload_custom_credentials() {
   fi
 }
 
-
 function create_k8s_resources() {
   create_k8s_namespace
-  create_k8s_gate_load_balancer
-  create_k8s_deck_load_balancer
+  create_k8s_nginx_load_balancer
   create_k8s_default_config
   create_k8s_custom_config
   create_k8s_svcs_and_rs
@@ -511,7 +494,7 @@ cat <<EOF
 
 Installation complete. You can access The Armory Platform via:
 
-  http://${DECK_IP}
+  http://${NGINX_IP}
 
 Your configuration has been stored in the ${CONFIG_STORE} bucket:
 
@@ -814,9 +797,9 @@ EOF
   echo "Waiting for the API gateway to become ready. This may take several minutes."
   counter=0
   while true; do
-        if [ `curl -s -m 3 http://${GATE_IP}:8084/applications` ]; then
+        if [ `curl -s -m 3 http://${NGINX_IP}/api/applications` ]; then
           #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
-          http_code=$(curl -s -o /dev/null -w %{http_code} -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${GATE_IP}:8084/pipelines")
+          http_code=$(curl -s -o /dev/null -w %{http_code} -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${NGINX_IP}/api/pipelines")
           if [[ "$http_code" -lt "200" || "$http_code" -gt "399" ]]; then
             echo "Received a error code from pipeline curl request: $http_code"
             exit 10
@@ -825,7 +808,7 @@ EOF
           fi
         fi
         if [ "$counter" -gt 200 ]; then
-            echo "ERROR: Timeout occurred waiting for http://${GATE_IP}:8084/applications to become available"
+            echo "ERROR: Timeout occurred waiting for http://NGINX_IP/api/applications to become available"
             exit 2
         fi
         counter=$((counter+1))
@@ -845,6 +828,7 @@ function set_profile_small() {
   export ORCA_CPU="100m"
   export REDIS_CPU="100m"
   export ROSCO_CPU="100m"
+  export NGINX_CPU="100m"
   export CLOUDDRIVER_MEMORY="128Mi"
   export DECK_MEMORY="128Mi"
   export ECHO_MEMORY="128Mi"
@@ -855,6 +839,7 @@ function set_profile_small() {
   export ORCA_MEMORY="128Mi"
   export REDIS_MEMORY="128Mi"
   export ROSCO_MEMORY="128Mi"
+  export NGINX_MEMORY="64Mi"
 }
 
 function set_profile_medium() {
@@ -868,6 +853,7 @@ function set_profile_medium() {
   export ORCA_CPU="1000m"
   export REDIS_CPU="500m"
   export ROSCO_CPU="500m"
+  export NGINX_CPU="200m"
   export CLOUDDRIVER_MEMORY="2Gi"
   export DECK_MEMORY="512Mi"
   export ECHO_MEMORY="512Mi"
@@ -878,6 +864,7 @@ function set_profile_medium() {
   export ORCA_MEMORY="2Gi"
   export REDIS_MEMORY="2Gi"
   export ROSCO_MEMORY="1Gi"
+  export NGINX_MEMORY="128Mi"
 }
 
 function set_profile_large() {
@@ -891,6 +878,7 @@ function set_profile_large() {
   export ORCA_CPU="2000m"
   export REDIS_CPU="1000m"
   export ROSCO_CPU="1000m"
+  export NGINX_CPU="500m"
   export CLOUDDRIVER_MEMORY="8Gi"
   export DECK_MEMORY="512Mi"
   export ECHO_MEMORY="1Gi"
@@ -901,6 +889,7 @@ function set_profile_large() {
   export ORCA_MEMORY="4Gi"
   export REDIS_MEMORY="16Gi"
   export ROSCO_MEMORY="1Gi"
+  export NGINX_MEMORY="256Mi"
 }
 
 function set_custom_profile() {
