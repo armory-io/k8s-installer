@@ -63,8 +63,8 @@
             ],
             "env": [
               {
-                  "name": "SPINNAKER_CONFIG_DIR",
-                  "value": "/root/.spinnaker"
+                  "name": "SPINNAKER_HOME",
+                  "value": "/home/spinnaker"
               },
               {
                 "name": "LIGHTHOUSE_PORT_MAPPING",

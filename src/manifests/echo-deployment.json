@@ -52,7 +52,7 @@
               "-c"
             ],
             "args": [
-              "bash /opt/spinnaker/config/default/fetch.sh && cd /root/.spinnaker && /opt/echo/bin/echo"
+              "bash /opt/spinnaker/config/default/fetch.sh && cd /home/spinnaker/config && /opt/echo/bin/echo"
             ],
             "envFrom": [
               {

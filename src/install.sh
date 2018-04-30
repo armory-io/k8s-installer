@@ -535,7 +535,7 @@ function create_upgrade_pipeline() {
 
 EOF
   echo "Creating..."
-  
+
   export packager_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'packager_version\']})
   export armoryspinnaker_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'armoryspinnaker_version\']})
   export fiat_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'fiat_version\']})
@@ -1045,13 +1045,7 @@ EOF
   done
 }
 
-function main() {
-  describe_installer
-  prompt_user
-  check_prereqs
-  select_kubectl_context
-  set_lb_type
-  set_resources
+function make_bucket() {
   if [[ "$ARMORY_CONF_STORE_BUCKET" == "" ]]; then
     export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< armory-platform-$(uuidgen))
     if [ "$CONFIG_STORE" == "S3" ]; then
@@ -1064,7 +1058,16 @@ function main() {
   else
     echo "Using existing bucket: $ARMORY_CONF_STORE_BUCKET"
   fi
+}
 
+function main() {
+  describe_installer
+  prompt_user
+  check_prereqs
+  select_kubectl_context
+  set_lb_type
+  set_resources
+  make_bucket
   encode_credentials
   encode_kubeconfig
   create_k8s_resources

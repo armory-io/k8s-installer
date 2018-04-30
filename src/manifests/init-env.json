@@ -25,6 +25,8 @@
     "SPRING_PROFILES_ACTIVE": "armory,local",
     "SPINNAKER_AWS_ENABLED": "false",
     "CONFIGURATOR_ENABLED": "true",
+    "SPINNAKER_HOME": "/home/spinnaker",
+    "SPINNAKER_CONFIG_DIR": "/home/spinnaker/config",
     "PLATFORM_ARCHITECTURE": "k8s"
   }
 }
