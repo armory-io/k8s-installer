@@ -7,9 +7,17 @@ node {
     print('Nothing to test yet.')
   }
 
-  if (env.BRANCH_NAME == 'master') {
-    stage('Upload version info to S3') {
-      sh('arm build')
+  stage('Upload version info to S3') {
+    if (env.BRANCH_NAME == 'master') {
+        sh('''
+          export S3_PREFIX=
+          arm build
+        ''')
+    } else {
+      sh('''
+          export S3_PREFIX=dev/
+          arm build
+        ''')
     }
   }
 }
