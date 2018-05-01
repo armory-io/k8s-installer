@@ -1,4 +1,4 @@
-#!/bin/sh -xe
+#!/bin/bash -xe
 cd "$(dirname "$0")"
 
 PROFILE=${PROFILE:-default}
