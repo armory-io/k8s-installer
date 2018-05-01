@@ -16,6 +16,9 @@ mkdir -p "$BUILD_DIR"
 export KUBECTL_OPTIONS="--namespace=${NAMESPACE}"
 
 function describe_installer() {
+  if [ ! -z "${NOPROMPT}" ]; then
+    return
+  fi
   echo "
 
   This installer will launch the Armory Platform into your Kubernetes cluster.
@@ -225,6 +228,10 @@ EOF
 }
 
 function prompt_user_for_config_store() {
+  if [ ! -z $CONFIG_STORE ]; then
+    return
+  fi
+
   cat <<EOF
 
   *****************************************************************************
@@ -253,6 +260,11 @@ EOF
 
 
 function select_kubectl_context() {
+  if [ ! -z $KUBE_CONTEXT ]; then
+      kubectl config use-context "${KUBE_CONTEXT}"
+      return
+  fi
+
   options=($(kubectl config get-contexts | awk '{print $2}' | grep -v NAME))
   if [ ${#options[@]} -eq 0 ]; then
       echo "It appears you do not have any K8s contexts in your KUBECONFIG file. Please refer to the docs to setup access to clusters:" 1>&2
@@ -308,7 +320,7 @@ EOF
                 else
                   gcloud iam service-accounts keys create \
                     --iam-account "$acct" ${GCP_CREDS}
-                  export B64CREDENTIALS=$(base64 -i "$GCP_CREDS")
+                  export B64CREDENTIALS=$(base64 -w 0 -i "$GCP_CREDS" 2>/dev/null || base64 -i "$GCP_CREDS")
                   break
                 fi
               done
@@ -324,7 +336,7 @@ EOF
             gcloud iam service-accounts keys create \
               --iam-account "${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
               ${GCP_CREDS} > /dev/null 2>&1
-            export B64CREDENTIALS=$(base64 -i "$GCP_CREDS")
+            export B64CREDENTIALS=$(base64 -w 0 -i "$GCP_CREDS" 2>/dev/null || base64 -i "$GCP_CREDS")
             break
             ;;
         *) echo "Invalid option";;
@@ -360,6 +372,10 @@ function make_gcs_bucket() {
 }
 
 function create_k8s_namespace() {
+  if [ ! -z $SKIP_CREATE_NS ]; then
+    return
+  fi
+
   kubectl ${KUBECTL_OPTIONS} create namespace ${NAMESPACE} || { echo "If this is not the first time you have ran this installer, a previous run might have created a namespace. If so, please manually delete it by running 'kubectl delete namespace ${NAMESPACE}'. " 1>&2 && exit 1; }
 }
 
@@ -468,22 +484,18 @@ function set_aws_vars() {
   export AWS_REGION=us-east-1
 }
 
-function encode_kubeconfig() {
-  export B64KUBECONFIG=$(base64 "${KUBECONFIG}")
-}
-
 function encode_credentials() {
   if [[ "$CONFIG_STORE" == "S3" ]]; then
       set_aws_vars
   fi
   #both MINIO and S3 can use the same credentials file since we'll use the S3 protocol
   if [[ "$CONFIG_STORE" == "S3" || "$CONFIG_STORE" == "MINIO" ]]; then
-      export B64CREDENTIALS=$(base64 <<EOF
-[default]
+
+      export CREDENTIALS_FILE="[default]
 aws_access_key_id=${AWS_ACCESS_KEY_ID}
 aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
-EOF
-)
+"
+      export B64CREDENTIALS=$(base64 -w 0 <<< "${CREDENTIALS_FILE}" 2>/dev/null || base64 <<< "${CREDENTIALS_FILE}")
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
     select_gcp_service_account_and_encode_creds
   fi
@@ -931,6 +943,11 @@ function set_custom_profile() {
 
 
 function set_resources() {
+  if [ ! -z ${NOPROMPT} ]; then
+    set_profile_small
+    return
+  fi
+
   cat <<EOF
 
   ******************************************************************************************
@@ -1006,6 +1023,9 @@ EOF
 }
 
 function set_lb_type() {
+  if [ ! -z $LB_TYPE ]; then
+    return
+  fi
   cat <<EOF
 
   *****************************************************************************
@@ -1057,7 +1077,6 @@ function main() {
   set_resources
   make_bucket
   encode_credentials
-  encode_kubeconfig
   create_k8s_resources
   upload_custom_credentials
   create_upgrade_pipeline

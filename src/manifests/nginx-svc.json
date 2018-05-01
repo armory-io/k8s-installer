@@ -6,6 +6,9 @@
         "namespace": "${NAMESPACE}",
         "labels": {
             "app": "nginx"
+        },
+        "annotations": {
+            "cloud.google.com/load-balancer-type": "${LB_TYPE}"
         }
     },
     "spec": {
