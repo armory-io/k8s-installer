@@ -11,7 +11,7 @@ node {
     }
     def tests = [
       "Install backed by S3": runner("spin-up-with-s3.sh"),
-      "Install backed by GCS": runner("spin-up-with-gcs.sh")
+      "TODO: Install backed by GCS": runner("spin-up-with-gcs.sh")
     ]
     parallel tests
   }

@@ -14,7 +14,7 @@ else
 fi
 
 if [ -z ${NAMESPACE} ]; then
-  export NAMESPACE=$(awk '{print tolower($0) }' <<< integration-$uuid)
+  export NAMESPACE=$(awk '{print tolower($0) }' <<< integration-s3-$uuid)
 fi
 
 if [ -z ${ARMORY_CONF_STORE_BUCKET} ]; then
