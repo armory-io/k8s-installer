@@ -320,7 +320,7 @@ EOF
                 else
                   gcloud iam service-accounts keys create \
                     --iam-account "$acct" ${GCP_CREDS}
-                  export B64CREDENTIALS=$(base64 -i "$GCP_CREDS")
+                  export B64CREDENTIALS=$(base64 -w 0 -i "$GCP_CREDS" || base64 -i "$GCP_CREDS")
                   break
                 fi
               done
@@ -336,7 +336,7 @@ EOF
             gcloud iam service-accounts keys create \
               --iam-account "${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
               ${GCP_CREDS} > /dev/null 2>&1
-            export B64CREDENTIALS=$(base64 -i "$GCP_CREDS")
+            export B64CREDENTIALS=$(base64 -w 0 -i "$GCP_CREDS" || base64 -i "$GCP_CREDS")
             break
             ;;
         *) echo "Invalid option";;
@@ -485,7 +485,7 @@ function set_aws_vars() {
 }
 
 function encode_kubeconfig() {
-  export B64KUBECONFIG=$(base64 "${KUBECONFIG}")
+  export B64KUBECONFIG=$(base64 -w 0 "${KUBECONFIG}" || base64 "${KUBECONFIG}")
 }
 
 function encode_credentials() {
@@ -494,7 +494,12 @@ function encode_credentials() {
   fi
   #both MINIO and S3 can use the same credentials file since we'll use the S3 protocol
   if [[ "$CONFIG_STORE" == "S3" || "$CONFIG_STORE" == "MINIO" ]]; then
-      export B64CREDENTIALS=$(base64 <<EOF
+      export B64CREDENTIALS=$(base64 -w 0 <<EOF
+[default]
+aws_access_key_id=${AWS_ACCESS_KEY_ID}
+aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
+EOF
+|| base64 <<EOF
 [default]
 aws_access_key_id=${AWS_ACCESS_KEY_ID}
 aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
@@ -948,7 +953,7 @@ function set_custom_profile() {
 
 function set_resources() {
   if [ ! -z ${NOPROMPT} ]; then
-    set_profile_medium
+    set_profile_small
     return
   fi
 

@@ -15,10 +15,3 @@ docker run --rm \
     -v "$(pwd):/k8s-installer/:rw" \
     $IMAGE \
         /k8s-installer/bin/integration
-
-
-#    -v "${JENKINS_USER_HOME}/.aws/credentials:/root/.aws/credentials" \
-#    -v "${JENKINS_USER_HOME}/.kube/config:/root/.kube/config" \
-#    -v "${JENKINS_USER_HOME}/.kube/gcp_key.json:/root/.kube/gcp_key.json" \
-#    -v "${JENKINS_USER_HOME}/.aws/:/root/.aws/" \
-#    -v "${JENKINS_USER_HOME}/.kube/:/root/.kube/:rw" \
