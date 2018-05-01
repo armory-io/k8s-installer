@@ -1,5 +1,7 @@
 #!/bin/bash -x
 
+export TEST_NAME=${TEST_NAME:-integration}
+
 cd "$(dirname "$0")/.."
 JENKINS_USER_HOME=${JENKINS_USER_HOME:-/root/}
 
@@ -14,4 +16,4 @@ docker run --rm \
     -v "${JENKINS_USER_HOME}/.kube/gcp_key.json:/root/.kube/gcp_key.json" \
     -v "$(pwd):/k8s-installer/:rw" \
     $IMAGE \
-        /k8s-installer/bin/integration
+        "/k8s-installer/bin/${TEST_NAME}"
