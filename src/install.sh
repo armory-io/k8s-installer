@@ -484,21 +484,18 @@ function set_aws_vars() {
   export AWS_REGION=us-east-1
 }
 
-function encode_kubeconfig() {
-  export B64KUBECONFIG=$(base64 -w 0 "${KUBECONFIG}" 2>/dev/null || base64 "${KUBECONFIG}")
-}
-
 function encode_credentials() {
   if [[ "$CONFIG_STORE" == "S3" ]]; then
       set_aws_vars
   fi
   #both MINIO and S3 can use the same credentials file since we'll use the S3 protocol
   if [[ "$CONFIG_STORE" == "S3" || "$CONFIG_STORE" == "MINIO" ]]; then
+
       export CREDENTIALS_FILE="[default]
 aws_access_key_id=${AWS_ACCESS_KEY_ID}
 aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
 "
-      export B64CREDENTIALS=$(base64 -w 0 "${CREDENTIALS_FILE}" 2>/dev/null || base64 "${CREDENTIALS_FILE}")
+      export B64CREDENTIALS=$(base64 -w 0 <<< "${CREDENTIALS_FILE}" 2>/dev/null || base64 <<< "${CREDENTIALS_FILE}")
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
     select_gcp_service_account_and_encode_creds
   fi
@@ -1080,7 +1077,6 @@ function main() {
   set_resources
   make_bucket
   encode_credentials
-  encode_kubeconfig
   create_k8s_resources
   upload_custom_credentials
   create_upgrade_pipeline
