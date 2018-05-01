@@ -35,12 +35,14 @@ else
   export LB_TYPE=internal
 fi
 aws --profile "${AWS_PROFILE}" --region us-east-1 s3 mb "s3://${ARMORY_CONF_STORE_BUCKET}"
-KUBECTL_CMD="kubectl -n $NAMESPACE"
+
+# unset fail fast so we can clean up our mess
+set +e
 bash -x src/install.sh
+EXIT_CODE=$?
 
-result=$(${KUBECTL_CMD} get svc | grep gate | awk '{print $4}')
-
+# cleanup
 kubectl delete ns $NAMESPACE
 aws --profile "${AWS_PROFILE}" --region us-east-1 s3 rm "s3://${ARMORY_CONF_STORE_BUCKET}"
 
-#TODO: Run more tests!
+exit $EXIT_CODE
