@@ -22,7 +22,7 @@ RUN apk add --update \
     tar \
     ca-certificates \
     util-linux \
-    core-utils \
+    coreutils \
     bash
 
 RUN pip install \
