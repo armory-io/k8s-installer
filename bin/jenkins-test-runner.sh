@@ -9,7 +9,8 @@ docker build -t $IMAGE -f bin/tester.Dockerfile .
 
 docker run --rm \
     -e GOOGLE_APPLICATION_CREDENTIALS="${HOME}/.kube/gcp_key.json" \
-    -v "${JENKINS_HOME}/:/root/:rw" \
+    -v "${JENKINS_HOME}/.aws/:/root/.aws/" \
+    -v "${JENKINS_HOME}/.kube/:/root/.kube/:rw" \
     -v "$(pwd):/k8s-installer/:rw" \
     $IMAGE \
         /k8s-installer/bin/integration
