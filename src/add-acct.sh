@@ -35,8 +35,6 @@ function get_var() {
 }
 
 function create_kubeconf() {
-  export SERVICE_ACCOUNT_NAME="$(mktemp -u armory-XXXXXXXXXXXX | tr '[:upper:]' '[:lower:]')"
-
   get_var "Enter path to cert file for the certificate authority: " CA_CERT
   get_var "Enter path to client certificate file for TLS: " CLIENT_CERT
   get_var "Enter path to client key file for TLS: " CLIENT_KEY
@@ -46,7 +44,7 @@ function create_kubeconf() {
   CA_CERT_DATA=$(cat $CA_CERT | base64)
   CLIENT_CERT_DATA=$(cat $CLIENT_CERT | base64)
   CLIENT_KEY_DATA=$(cat $CLIENT_KEY | base64)
-  ARMORY_KUBECONF=$(mktemp -u armory-kubeconf-XXXXXXXXXX)
+  ARMORY_KUBECONF=$(mktemp -u /tmp/armory-kubeconf-XXXXXXXXXX)
   cat <<EOF > $ARMORY_KUBECONF
   apiVersion: v1
   clusters:
