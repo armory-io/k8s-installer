@@ -2,7 +2,7 @@
 set -x
 set -e
 
-export TEST_NAME=${TEST_NAME:-integration}
+export TEST_NAME=${TEST_NAME:-spin-up-with-s3.sh}
 
 cd "$(dirname "$0")/.."
 JENKINS_USER_HOME=${JENKINS_USER_HOME:-/root/}
@@ -18,4 +18,4 @@ docker run --rm \
     -v "${JENKINS_USER_HOME}/.kube/gcp_key.json:/root/.kube/gcp_key.json" \
     -v "$(pwd):/k8s-installer/:rw" \
     $IMAGE \
-        "/k8s-installer/bin/${TEST_NAME}"
+        "/k8s-installer/tests/${TEST_NAME}"
