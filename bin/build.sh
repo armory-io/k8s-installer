@@ -2,7 +2,7 @@
 cd "$(dirname "$0")"
 
 PROFILE=${PROFILE:-default}
-S3_PREFIX="${S3_PREFIX:-dev/}"
+S3_PREFIX="${S3_PREFIX:-/dev/}"
 
 generate_json_with_trailing_comma() {
   source ../src/version.manifest
@@ -22,7 +22,7 @@ generate_json() {
 
 upload_version_info() {
   generate_json > versions.tmp.json
-  aws s3 cp versions.tmp.json "s3://armory-web/${S3_PREFIX}k8s-latest.json" --profile=${PROFILE}
+  aws s3 cp versions.tmp.json "s3://armory-web${S3_PREFIX}k8s-latest.json" --profile=${PROFILE}
   rm versions.tmp.json
 }
 

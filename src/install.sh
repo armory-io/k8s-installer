@@ -284,7 +284,7 @@ function select_kubectl_context() {
 
 function select_gcp_service_account_and_encode_creds() {
   export PROJECT_ID=$(gcloud config get-value core/project)
-  export SERVICE_ACCOUNT_NAME="$(mktemp -u armory-svc-acct-XXXXXXXXXXXX | tr '[:upper:]' '[:lower:]')"
+  export SERVICE_ACCOUNT_NAME="$(mktemp -u $NAMESPACE-svc-acct-XXXXXXXXXXXX | tr '[:upper:]' '[:lower:]' | cut -c 1-30)"
   mkdir -p ${BUILD_DIR}/credentials
   export GCP_CREDS="${BUILD_DIR}/credentials/service-account.json"
 
