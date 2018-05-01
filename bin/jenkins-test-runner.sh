@@ -1,4 +1,6 @@
-#!/bin/bash -x
+#!/bin/bash
+set -x
+set -e
 
 export TEST_NAME=${TEST_NAME:-integration}
 
