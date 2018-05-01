@@ -5,7 +5,9 @@ node {
 
   stage('Testing') {
     def runner = { testName ->
-      sh "export TEST_NAME=$testName ; bin/jenkins-test-runner.sh"
+      return {
+        sh "export TEST_NAME=$testName ; bin/jenkins-test-runner.sh"
+      }
     }
     def tests = [
       "Install backed by S3": runner("spin-up-with-s3.sh"),
