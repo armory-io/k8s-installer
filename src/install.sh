@@ -494,17 +494,11 @@ function encode_credentials() {
   fi
   #both MINIO and S3 can use the same credentials file since we'll use the S3 protocol
   if [[ "$CONFIG_STORE" == "S3" || "$CONFIG_STORE" == "MINIO" ]]; then
-      export B64CREDENTIALS=$(base64 -w 0 <<EOF
-[default]
+      export CREDENTIALS_FILE="[default]
 aws_access_key_id=${AWS_ACCESS_KEY_ID}
 aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
-EOF
-|| base64 <<EOF
-[default]
-aws_access_key_id=${AWS_ACCESS_KEY_ID}
-aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
-EOF
-)
+"
+      export B64CREDENTIALS=$(base64 -w 0 "${CREDENTIALS_FILE}" || base64 "${CREDENTIALS_FILE}")
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
     select_gcp_service_account_and_encode_creds
   fi
