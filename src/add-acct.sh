@@ -34,50 +34,55 @@ function get_var() {
   fi
 }
 
-function create_service_acct() {
-  export SERVICE_ACCOUNT_NAME="$(mktemp -u armory-svc-acct-XXXXXXXXXXXX | tr '[:upper:]' '[:lower:]')"
+function create_kubeconf() {
+  export SERVICE_ACCOUNT_NAME="$(mktemp -u armory-XXXXXXXXXXXX | tr '[:upper:]' '[:lower:]')"
 
   get_var "Enter path to cert file for the certificate authority: " CA_CERT
-  if [ ! -z "$CA_CERT" ]; then
-    export KUBECTL_OPTIONS="--certificate-authority=$CA_CERT $KUBECTL_OPTIONS"
-  fi
   get_var "Enter path to client certificate file for TLS: " CLIENT_CERT
-  if [ ! -z "$CLIENT_CERT" ]; then
-    export KUBECTL_OPTIONS="--client-certificate=$CLIENT_CERT $KUBECTL_OPTIONS"
-  fi
   get_var "Enter path to client key file for TLS: " CLIENT_KEY
-  if [ ! -z "$CLIENT_KEY" ]; then
-    export KUBECTL_OPTIONS="--client-key=$CLIENT_KEY $KUBECTL_OPTIONS"
-  fi
-  get_var "Enter K8s API/master hostname or IP (eg: https://146.148.69.252): " SERVER_NAME
-  if [ ! -z "$SERVER_NAME" ]; then
-    export KUBECTL_OPTIONS="--server=$SERVER_NAME $KUBECTL_OPTIONS"
-  fi
+  get_var "Enter K8s API/master hostname or IP (eg: https://149.142.10.199): " SERVER_NAME
+  get_var "Initial namespace to use (eg: tools): " NAMESPACE
 
-  kubectl ${KUBECTL_OPTIONS} create serviceaccount "$SERVICE_ACCOUNT_NAME"
-}
-
-function generate_kubeconfig() {
-  export B64_KUBE_CONF="$(mktemp -u kubeconf-XXXXXXX)"
-  get_var "Enter the K8s context you want to use: " CONTEXT
-  get_var "Enter the K8s cluster you want to use: " CLUSTER
-  if [ ! -z "$CONTEXT" ]; then
-    ./create-kubeconfig "$SERVICE_ACCOUNT_NAME" "$CONTEXT" "$CLUSTER" "$KUBECTL_OPTIONS" | base64 > "$B64_KUBE_CONF"
-  fi
+  CA_CERT_DATA=$(cat $CA_CERT | base64)
+  CLIENT_CERT_DATA=$(cat $CLIENT_CERT | base64)
+  CLIENT_KEY_DATA=$(cat $CLIENT_KEY | base64)
+  ARMORY_KUBECONF=$(mktemp -u armory-kubeconf-XXXXXXXXXX)
+  cat <<EOF > $ARMORY_KUBECONF
+  apiVersion: v1
+  clusters:
+  - cluster:
+      certificate-authority-data: ${CA_CERT_DATA}
+      server: ${SERVER_NAME}
+    name: armory-cluster
+  contexts:
+  - context:
+      cluster: armory-cluster
+      user: armory-user
+    name: armory-context
+  current-context: armory-context
+  kind: Config
+  preferences: {}
+  users:
+  - name: armory-user
+    user:
+      client-certificate-data: ${CLIENT_CERT_DATA}
+      client-key-data: ${CLIENT_KEY_DATA}
+EOF
 }
 
 function post_kubeconfig_to_lighthouse() {
-  get_var "Enter gate URL for your spinnaker install (eg: http://spinnaker.company.com:8084): " GATE_URL
+  get_var "Enter gate URL for your spinnaker install (eg: http://spinnaker.tools.company.com:8084): " GATE_URL
+  get_var "Enter account name to display in Spinnaker (eg: production): " ACCOUNT_NAME
 
+  KUBECONF_B64=$(cat $ARMORY_KUBECONF | base64)
   DATA="{
-    \"kubeconfig\": \"$(cat $B64_KUBE_CONF)\",
+    \"kubeconfig\": \"$KUBECONF_B64\",
     \"namespaces\": [\"$NAMESPACE\"],
-    \"account_name\": \"$CLUSTER\",
-    \"is_service_account\": true
+    \"account_name\": \"$ACCOUNT_NAME\",
+    \"is_service_account\": false
   }"
 
   curl -X POST -H "Content-Type: application/json" "$GATE_URL"/armory/v1/configs/accounts/kubernetes -d "$DATA"
-  rm -rf "$B64_KUBE_CONF"
 }
 
 function main() {
@@ -90,8 +95,7 @@ function main() {
   *****************************************************************************
 
 EOF
-  create_service_acct
-  generate_kubeconfig
+  create_kubeconf
   post_kubeconfig_to_lighthouse
 }
 
