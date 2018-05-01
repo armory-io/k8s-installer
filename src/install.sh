@@ -320,7 +320,7 @@ EOF
                 else
                   gcloud iam service-accounts keys create \
                     --iam-account "$acct" ${GCP_CREDS}
-                  export B64CREDENTIALS=$(base64 -w 0 -i "$GCP_CREDS" || base64 -i "$GCP_CREDS")
+                  export B64CREDENTIALS=$(base64 -w 0 -i "$GCP_CREDS" 2>/dev/null || base64 -i "$GCP_CREDS")
                   break
                 fi
               done
@@ -336,7 +336,7 @@ EOF
             gcloud iam service-accounts keys create \
               --iam-account "${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
               ${GCP_CREDS} > /dev/null 2>&1
-            export B64CREDENTIALS=$(base64 -w 0 -i "$GCP_CREDS" || base64 -i "$GCP_CREDS")
+            export B64CREDENTIALS=$(base64 -w 0 -i "$GCP_CREDS" 2>/dev/null || base64 -i "$GCP_CREDS")
             break
             ;;
         *) echo "Invalid option";;
@@ -485,7 +485,7 @@ function set_aws_vars() {
 }
 
 function encode_kubeconfig() {
-  export B64KUBECONFIG=$(base64 -w 0 "${KUBECONFIG}" || base64 "${KUBECONFIG}")
+  export B64KUBECONFIG=$(base64 -w 0 "${KUBECONFIG}" 2>/dev/null || base64 "${KUBECONFIG}")
 }
 
 function encode_credentials() {
@@ -498,7 +498,7 @@ function encode_credentials() {
 aws_access_key_id=${AWS_ACCESS_KEY_ID}
 aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
 "
-      export B64CREDENTIALS=$(base64 -w 0 "${CREDENTIALS_FILE}" || base64 "${CREDENTIALS_FILE}")
+      export B64CREDENTIALS=$(base64 -w 0 "${CREDENTIALS_FILE}" 2>/dev/null || base64 "${CREDENTIALS_FILE}")
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
     select_gcp_service_account_and_encode_creds
   fi
