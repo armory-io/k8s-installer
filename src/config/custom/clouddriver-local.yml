@@ -12,6 +12,8 @@ artifacts:
     enabled: ${S3_ENABLED}
     accounts:
     - name: armory-config-s3-account
+      apiEndpoint: ${MINIO_ENDPOINT}
+      apiRegion: us-east-1
   gcs:
     enabled: ${GCS_ENABLED}
     accounts:
