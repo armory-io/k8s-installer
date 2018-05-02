@@ -9,7 +9,9 @@ features:
   certifiedPipelines:
     enabled: ${CERTIFIED_PIPELINES_ENABLED:false}
   configuratorEnabled:
-    enabled: ${CONFIGURATOR_ENABLED:false}
+    enabled: ${CONFIGURATOR_ENABLED:true}
+  configuratorWizard:
+    enabled: ${CONFIGURATOR_WIZARD:true}
   loadtestStage:
     enabled: ${LOADTEST_ENABLED:false}
   jira:
