@@ -1,6 +1,7 @@
 #!/bin/bash -x
 
 CONFIG_LOCATION=${SPINNAKER_HOME:-"/opt/spinnaker"}/config/
+CONTAINER=$1
 
 rm -f /opt/spinnaker/config/*.yml
 
@@ -30,3 +31,16 @@ if [  -f ${ca_cert_path} ]; then
 else
     echo "No CA cert found at ${ca_cert_path}"
 fi
+
+saml_jks_path="${CONFIG_LOCATION}/saml.jks"
+if [ "${CONTAINER}" == "gate" ]; then
+    if [ -z ${saml_cert_path} ]; then
+        echo "Creating ${saml_jks_path}"
+        keytool -genkey -v -keystore ${saml_jks_path} -alias saml \
+                -keyalg RSA -keysize 2048 -validity 10000 \
+                -storepass changeit -keypass changeit -dname "CN=armory"
+    fi
+fi
+
+
+
