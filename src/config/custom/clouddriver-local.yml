@@ -3,9 +3,10 @@ kubernetes:
   accounts:
     - name: kubernetes
       providerVersion: v2
-      serviceAccount: true
+      serviceAccount: ${USE_SERVICE_ACCOUNT}
       namespaces:
         - ${NAMESPACE}
+      ${KUBECONFIG_CONFIG_ENTRY}
 
 artifacts:
   s3:

@@ -129,6 +129,14 @@ function validate_gcp_creds() {
   return 0
 }
 
+function validate_create_service_account() {
+  if [[ "$1" != "y" ]] && [[ "$1" != "n" ]]; then
+    echo "must input either 'y' or 'n'"
+    return 1
+  fi
+  return 0
+}
+
 function get_var() {
   local text=$1
   local var_name="${2}"
@@ -214,17 +222,26 @@ EOF
     # get_var "Enter path to GCP service account creds: " GCP_CREDS validate_gcp_creds
   fi
   cat <<EOF
-
   *****************************************************************************
-  * A kubeconfig file is needed to identify a k8s cluster and to provide      *
-  * access. The kubeconfig is only used during the installation. After the    *
-  * installation, the Armory Platform will use a k8s service account to gain  *
-  * access to the cluster and namespace in which it is installed.             *
+  * A kubeconfig file is needed to install The Armory Platform inside a       *
+  * kubernetes cluster. The same kubeconfig file can also be added to the     *
+  * cluster as a secret. Alternatively, we can create a service account in    *
+  * the cluster to allow The Armory Platform to redeploy itself.              *
+  *                                                                           *
+  * Note: If you choose to add a kubeconfig to the cluster it must only have  *
+  * one context. Specifically, context for the cluster where we are installing*
   *****************************************************************************
 
 EOF
   get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
-
+  get_var "Would you like us to use a service account? If not the kubeconfig file will be added to the cluster as a secret. [Y/n]: " CREATE_SERVICE_ACCOUNT validate_create_service_account "" "y"
+  if [[ "$CREATE_SERVICE_ACCOUNT" == "y" ]]; then
+    export USE_SERVICE_ACCOUNT=true
+  else
+    export USE_SERVICE_ACCOUNT=false
+    export KUBECONFIG_CONFIG_ENTRY="kubeconfigFile: /opt/spinnaker/credentials/custom/default-kubeconfig"
+    encode_kubeconfig
+  fi
 }
 
 function prompt_user_for_config_store() {
@@ -499,6 +516,11 @@ aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
     select_gcp_service_account_and_encode_creds
   fi
+}
+
+function encode_kubeconfig() {
+  B64KUBECONFIG=$(base64 -w 0 "${KUBECONFIG}" 2>/dev/null || base64 "${KUBECONFIG}")
+  export KUBECONFIG_ENTRY_IN_SECRETS_FILE="\"default-kubeconfig\": \"${B64KUBECONFIG}\""
 }
 
 function output_results() {
