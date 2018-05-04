@@ -19,3 +19,9 @@ artifacts:
     enabled: ${GCS_ENABLED}
     accounts:
     - name: armory-config-gcs-account
+
+services:
+  deck:
+    gateUrl: ${services.deck.protocol}://${services.deck.hostname}/api
+    deckUrl: ${services.deck.protocol}://${services.deck.hostname}
+
