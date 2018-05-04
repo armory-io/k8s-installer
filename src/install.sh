@@ -433,7 +433,6 @@ EOF
 
 function create_k8s_default_config() {
   kubectl ${KUBECTL_OPTIONS} create configmap default-config --from-file=$(pwd)/config/default
-  kubectl ${KUBECTL_OPTIONS} create configmap nginx-config --from-file=$(pwd)/config/nginx
 }
 
 function create_k8s_custom_config() {
