@@ -824,6 +824,22 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         "requisiteStageRefIds": ["2", "1", "12"],
         "source": "text",
         "type": "deployManifest"
+    },
+    {
+        "account": "kubernetes",
+        "cloudProvider": "kubernetes",
+        "manifests": [
+            $(cat ${BUILD_DIR}/pipeline/pipeline-kayenta-deployment.json)
+        ],
+        "moniker": {
+            "app": "armory",
+            "cluster": "kayenta"
+        },
+        "name": "Deploy kayenta",
+        "refId": "10",
+        "requisiteStageRefIds": ["2", "1", "12"],
+        "source": "text",
+        "type": "deployManifest"
     }
   ]
 }
@@ -858,6 +874,7 @@ function set_profile_small() {
   export FRONT50_CPU="100m"
   export GATE_CPU="100m"
   export IGOR_CPU="100m"
+  export KAYENTA_CPU="100m"
   export LIGHTHOUSE_CPU="100m"
   export ORCA_CPU="100m"
   export REDIS_CPU="100m"
@@ -869,6 +886,7 @@ function set_profile_small() {
   export FRONT50_MEMORY="128Mi"
   export GATE_MEMORY="128Mi"
   export IGOR_MEMORY="128Mi"
+  export KAYENTA_MEMORY="128Mi"
   export LIGHTHOUSE_MEMORY="128Mi"
   export ORCA_MEMORY="128Mi"
   export REDIS_MEMORY="128Mi"
@@ -883,6 +901,7 @@ function set_profile_medium() {
   export FRONT50_CPU="500m"
   export GATE_CPU="500m"
   export IGOR_CPU="500m"
+  export KAYENTA_CPU="500m"
   export LIGHTHOUSE_CPU="500m"
   export ORCA_CPU="1000m"
   export REDIS_CPU="500m"
@@ -894,6 +913,7 @@ function set_profile_medium() {
   export FRONT50_MEMORY="1Gi"
   export GATE_MEMORY="1Gi"
   export IGOR_MEMORY="1Gi"
+  export KAYENTA_MEMORY="512Mi"
   export LIGHTHOUSE_MEMORY="512Mi"
   export ORCA_MEMORY="2Gi"
   export REDIS_MEMORY="2Gi"
@@ -908,6 +928,7 @@ function set_profile_large() {
   export FRONT50_CPU="1000m"
   export GATE_CPU="1000m"
   export IGOR_CPU="1000m"
+  export KAYENTA_CPU="500m"
   export LIGHTHOUSE_CPU="500m"
   export ORCA_CPU="2000m"
   export REDIS_CPU="1000m"
@@ -919,6 +940,7 @@ function set_profile_large() {
   export FRONT50_MEMORY="2Gi"
   export GATE_MEMORY="2Gi"
   export IGOR_MEMORY="2Gi"
+  export KAYENTA_MEMORY="512Mi"
   export LIGHTHOUSE_MEMORY="512Mi"
   export ORCA_MEMORY="4Gi"
   export REDIS_MEMORY="16Gi"
@@ -927,7 +949,7 @@ function set_profile_large() {
 }
 
 function set_custom_profile() {
-  cpu_vars=("CLOUDDRIVER_CPU" "DECK_CPU" "ECHO_CPU" "FRONT50_CPU" "GATE_CPU" "IGOR_CPU" "LIGHTHOUSE_CPU" "ORCA_CPU" "REDIS_CPU" "ROSCO_CPU")
+  cpu_vars=("CLOUDDRIVER_CPU" "DECK_CPU" "ECHO_CPU" "FRONT50_CPU" "GATE_CPU" "IGOR_CPU" "KAYENTA_CPU" "LIGHTHOUSE_CPU" "ORCA_CPU" "REDIS_CPU" "ROSCO_CPU")
   for v in "${cpu_vars[@]}"; do
     echo "What allocation would you like for $v?"
     options=("500m" "1000m" "1500m" "2000m" "2500m")
@@ -944,7 +966,7 @@ function set_custom_profile() {
       esac
     done
   done
-  mem_vars=("CLOUDDRIVER_MEMORY" "DECK_MEMORY" "ECHO_MEMORY" "FRONT50_MEMORY" "GATE_MEMORY" "IGOR_MEMORY" "LIGHTHOUSE_MEMORY" "ORCA_MEMORY" "REDIS_MEMORY" "ROSCO_MEMORY")
+  mem_vars=("CLOUDDRIVER_MEMORY" "DECK_MEMORY" "ECHO_MEMORY" "FRONT50_MEMORY" "GATE_MEMORY" "IGOR_MEMORY" "KAYENTA_MEMORY" "LIGHTHOUSE_MEMORY" "ORCA_MEMORY" "REDIS_MEMORY" "ROSCO_MEMORY")
   for v in "${mem_vars[@]}"; do
     echo "What allocation would you like for $v?"
     options=("512Mi" "1Gi" "2Gi" "4Gi" "8Gi" "16Gi")
@@ -990,19 +1012,19 @@ EOF
   echo "       Total MEMROY: 2048Mi (~2 GB)"
   echo ""
   echo "  'Medium'"
-  echo "       CPU: 500m for deck, echo, front50, gate, igor, lighthouse, redis & rosco"
+  echo "       CPU: 500m for deck, echo, front50, gate, igor, kayenta, lighthouse, redis & rosco"
   echo "            1000m for clouddriver & orca"
-  echo "       MEMORY: 512Mi for deck, echo, lighthouse & rosco"
+  echo "       MEMORY: 512Mi for deck, echo, kayenta lighthouse & rosco"
   echo "               1Gi for front50, gate, igor & rosco"
   echo "               2Gi for clouddriver, orca & redis"
   echo "       Total CPU: 10000m (10 vCPUs)"
   echo "       Total MEMROY: 18.5Gi (~19.86 GB)"
   echo ""
   echo "  'Large'"
-  echo "       CPU: 500m for lighthouse"
+  echo "       CPU: 500m for kayenta & lighthouse"
   echo "            1000m for deck, echo, front50, gate, igor, redis & rosco"
   echo "            2000m for clouddriver & orca"
-  echo "       MEMORY: 521Mi for deck & lighthouse"
+  echo "       MEMORY: 521Mi for deck kayenta & lighthouse"
   echo "               1Gi for echo & rosco"
   echo "               2Gi for front50, gate & igor"
   echo "               4Gi for orca"
