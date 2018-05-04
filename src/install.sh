@@ -552,25 +552,6 @@ function create_upgrade_pipeline() {
 EOF
   echo "Creating..."
 
-  export packager_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'packager_version\']})
-  export armoryspinnaker_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'armoryspinnaker_version\']})
-  export fiat_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'fiat_version\']})
-  export front50_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'front50_version\']})
-  export igor_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'igor_version\']})
-  export rosco_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'rosco_version\']})
-  export clouddriver_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'clouddriver_version\']})
-  export orca_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'orca_version\']})
-  export lighthouse_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'lighthouse_version\']})
-  export barometer_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'barometer_version\']})
-  export dinghy_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'dinghy_version\']})
-  export platform_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'platform_version\']})
-  export kayenta_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'kayenta_version\']})
-  export gate_armory_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'gate_armory_version\']})
-  export gate_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'gate_version\']})
-  export echo_armory_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'echo_armory_version\']})
-  export echo_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'echo_version\']})
-  export deck_armory_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'deck_armory_version\']})
-  export deck_version=$(echo -ne \${\#stage\(\'Fetch latest version\'\)[\'context\'][\'webhook\'][\'body\'][\'deck_version\']})
   export custom_credentials_secret_name=$(echo -ne \${\#stage\(\'Deploy Credentials\'\)[\'context\'][\'artifacts\'][0][\'reference\']})
 
   mkdir -p ${BUILD_DIR}/pipeline
@@ -633,197 +614,187 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
     }
   ],
   "stages": [
-      {
-        "account": "kubernetes",
-        "cloudProvider": "kubernetes",
-        "manifestArtifactAccount": "${ARTIFACT_ACCOUNT}",
-        "manifestArtifactId": "ced981ba-4bf5-41e2-8ee0-07209f79d190",
-        "moniker": {
-          "app": "armory",
-          "cluster": "custom-config"
-        },
-        "name": "Deploy Config",
-        "refId": "1",
-        "relationships": {
-          "loadBalancers": [],
-          "securityGroups": []
-        },
-        "requisiteStageRefIds": [],
-        "source": "artifact",
-        "type": "deployManifest"
+    {
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifestArtifactAccount": "${ARTIFACT_ACCOUNT}",
+      "manifestArtifactId": "ced981ba-4bf5-41e2-8ee0-07209f79d190",
+      "moniker": {
+        "app": "armory",
+        "cluster": "custom-config"
       },
-      {
-        "account": "kubernetes",
-        "cloudProvider": "kubernetes",
-        "manifestArtifactAccount": "${ARTIFACT_ACCOUNT}",
-        "manifestArtifactId": "ced981ba-4bf5-41e2-8ee0-07209f79d191",
-        "moniker": {
-          "app": "armory",
-          "cluster": "custom-credentials"
-        },
-        "name": "Deploy Credentials",
-        "refId": "12",
-        "relationships": {
-          "loadBalancers": [],
-          "securityGroups": []
-        },
-        "requisiteStageRefIds": [],
-        "source": "artifact",
-        "type": "deployManifest"
+      "name": "Deploy Config",
+      "refId": "1",
+      "relationships": {
+        "loadBalancers": [],
+        "securityGroups": []
       },
-      {
-        "method": "GET",
-        "name": "Fetch latest version",
-        "refId": "2",
-        "requisiteStageRefIds": [],
-        "statusUrlResolution": "getMethod",
-        "type": "webhook",
-        "url": "https://get.armory.io/k8s-latest.json",
-        "waitForCompletion": false
+      "requisiteStageRefIds": [],
+      "source": "artifact",
+      "type": "deployManifest"
     },
     {
-        "account": "kubernetes",
-        "cloudProvider": "kubernetes",
-        "manifests": [
-            $(cat ${BUILD_DIR}/pipeline/pipeline-rosco-deployment.json)
-        ],
-        "moniker": {
-            "app": "armory",
-            "cluster": "rosco"
-        },
-        "name": "Deploy Rosco",
-        "refId": "10",
-        "requisiteStageRefIds": ["2", "1", "12"],
-        "source": "text",
-        "type": "deployManifest"
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifestArtifactAccount": "${ARTIFACT_ACCOUNT}",
+      "manifestArtifactId": "ced981ba-4bf5-41e2-8ee0-07209f79d191",
+      "moniker": {
+        "app": "armory",
+        "cluster": "custom-credentials"
+      },
+      "name": "Deploy Credentials",
+      "refId": "12",
+      "relationships": {
+        "loadBalancers": [],
+        "securityGroups": []
+      },
+      "requisiteStageRefIds": [],
+      "source": "artifact",
+      "type": "deployManifest"
     },
     {
-        "account": "kubernetes",
-        "cloudProvider": "kubernetes",
-        "manifests": [
-            $(cat ${BUILD_DIR}/pipeline/pipeline-clouddriver-deployment.json)
-        ],
-        "moniker": {
-            "app": "armory",
-            "cluster": "clouddriver"
-        },
-        "name": "Deploy clouddriver",
-        "refId": "11",
-        "requisiteStageRefIds": ["2", "1", "12"],
-        "source": "text",
-        "type": "deployManifest"
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-rosco-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "rosco"
+      },
+      "name": "Deploy Rosco",
+      "refId": "10",
+      "requisiteStageRefIds": ["1", "12"],
+      "source": "text",
+      "type": "deployManifest"
     },
     {
-        "account": "kubernetes",
-        "cloudProvider": "kubernetes",
-        "manifests": [
-            $(cat ${BUILD_DIR}/pipeline/pipeline-deck-deployment.json)
-        ],
-        "moniker": {
-            "app": "armory",
-            "cluster": "deck"
-        },
-        "name": "Deploy deck",
-        "refId": "3",
-        "requisiteStageRefIds": ["2", "1", "12"],
-        "source": "text",
-        "type": "deployManifest"
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-clouddriver-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "clouddriver"
+      },
+      "name": "Deploy clouddriver",
+      "refId": "11",
+      "requisiteStageRefIds": ["1", "12"],
+      "source": "text",
+      "type": "deployManifest"
     },
     {
-        "account": "kubernetes",
-        "cloudProvider": "kubernetes",
-        "manifests": [
-            $(cat ${BUILD_DIR}/pipeline/pipeline-echo-deployment.json)
-        ],
-        "moniker": {
-            "app": "armory",
-            "cluster": "echo"
-        },
-        "name": "Deploy echo",
-        "refId": "4",
-        "requisiteStageRefIds": ["2", "1", "12"],
-        "source": "text",
-        "type": "deployManifest"
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-deck-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "deck"
+      },
+      "name": "Deploy deck",
+      "refId": "3",
+      "requisiteStageRefIds": ["1", "12"],
+      "source": "text",
+      "type": "deployManifest"
     },
     {
-        "account": "kubernetes",
-        "cloudProvider": "kubernetes",
-        "manifests": [
-            $(cat ${BUILD_DIR}/pipeline/pipeline-front50-deployment.json)
-        ],
-        "moniker": {
-            "app": "armory",
-            "cluster": "front50"
-        },
-        "name": "Deploy front50",
-        "refId": "5",
-        "requisiteStageRefIds": ["2", "1", "12"],
-        "source": "text",
-        "type": "deployManifest"
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-echo-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "echo"
+      },
+      "name": "Deploy echo",
+      "refId": "4",
+      "requisiteStageRefIds": ["1", "12"],
+      "source": "text",
+      "type": "deployManifest"
     },
     {
-        "account": "kubernetes",
-        "cloudProvider": "kubernetes",
-        "manifests": [
-            $(cat ${BUILD_DIR}/pipeline/pipeline-gate-deployment.json)
-        ],
-        "moniker": {
-            "app": "armory",
-            "cluster": "gate"
-        },
-        "name": "Deploy gate",
-        "refId": "6",
-        "requisiteStageRefIds": ["2", "1", "12"],
-        "source": "text",
-        "type": "deployManifest"
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-front50-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "front50"
+      },
+      "name": "Deploy front50",
+      "refId": "5",
+      "requisiteStageRefIds": ["1", "12"],
+      "source": "text",
+      "type": "deployManifest"
     },
     {
-        "account": "kubernetes",
-        "cloudProvider": "kubernetes",
-        "manifests": [
-            $(cat ${BUILD_DIR}/pipeline/pipeline-igor-deployment.json)
-        ],
-        "moniker": {
-            "app": "armory",
-            "cluster": "igor"
-        },
-        "name": "Deploy igor",
-        "refId": "7",
-        "requisiteStageRefIds": ["2", "1", "12"],
-        "source": "text",
-        "type": "deployManifest"
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-gate-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "gate"
+      },
+      "name": "Deploy gate",
+      "refId": "6",
+      "requisiteStageRefIds": ["1", "12"],
+      "source": "text",
+      "type": "deployManifest"
     },
     {
-        "account": "kubernetes",
-        "cloudProvider": "kubernetes",
-        "manifests": [
-            $(cat ${BUILD_DIR}/pipeline/pipeline-lighthouse-deployment.json)
-        ],
-        "moniker": {
-            "app": "armory",
-            "cluster": "lighthouse"
-        },
-        "name": "Deploy lighthouse",
-        "refId": "8",
-        "requisiteStageRefIds": ["2", "1", "12"],
-        "source": "text",
-        "type": "deployManifest"
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-igor-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "igor"
+      },
+      "name": "Deploy igor",
+      "refId": "7",
+      "requisiteStageRefIds": ["1", "12"],
+      "source": "text",
+      "type": "deployManifest"
     },
     {
-        "account": "kubernetes",
-        "cloudProvider": "kubernetes",
-        "manifests": [
-            $(cat ${BUILD_DIR}/pipeline/pipeline-orca-deployment.json)
-        ],
-        "moniker": {
-            "app": "armory",
-            "cluster": "orca"
-        },
-        "name": "Deploy orca",
-        "refId": "9",
-        "requisiteStageRefIds": ["2", "1", "12"],
-        "source": "text",
-        "type": "deployManifest"
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-lighthouse-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "lighthouse"
+      },
+      "name": "Deploy lighthouse",
+      "refId": "8",
+      "requisiteStageRefIds": ["1", "12"],
+      "source": "text",
+      "type": "deployManifest"
+    },
+    {
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-orca-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "orca"
+      },
+      "name": "Deploy orca",
+      "refId": "9",
+      "requisiteStageRefIds": ["1", "12"],
+      "source": "text",
+      "type": "deployManifest"
     }
   ]
 }
@@ -1077,7 +1048,7 @@ EOF
 
 function make_bucket() {
   if [[ "$ARMORY_CONF_STORE_BUCKET" == "" ]]; then
-    export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< armory-platform-$(uuidgen))
+    export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< ${NAMESPACE}-platform-$(uuidgen) | cut -c 1-51)
     if [ "$CONFIG_STORE" == "S3" ]; then
       make_s3_bucket
     elif [ "$CONFIG_STORE" == "GCS" ]; then
