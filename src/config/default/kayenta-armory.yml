@@ -1,2 +1,0 @@
-redis:
-  connection: redis://${services.redis.host}:${services.redis.port}
