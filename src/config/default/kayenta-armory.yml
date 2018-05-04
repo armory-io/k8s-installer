@@ -1,2 +1,2 @@
 redis:
-  connection: ${services.redis.baseUrl:redis://localhost:6379}
+  connection: redis://${services.redis.host}:${services.redis.port}
