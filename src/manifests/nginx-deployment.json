@@ -60,17 +60,18 @@
                         ],
                         "volumeMounts": [
                             {
-                                "name": "nginx-config",
-                                "mountPath": "/etc/nginx/conf.d"
+                                "name": "default-config",
+                                "mountPath": "/etc/nginx/conf.d/nginx.conf",
+                                "subPath": "nginx.conf"
                             }
                         ]
                     }
                 ],
                 "volumes": [
                     {
-                        "name": "nginx-config",
+                        "name": "default-config",
                         "configMap": {
-                            "name": "nginx-config"
+                            "name": "default-config"
                         }
                     }
                 ]
