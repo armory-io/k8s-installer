@@ -60,18 +60,28 @@
                         ],
                         "volumeMounts": [
                             {
-                                "name": "default-config",
+                                "name": "custom-config",
                                 "mountPath": "/etc/nginx/conf.d/nginx.conf",
                                 "subPath": "nginx.conf"
+                            },
+                            {
+                                "name": "nginx-certs",
+                                "mountPath": "/opt/nginx/certs"
                             }
                         ]
                     }
                 ],
                 "volumes": [
                     {
-                        "name": "default-config",
+                        "name": "custom-config",
                         "configMap": {
-                            "name": "default-config"
+                            "name": "custom-config"
+                        }
+                    },
+                    {
+                        "name": "nginx-certs",
+                        "secret": {
+                            "secretName": "nginx-certs"
                         }
                     }
                 ]
