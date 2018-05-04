@@ -13,16 +13,16 @@ kayenta:
 
   google:
     enabled: false
-    accounts:
-      - name: cloud-armory
-        project: cloud-armory
-        jsonPath: /home/spinnaker/.gcp/gcp.json
-        bucket: paul-kayenta-test-bucket-1
-        rootFolder: kayenta
-        supportedTypes:
-          - METRICS_STORE
-          - OBJECT_STORE
-          - CONFIGURATION_STORE
+#    accounts:
+#      - name: cloud-armory
+#        project: cloud-armory
+#        jsonPath: /home/spinnaker/.gcp/gcp.json
+#        bucket: paul-kayenta-test-bucket-1
+#        rootFolder: kayenta
+#        supportedTypes:
+#          - METRICS_STORE
+#          - OBJECT_STORE
+#          - CONFIGURATION_STORE
 
   aws:
     enabled: false
