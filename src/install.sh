@@ -807,7 +807,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
             "cluster": "kayenta"
         },
         "name": "Deploy kayenta",
-        "refId": "10",
+        "refId": "13",
         "requisiteStageRefIds": ["2", "1", "12"],
         "source": "text",
         "type": "deployManifest"

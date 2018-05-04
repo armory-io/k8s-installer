@@ -1,3 +1,6 @@
+server:
+  port: ${services.kayenta.port:8090}
+
 kayenta:
   atlas:
     enabled: false
@@ -16,7 +19,7 @@ kayenta:
 #    accounts:
 #      - name: cloud-armory
 #        project: cloud-armory
-#        jsonPath: /home/spinnaker/.gcp/gcp.json
+#        jsonPath: /Users/paul/.armory/cache/gcp.json
 #        bucket: paul-kayenta-test-bucket-1
 #        rootFolder: kayenta
 #        supportedTypes:
@@ -33,6 +36,26 @@ kayenta:
 #        supportedTypes:
 #          - OBJECT_STORE
 #          - CONFIGURATION_STORE
+
+  datadog:
+    enabled: false
+#    accounts:
+#      - name: my-datadog-account
+#        apiKey: xxxx
+#        applicationKey: xxxx
+#        supportedTypes:
+#          - METRICS_STORE
+#        endpoint.baseUrl: https://app.datadoghq.com
+
+  prometheus:
+    enabled: false
+#    accounts:
+#      - name: my-prometheus-account
+#        endpoint:
+#          baseUrl: http://localhost:9090
+#        supportedTypes:
+#          - METRICS_STORE
+
 
   gcs:
     enabled: false
@@ -51,12 +74,14 @@ kayenta:
 
 management.security.enabled: false
 
-queue:
-  redis:
-    enabled: true
-    queueName: kayenta.orca.task.queue
-    deadLetterQueueName: kayenta.orca.task.deadLetterQueue
-    ackTimeoutSeconds: 600
+keiko:
+  queue:
+    redis:
+      queueName: kayenta.keiko.queue
+      deadLetterQueueName: kayenta.keiko.queue.deadLetters
+
+redis:
+  connection: ${services.redis.connection}
 
 executionLog.redis.enabled: true
 
@@ -66,7 +91,7 @@ spectator:
     enabled: true
 
 swagger:
-  enabled: true
+  enabled: false
   title: Kayenta API
   description:
   contact:
