@@ -437,6 +437,7 @@ function create_k8s_default_config() {
 
 function create_k8s_custom_config() {
   mkdir -p ${BUILD_DIR}/config/custom/
+  cp "config/custom/nginx.conf" "${BUILD_DIR}/config/custom/nginx.conf"
   for filename in config/custom/*.yml; do
     envsubst < $filename > ${BUILD_DIR}/config/custom/$(basename $filename)
   done
