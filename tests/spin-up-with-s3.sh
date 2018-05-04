@@ -40,6 +40,7 @@ aws --profile "${AWS_PROFILE}" --region us-east-1 s3 mb "s3://${ARMORY_CONF_STOR
 set +e
 bash -x src/install.sh
 EXIT_CODE=$?
+set -e
 
 # cleanup
 kubectl delete ns $NAMESPACE
