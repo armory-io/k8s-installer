@@ -20,6 +20,8 @@ NAMESPACE="yournamehere-$(date -u +"%m%dt%H%M")" ./src/install.sh
 myLatestCreatedNamespace() {
   kubectl get namespaces --sort-by="{.metadata.creationTimestamp}" | grep yournamehere | tail -1 | awk "{print \$1}"
 }
+export -f myLatestCreatedNamespace
+
 
 # keep an eye out on the latest containers
 watch -n 1  'kubectl -n $(myLatestCreatedNamespace) get pods'
