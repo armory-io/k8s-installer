@@ -1048,7 +1048,7 @@ EOF
 
 function make_bucket() {
   if [[ "$ARMORY_CONF_STORE_BUCKET" == "" ]]; then
-    export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< armory-platform-$(uuidgen))
+    export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< ${NAMESPACE}-platform-$(uuidgen) | cut -c 1-51)
     if [ "$CONFIG_STORE" == "S3" ]; then
       make_s3_bucket
     elif [ "$CONFIG_STORE" == "GCS" ]; then
