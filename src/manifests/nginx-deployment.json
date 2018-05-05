@@ -81,7 +81,7 @@
                     {
                         "name": "nginx-certs",
                         "secret": {
-                            "secretName": "nginx-certs"
+                            "secretName": "${nginx_certs_secret_name}"
                         }
                     }
                 ]
