@@ -876,7 +876,7 @@ EOF
       break
     fi
     if [ "$counter" -gt 200 ]; then
-        echo "ERROR: Timeout occurred waiting for http://${NGINX_IP}/api/applications to become available"
+        echo "ERROR: Timeout occurred waiting for http://${NGINX_IP}/api to become available"
         exit 2
     fi
     counter=$((counter+1))
