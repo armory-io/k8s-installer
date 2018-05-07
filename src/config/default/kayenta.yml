@@ -57,9 +57,6 @@ kayenta:
 #        supportedTypes:
 #          - METRICS_STORE
 
-security.basic.enabled: false
-management.security.enabled: false
-
   gcs:
     enabled: false
 
@@ -104,3 +101,6 @@ swagger:
     - /metricSetList.*
     - /metricSetPairList.*
     - /pipeline.*
+
+security.basic.enabled: false
+management.security.enabled: false
