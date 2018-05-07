@@ -281,7 +281,7 @@ function select_kubectl_context() {
       return
   fi
 
-  options=($(kubectl config get-contexts | awk '{print $2}' | grep -v NAME))
+  options=($(kubectl config get-contexts | awk '{print $2}' | grep -v NAME | sort))
   if [ ${#options[@]} -eq 0 ]; then
       echo "It appears you do not have any K8s contexts in your KUBECONFIG file. Please refer to the docs to setup access to clusters:" 1>&2
       echo "https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/"  1>&2
