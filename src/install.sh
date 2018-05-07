@@ -529,6 +529,10 @@ Installation complete. You can access The Armory Platform via:
 
   http://${NGINX_IP}
 
+You can find Armory deploying Armory here:
+
+  http://${NGINX_IP}/#/applications/armory/executions
+
 Your configuration has been stored in the ${CONFIG_STORE} bucket:
 
   ${ARMORY_CONF_STORE_BUCKET}
@@ -798,7 +802,9 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
   ]
 }
 EOF
-  echo "Waiting for the API gateway to become ready. This may take several minutes."
+
+  echo "Waiting for the API gateway to become ready, we'll then create an Armory deploy Armory pipeline!"
+  echo "This may take several minutes."
   counter=0
   while true; do
         if [ `curl -s -m 3 http://${NGINX_IP}/api/applications` ]; then
@@ -1029,7 +1035,7 @@ function set_lb_type() {
   *****************************************************************************
 
 EOF
-  echo "Load balancer types [defaults to 'Internal']: "
+  echo "Load balancer types: "
   options=("Internal" "External")
   PS3='Select the LB type you want to use: '
   select opt in "${options[@]}"
