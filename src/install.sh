@@ -841,23 +841,19 @@ EOF
   echo "Waiting for the API gateway to become ready. This may take several minutes."
   counter=0
   while true; do
-        if [ `curl -s -m 3 http://${NGINX_IP}/api/applications` ]; then
-          #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
-          http_code=$(curl -s -o /dev/null -w %{http_code} -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${NGINX_IP}/api/pipelines")
-          if [[ "$http_code" -lt "200" || "$http_code" -gt "399" ]]; then
-            echo "Received a error code from pipeline curl request: $http_code"
-            exit 10
-          else
-            break
-          fi
-        fi
-        if [ "$counter" -gt 200 ]; then
-            echo "ERROR: Timeout occurred waiting for http://${NGINX_IP}/api/applications to become available"
-            exit 2
-        fi
-        counter=$((counter+1))
-        echo -n "."
-        sleep 2
+    #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
+    http_code=$(curl -s -o /dev/null -w %{http_code} -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${NGINX_IP}/api/pipelines")
+    if [[ "$http_code" -gt "200" && "$http_code" -lt "399" ]]; then
+      echo "The re-deploy pipeline has been added and will be able to be seen in the web interface."
+      break
+    fi
+    if [ "$counter" -gt 200 ]; then
+        echo "ERROR: Timeout occurred waiting for http://${NGINX_IP}/api/applications to become available"
+        exit 2
+    fi
+    counter=$((counter+1))
+    echo -n "."
+    sleep 2
   done
 }
 
