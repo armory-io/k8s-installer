@@ -860,6 +860,22 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
+    },
+    {
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-nginx-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "nginx"
+      },
+      "name": "Deploy nginx",
+      "refId": "14",
+      "requisiteStageRefIds": ["2", "1", "12"],
+      "source": "text",
+      "type": "deployManifest"
     }
   ]
 }
@@ -868,8 +884,9 @@ EOF
   echo "Waiting for the API gateway to become ready, we'll then create an Armory deploy Armory pipeline!"
   echo "This may take several minutes."
   counter=0
+  set +e
   while true; do
-    curl --max-time 10 http://${NGINX_IP}/api/applications >/dev/null
+    curl --max-time 10 -s -o /dev/null http://${NGINX_IP}/api/applications
     exit_code=$?
     if [[ "$exit_code" == "0" ]]; then
       #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
@@ -888,6 +905,7 @@ EOF
     echo -n "."
     sleep 2
   done
+  set -e
 }
 
 function set_profile_small() {
