@@ -11,7 +11,7 @@ Install the Armory Platform on Kubernetes
 
 
 ## Working on the installer
-Here's some helpful commands while you're developing on the installer.
+Here are some helpful commands while you're developing on the installer.
 ```bash
 # run the install script with namespaced resources (for easier cleanup and namespaces for multiple developers)
 NAMESPACE="yournamehere-$(date -u +"%m%dt%H%M")" ./src/install.sh
