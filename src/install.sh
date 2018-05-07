@@ -193,8 +193,6 @@ EOF
   elif [[ "$CONFIG_STORE" == "MINIO" ]]; then
     export S3_ENABLED=true
     export GCS_ENABLED=false
-    export AWS_ACCESS_KEY_ID=""
-    export AWS_SECRET_ACCESS_KEY=""
   cat <<EOF
 
   *****************************************************************************
@@ -215,6 +213,7 @@ EOF
     get_var "Enter your minio endpoint (ex: http://172.0.10.1:9000): " MINIO_ENDPOINT
     #this is a bit of hack until this gets https://github.com/spinnaker/front50/pull/308, check description of PR
     export ENDPOINT_PROPERTY="endpoint: ${MINIO_ENDPOINT}"
+    export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY MINIO_ENDPOINT
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
     export GCS_ENABLED=true
     export S3_ENABLED=false
@@ -282,7 +281,7 @@ function select_kubectl_context() {
       return
   fi
 
-  options=($(kubectl config get-contexts | awk '{print $2}' | grep -v NAME))
+  options=($(kubectl config get-contexts | awk '{print $2}' | grep -v NAME | sort))
   if [ ${#options[@]} -eq 0 ]; then
       echo "It appears you do not have any K8s contexts in your KUBECONFIG file. Please refer to the docs to setup access to clusters:" 1>&2
       echo "https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/"  1>&2
@@ -529,6 +528,10 @@ cat <<EOF
 Installation complete. You can access The Armory Platform via:
 
   http://${NGINX_IP}
+
+You can find Armory deploying Armory here:
+
+  http://${NGINX_IP}/#/applications/armory/executions
 
 Your configuration has been stored in the ${CONFIG_STORE} bucket:
 
@@ -799,7 +802,9 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
   ]
 }
 EOF
-  echo "Waiting for the API gateway to become ready. This may take several minutes."
+
+  echo "Waiting for the API gateway to become ready, we'll then create an Armory deploy Armory pipeline!"
+  echo "This may take several minutes."
   counter=0
   while true; do
         if [ `curl -s -m 3 http://${NGINX_IP}/api/applications` ]; then
@@ -1030,7 +1035,7 @@ function set_lb_type() {
   *****************************************************************************
 
 EOF
-  echo "Load balancer types [defaults to 'Internal']: "
+  echo "Load balancer types: "
   options=("Internal" "External")
   PS3='Select the LB type you want to use: '
   select opt in "${options[@]}"
