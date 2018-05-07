@@ -91,7 +91,7 @@ services:
       enabled: ${AUTH_ENABLED:false}
 
   fiat:
-    enabled: false
+    enabled: ${FIAT_ENABLED:false}
     host: ${services.default.host}
     port: 7003
     baseUrl: ${services.default.protocol}://${services.fiat.host}:${services.fiat.port}
