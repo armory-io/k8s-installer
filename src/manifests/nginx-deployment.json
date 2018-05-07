@@ -20,7 +20,7 @@
             "type": "RollingUpdate",
             "rollingUpdate": {
                 "maxUnavailable": 0,
-                "maxSurge": 3
+                "maxSurge": "100%"
             }
         },
         "replicas": 2,
@@ -60,17 +60,27 @@
                         ],
                         "volumeMounts": [
                             {
-                                "name": "nginx-config",
+                                "name": "custom-config",
                                 "mountPath": "/etc/nginx/conf.d"
+                            },
+                            {
+                                "name": "nginx-certs",
+                                "mountPath": "/opt/nginx/certs"
                             }
                         ]
                     }
                 ],
                 "volumes": [
                     {
-                        "name": "nginx-config",
+                        "name": "custom-config",
                         "configMap": {
-                            "name": "nginx-config"
+                            "name": "custom-config"
+                        }
+                    },
+                    {
+                        "name": "nginx-certs",
+                        "secret": {
+                            "secretName": "${nginx_certs_secret_name}"
                         }
                     }
                 ]
