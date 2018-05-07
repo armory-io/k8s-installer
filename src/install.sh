@@ -465,15 +465,22 @@ function create_k8s_custom_config() {
 
 function upload_custom_credentials() {
   local credentials_manifest="${BUILD_DIR}/custom-credentials.json"
+  local certificates_manifest="${BUILD_DIR}/nginx-certs.json"
   if [[ "${CONFIG_STORE}" == "S3" ]]; then
     aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
       "${credentials_manifest}" \
       "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
+    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+      "${certificates_manifest}" \
+      "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
   elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
     AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
       --endpoint-url=${MINIO_ENDPOINT} "${credentials_manifest}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
+    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
+      --endpoint-url=${MINIO_ENDPOINT} "${certificates_manifest}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
   elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
     gsutil cp "${credentials_manifest}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
+    gsutil cp "${certificates_manifest}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
   fi
 }
 
