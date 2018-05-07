@@ -1029,7 +1029,7 @@ function set_lb_type() {
   *****************************************************************************
 
 EOF
-  echo "Load balancer types [defaults to 'Internal']: "
+  echo "Load balancer types: "
   options=("Internal" "External")
   PS3='Select the LB type you want to use: '
   select opt in "${options[@]}"
