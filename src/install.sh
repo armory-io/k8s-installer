@@ -871,10 +871,11 @@ EOF
   while true; do
     curl --max-time 10 http://${NGINX_IP}/api/applications >/dev/null
     exit_code=$?
-    if [[ "$exit_code" == 0 ]]; then
+    if [[ "$exit_code" == "0" ]]; then
       #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
       http_code=$(curl --max-time 10 -s -o /dev/null -w %{http_code} -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${NGINX_IP}/api/pipelines")
-      if [[ "$http_code" -gt "200" && "$http_code" -lt "399" ]]; then
+      exit_code=$?
+      if [[ "$exit_code" == "0" && "$http_code" -gt "199" && "$http_code" -lt "400" ]]; then
         echo "The re-deploy pipeline has been added and will be able to be seen in the web interface."
         break
       fi
