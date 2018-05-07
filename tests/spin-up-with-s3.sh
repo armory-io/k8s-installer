@@ -14,11 +14,11 @@ else
 fi
 
 if [ -z ${NAMESPACE} ]; then
-  export NAMESPACE=$(awk '{print tolower($0) }' <<< integration-s3-$uuid)
+  export NAMESPACE=$(awk '{print tolower($0) }' <<< integration-test-$uuid)
 fi
 
 if [ -z ${ARMORY_CONF_STORE_BUCKET} ]; then
-  export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< k8s-installer-$uuid)
+  export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< integration-test-$uuid)
 fi
 
 export NOPROMPT=true
@@ -43,6 +43,6 @@ EXIT_CODE=$?
 
 # cleanup
 kubectl delete ns $NAMESPACE
-aws --profile "${AWS_PROFILE}" --region us-east-1 s3 rm "s3://${ARMORY_CONF_STORE_BUCKET}"
+aws --profile "${AWS_PROFILE}" --region us-east-1 s3 rb --force "s3://${ARMORY_CONF_STORE_BUCKET}"
 
 exit $EXIT_CODE
