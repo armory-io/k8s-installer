@@ -78,7 +78,7 @@ services:
     host: ${DEFAULT_DNS_NAME:igor}
 
   kayenta:
-    enabled: false # ${KAYENTA_ENABLED:false}  # disabled kayenta because the image is huge, we'll need address this when we enable it
+    enabled: true
     host: ${DEFAULT_DNS_NAME:kayenta}
     canaryConfigStore: true
     port: 8090
