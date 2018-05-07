@@ -529,6 +529,10 @@ Installation complete. You can access The Armory Platform via:
 
   http://${NGINX_IP}
 
+You can find Armory deploying Armory here:
+
+  http://${NGINX_IP}/#/applications/armory/executions
+
 Your configuration has been stored in the ${CONFIG_STORE} bucket:
 
   ${ARMORY_CONF_STORE_BUCKET}
@@ -1031,7 +1035,7 @@ function set_lb_type() {
   *****************************************************************************
 
 EOF
-  echo "Load balancer types [defaults to 'Internal']: "
+  echo "Load balancer types: "
   options=("Internal" "External")
   PS3='Select the LB type you want to use: '
   select opt in "${options[@]}"
