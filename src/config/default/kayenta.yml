@@ -78,6 +78,9 @@ keiko:
       queueName: kayenta.keiko.queue
       deadLetterQueueName: kayenta.keiko.queue.deadLetters
 
+redis:
+  connection: ${services.redis.connection}
+
 spectator:
   applicationName: ${spring.application.name}
   webEndpoint:
