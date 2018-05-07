@@ -792,7 +792,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy orca",
         "refId": "9",
-        "requisiteStageRefIds": ["2", "1", "12"],
+        "requisiteStageRefIds": ["1", "12"],
         "source": "text",
         "type": "deployManifest"
     },
@@ -808,7 +808,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         },
         "name": "Deploy kayenta",
         "refId": "13",
-        "requisiteStageRefIds": ["2", "1", "12"],
+        "requisiteStageRefIds": ["1", "12"],
         "source": "text",
         "type": "deployManifest"
     }
