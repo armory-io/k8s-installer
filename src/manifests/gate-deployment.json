@@ -43,6 +43,10 @@
         }
       },
       "spec": {
+        "securityContext":
+          {
+            "runAsUser": 2000
+          },
         "containers": [
           {
             "name": "gate",
