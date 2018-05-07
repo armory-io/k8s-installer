@@ -802,7 +802,9 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
   ]
 }
 EOF
-  echo "Waiting for the API gateway to become ready. This may take several minutes."
+
+  echo "Waiting for the API gateway to become ready, we'll then create an Armory deploy Armory pipeline!"
+  echo "This may take several minutes."
   counter=0
   while true; do
         if [ `curl -s -m 3 http://${NGINX_IP}/api/applications` ]; then
