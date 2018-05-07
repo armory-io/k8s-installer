@@ -20,7 +20,7 @@
             "type": "RollingUpdate",
             "rollingUpdate": {
                 "maxUnavailable": 0,
-                "maxSurge": "100$"
+                "maxSurge": "100%"
             }
         },
         "replicas": 2,
@@ -61,8 +61,7 @@
                         "volumeMounts": [
                             {
                                 "name": "custom-config",
-                                "mountPath": "/etc/nginx/conf.d/nginx.conf",
-                                "subPath": "nginx.conf"
+                                "mountPath": "/etc/nginx/conf.d"
                             },
                             {
                                 "name": "nginx-certs",
