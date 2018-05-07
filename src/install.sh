@@ -193,8 +193,6 @@ EOF
   elif [[ "$CONFIG_STORE" == "MINIO" ]]; then
     export S3_ENABLED=true
     export GCS_ENABLED=false
-    export AWS_ACCESS_KEY_ID=""
-    export AWS_SECRET_ACCESS_KEY=""
   cat <<EOF
 
   *****************************************************************************
@@ -215,6 +213,7 @@ EOF
     get_var "Enter your minio endpoint (ex: http://172.0.10.1:9000): " MINIO_ENDPOINT
     #this is a bit of hack until this gets https://github.com/spinnaker/front50/pull/308, check description of PR
     export ENDPOINT_PROPERTY="endpoint: ${MINIO_ENDPOINT}"
+    export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY MINIO_ENDPOINT
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
     export GCS_ENABLED=true
     export S3_ENABLED=false
