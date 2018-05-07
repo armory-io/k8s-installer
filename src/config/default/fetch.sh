@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash -xe
 
 CONFIG_LOCATION=${SPINNAKER_HOME:-"/opt/spinnaker"}/config/
 
