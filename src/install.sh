@@ -421,6 +421,7 @@ function create_k8s_svcs_and_rs() {
 
 EOF
   export custom_credentials_secret_name="custom-credentials"
+  export nginx_certs_secret_name="nginx-certs"
   for filename in manifests/*.json; do
     envsubst < "$filename" > "$BUILD_DIR/$(basename $filename)"
   done
@@ -432,11 +433,11 @@ EOF
 
 function create_k8s_default_config() {
   kubectl ${KUBECTL_OPTIONS} create configmap default-config --from-file=$(pwd)/config/default
-  kubectl ${KUBECTL_OPTIONS} create configmap nginx-config --from-file=$(pwd)/config/nginx
 }
 
 function create_k8s_custom_config() {
   mkdir -p ${BUILD_DIR}/config/custom/
+  cp "config/custom/nginx.conf" "${BUILD_DIR}/config/custom/nginx.conf"
   for filename in config/custom/*.yml; do
     envsubst < $filename > ${BUILD_DIR}/config/custom/$(basename $filename)
   done
@@ -464,15 +465,22 @@ function create_k8s_custom_config() {
 
 function upload_custom_credentials() {
   local credentials_manifest="${BUILD_DIR}/custom-credentials.json"
+  local certificates_manifest="${BUILD_DIR}/nginx-certs.json"
   if [[ "${CONFIG_STORE}" == "S3" ]]; then
     aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
       "${credentials_manifest}" \
       "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
+    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+      "${certificates_manifest}" \
+      "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
   elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
     AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
       --endpoint-url=${MINIO_ENDPOINT} "${credentials_manifest}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
+    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
+      --endpoint-url=${MINIO_ENDPOINT} "${certificates_manifest}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
   elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
     gsutil cp "${credentials_manifest}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
+    gsutil cp "${certificates_manifest}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
   fi
 }
 
@@ -556,6 +564,7 @@ EOF
   echo "Creating..."
 
   export custom_credentials_secret_name=$(echo -ne \${\#stage\(\'Deploy Credentials\'\)[\'context\'][\'artifacts\'][0][\'reference\']})
+  export nginx_certs_secret_name=$(echo -ne \${\#stage\(\'Deploy Certificates\'\)[\'context\'][\'artifacts\'][0][\'reference\']})
 
   mkdir -p ${BUILD_DIR}/pipeline
   for filename in manifests/*-deployment.json; do
@@ -565,11 +574,13 @@ EOF
   if [[ "${S3_ENABLED}" == "true" ]]; then
     export CONFIG_ARTIFACT_URI=s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json
     export SECRET_ARTIFACT_URI=s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json
+    export CERT_ARTIFACT_URI=s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json
     export ARTIFACT_KIND=s3
     export ARTIFACT_ACCOUNT=armory-config-s3-account
   elif [[ "${GCS_ENABLED}" == "true" ]]; then
     export CONFIG_ARTIFACT_URI=gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json
     export SECRET_ARTIFACT_URI=gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json
+    export CERT_ARTIFACT_URI=gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json
     export ARTIFACT_KIND=gcs
     export ARTIFACT_ACCOUNT=armory-config-gcs-account
   else
@@ -610,6 +621,22 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "matchArtifact": {
         "kind": "${ARTIFACT_KIND}",
         "name": "${SECRET_ARTIFACT_URI}",
+        "type": "${ARTIFACT_KIND}/object"
+      },
+      "useDefaultArtifact": true,
+      "usePriorExecution": false
+    },
+    {
+      "defaultArtifact": {
+        "kind": "default.${ARTIFACT_KIND}",
+        "name": "${CERT_ARTIFACT_URI}",
+        "reference": "${CERT_ARTIFACT_URI}",
+        "type": "${ARTIFACT_KIND}/object"
+      },
+      "id": "ced981ba-4bf5-41e2-8ee0-07209f79d192",
+      "matchArtifact": {
+        "kind": "${ARTIFACT_KIND}",
+        "name": "${CERT_ARTIFACT_URI}",
         "type": "${ARTIFACT_KIND}/object"
       },
       "useDefaultArtifact": true,
@@ -658,6 +685,25 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
     {
       "account": "kubernetes",
       "cloudProvider": "kubernetes",
+      "manifestArtifactAccount": "${ARTIFACT_ACCOUNT}",
+      "manifestArtifactId": "ced981ba-4bf5-41e2-8ee0-07209f79d192",
+      "moniker": {
+        "app": "armory",
+        "cluster": "nginx-certs"
+      },
+      "name": "Deploy Certificates",
+      "refId": "2",
+      "relationships": {
+        "loadBalancers": [],
+        "securityGroups": []
+      },
+      "requisiteStageRefIds": [],
+      "source": "artifact",
+      "type": "deployManifest"
+    },
+    {
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
       "manifests": [
           $(cat ${BUILD_DIR}/pipeline/pipeline-rosco-deployment.json)
       ],
@@ -667,7 +713,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy Rosco",
       "refId": "10",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -683,7 +729,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy clouddriver",
       "refId": "11",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -699,7 +745,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy deck",
       "refId": "3",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -715,7 +761,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy echo",
       "refId": "4",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -731,7 +777,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy front50",
       "refId": "5",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -747,7 +793,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy gate",
       "refId": "6",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -763,7 +809,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy igor",
       "refId": "7",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -779,7 +825,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy lighthouse",
       "refId": "8",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -811,7 +857,23 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy orca",
       "refId": "13",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
+      "source": "text",
+      "type": "deployManifest"
+    },
+    {
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-nginx-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "nginx"
+      },
+      "name": "Deploy nginx",
+      "refId": "14",
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -838,25 +900,28 @@ EOF
   echo "Waiting for the API gateway to become ready, we'll then create an Armory deploy Armory pipeline!"
   echo "This may take several minutes."
   counter=0
+  set +e
   while true; do
-        if [ `curl -s -m 3 http://${NGINX_IP}/api/applications` ]; then
-          #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
-          http_code=$(curl -s -o /dev/null -w %{http_code} -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${NGINX_IP}/api/pipelines")
-          if [[ "$http_code" -lt "200" || "$http_code" -gt "399" ]]; then
-            echo "Received a error code from pipeline curl request: $http_code"
-            exit 10
-          else
-            break
-          fi
-        fi
-        if [ "$counter" -gt 200 ]; then
-            echo "ERROR: Timeout occurred waiting for http://NGINX_IP/api/applications to become available"
-            exit 2
-        fi
-        counter=$((counter+1))
-        echo -n "."
-        sleep 2
+    curl --max-time 10 -s -o /dev/null http://${NGINX_IP}/api/applications
+    exit_code=$?
+    if [[ "$exit_code" == "0" ]]; then
+      #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
+      http_code=$(curl --max-time 10 -s -o /dev/null -w %{http_code} -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${NGINX_IP}/api/pipelines")
+      exit_code=$?
+      if [[ "$exit_code" == "0" && "$http_code" -gt "199" && "$http_code" -lt "400" ]]; then
+        echo "The re-deploy pipeline has been added and will be able to be seen in the web interface."
+        break
+      fi
+      if [ "$counter" -gt 200 ]; then
+          echo "ERROR: Timeout occurred waiting for http://${NGINX_IP}/api to become available"
+          exit 2
+      fi
+    fi
+    counter=$((counter+1))
+    echo -n "."
+    sleep 2
   done
+  set -e
 }
 
 function set_profile_small() {
