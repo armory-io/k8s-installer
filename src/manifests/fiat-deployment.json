@@ -64,10 +64,6 @@
                   "value": "-7003:7003"
                 },
                 {
-                  "name": "GOOGLE_APPLICATION_CREDENTIALS",
-                  "value": "${GCP_CREDS_MNT_PATH}"
-                },
-                {
                   "name": "LOG_LEVEL",
                   "value": "DEBUG"
                 },
