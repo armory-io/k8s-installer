@@ -21,7 +21,7 @@ add_ca_certs() {
   ca_cert_path="${CONFIG_LOCATION}/ca.crt"
   jks_path="/etc/ssl/certs/java/cacerts"
 
-  if [[ "$(whoami)" -ne "root" ]]; then
+  if [[ "$(whoami)" != "root" ]]; then
     echo "INFO: I do not have proper permisions to add CA roots"
     return
   fi
@@ -43,5 +43,5 @@ if type keytool > /dev/null; then
   add_ca_certs
   #we'll want to add saml, oauth, authn/authz stuff here too
 else
-  echo "INFO: Keytool not found"
+  echo "INFO: Keytool not found, not adding any certs/private keys"
 fi
