@@ -121,6 +121,10 @@
                   "mountPath": "/home/spinnaker/.gcp"
                 },
                 {
+                  "name": "aws-s3-credentials",
+                  "mountPath": "/home/spinnaker/.aws"
+                },
+                {
                   "name": "custom-config",
                   "mountPath": "/opt/spinnaker/config/custom"
                 }
@@ -141,11 +145,17 @@
               }
             },
             {
-                "name": "gcp-credentials",
-                "secret": {
-                  "secretName": "gcp-credentials"
-                }
-              },
+              "name": "gcp-credentials",
+              "secret": {
+                "secretName": "gcp-credentials"
+              }
+            },
+            {
+              "name": "aws-s3-credentials",
+              "secret": {
+                "secretName": "aws-s3-credentials"
+              }
+            },
             {
               "name": "podinfo",
               "downwardAPI": {
