@@ -32,7 +32,7 @@ else
     echo "No CA cert found at ${ca_cert_path}"
 fi
 
-saml_pem_path="/opt/spinnaker/config/custom/saml/saml.pem"
+saml_pem_path="/opt/spinnaker/config/custom/saml.pem"
 saml_pkcs12_path="/tmp/saml.pkcs12"
 saml_jks_path="${CONFIG_LOCATION}/saml.jks"
 if [ "${CONTAINER}" == "gate" ]; then
