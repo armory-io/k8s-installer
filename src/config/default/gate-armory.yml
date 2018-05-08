@@ -1,12 +1,3 @@
 lighthouse:
     baseUrl: http://${DEFAULT_DNS_NAME:lighthouse}:5000
 
-saml:
-  enabled: false
-  keyStore: file:/home/spinnaker/config/saml.jks
-  keyStorePassword: changeit
-  keyStoreAliasName: saml
-  metadataUrl: file:/opt/spinnaker/config/default/metadata.xml
-  issuerId:  foo
-  redirectHostname:  bar
-
