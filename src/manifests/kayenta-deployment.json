@@ -117,6 +117,10 @@
                   "mountPath": "/opt/spinnaker/config/default"
                 },
                 {
+                  "name": "gcp-credentials",
+                  "mountPath": "/home/spinnaker/.gcp"
+                },
+                {
                   "name": "custom-config",
                   "mountPath": "/opt/spinnaker/config/custom"
                 }
