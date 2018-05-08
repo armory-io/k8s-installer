@@ -14,6 +14,7 @@ export ARMORY_CONF_STORE_PREFIX=front50
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 export KUBECTL_OPTIONS="--namespace=${NAMESPACE}"
+BASE64=$(which base64)
 
 function describe_installer() {
   if [ ! -z "${NOPROMPT}" ]; then
@@ -65,17 +66,49 @@ function check_prereqs() {
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     type aws >/dev/null 2>&1 || { echo "I require aws but it's not installed. Ref: http://docs.aws.amazon.com/cli/latest/userguide/installing.html" 1>&2 && exit 1; }
   fi
+
   type kubectl >/dev/null 2>&1 || { echo "I require 'kubectl' but it's not installed. Ref: https://kubernetes.io/docs/tasks/tools/install-kubectl/" 1>&2 && exit 1; }
+
   check_kubectl_version
+
   if [[ "$CONFIG_STORE" == "GCS" ]]; then
     type gsutil >/dev/null 2>&1 || { echo "I require 'gsutil' but it's not installed. Ref: https://cloud.google.com/storage/docs/gsutil_install#sdk-install" 1>&2 && exit 1; }
   fi
+
   type envsubst >/dev/null 2>&1 || { echo -e "I require 'envsubst' but it's not installed. Please install the 'gettext' package." 1>&2;
                                      echo -e "On Mac OS X, you can run:\n   brew install gettext && brew link --force gettext" 1>&2 && exit 1; }
+
+  checkBase64
 
   type jq >/dev/null 2>&1 || { echo -e "I require 'jq' but it's not installed. Please install the 'jq' package: https://stedolan.github.io/jq/download/" 1>&2;
                                      echo -e "On Mac OS X, you can run:\n   brew install jq && brew link --force jq" 1>&2 && exit 1; }
 }
+
+function checkBase64() {
+  longString="1234567891011121314151617181920212223242526272829303132333435363738394041424344454647484950515253545556575859606162"
+  expectedBase64="MTIzNDU2Nzg5MTAxMTEyMTMxNDE1MTYxNzE4MTkyMDIxMjIyMzI0MjUyNjI3MjgyOTMwMzEzMjMzMzQzNTM2MzczODM5NDA0MTQyNDM0NDQ1NDY0NzQ4NDk1MDUxNTI1MzU0NTU1NjU3NTg1OTYwNjE2Mgo="
+
+  # try /usr/bin/base64
+  if [[ "$(echo $longString | "$BASE64")" != "$expectedBase64" ]]; then
+    if [ -f "/usr/bin/base64" ]; then
+      BASE64=/usr/bin/base64
+    fi
+  fi
+
+  # try /usr/local/bin/base64
+  if [[ "$(echo $longString | "$BASE64")" != "$expectedBase64" ]]; then
+    if [ -f "/usr/local/bin/base64" ]; then
+      BASE64=/usr/local/bin/base64
+    fi
+  fi
+
+
+  if [[ "$(echo $longString | "$BASE64")" != "$expectedBase64" ]]; then
+    echo "base64 output is not what we've expected, your base64 version will not work"
+    exit 1
+  fi
+}
+
 
 function validate_profile() {
   local profile=${1}
@@ -336,7 +369,7 @@ EOF
                 else
                   gcloud iam service-accounts keys create \
                     --iam-account "$acct" ${GCP_CREDS}
-                  export B64CREDENTIALS=$(base64 -w 0 -i "$GCP_CREDS" 2>/dev/null || base64 -i "$GCP_CREDS")
+                  export B64CREDENTIALS=$($BASE64 -w 0 -i "$GCP_CREDS" 2>/dev/null || $BASE64 -i "$GCP_CREDS")
                   break
                 fi
               done
@@ -352,7 +385,7 @@ EOF
             gcloud iam service-accounts keys create \
               --iam-account "${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
               ${GCP_CREDS} > /dev/null 2>&1
-            export B64CREDENTIALS=$(base64 -w 0 -i "$GCP_CREDS" 2>/dev/null || base64 -i "$GCP_CREDS")
+            export B64CREDENTIALS=$($BASE64 -w 0 -i "$GCP_CREDS" 2>/dev/null || $BASE64 -i "$GCP_CREDS")
             break
             ;;
         *) echo "Invalid option";;
@@ -519,14 +552,14 @@ function encode_credentials() {
 aws_access_key_id=${AWS_ACCESS_KEY_ID}
 aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
 "
-      export B64CREDENTIALS=$(base64 -w 0 <<< "${CREDENTIALS_FILE}" 2>/dev/null || base64 <<< "${CREDENTIALS_FILE}")
+      export B64CREDENTIALS=$($BASE64 -w 0 <<< "${CREDENTIALS_FILE}" 2>/dev/null || $BASE64 <<< "${CREDENTIALS_FILE}")
   elif [[ "$CONFIG_STORE" == "GCS" ]]; then
     select_gcp_service_account_and_encode_creds
   fi
 }
 
 function encode_kubeconfig() {
-  B64KUBECONFIG=$(base64 -w 0 "${KUBECONFIG}" 2>/dev/null || base64 "${KUBECONFIG}")
+  B64KUBECONFIG=$($BASE64 -w 0 "${KUBECONFIG}" 2>/dev/null || $BASE64 "${KUBECONFIG}")
   export KUBECONFIG_ENTRY_IN_SECRETS_FILE="\"default-kubeconfig\": \"${B64KUBECONFIG}\""
 }
 
