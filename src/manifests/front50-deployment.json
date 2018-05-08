@@ -47,7 +47,7 @@
         "containers": [
           {
             "name": "front50",
-            "image": "docker.io/armory/spinnaker-front50-slim:${front50_version}",
+            "image": "${DOCKER_REGISTRY}/spinnaker-front50-slim:${front50_version}",
             "command": [
               "bash",
               "-c"

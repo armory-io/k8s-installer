@@ -1,2 +1,3 @@
 lighthouse:
     baseUrl: http://${DEFAULT_DNS_NAME:lighthouse}:5000
+
