@@ -1,6 +1,7 @@
 #!/bin/bash -xe
 
 CONFIG_LOCATION=${SPINNAKER_HOME:-"/opt/spinnaker"}/config/
+CONTAINER=$1
 
 rm -f /opt/spinnaker/config/*.yml
 
@@ -45,3 +46,32 @@ if type keytool > /dev/null; then
 else
   echo "INFO: Keytool not found, not adding any certs/private keys"
 fi
+
+saml_pem_path="/opt/spinnaker/config/custom/saml.pem"
+saml_pkcs12_path="/tmp/saml.pkcs12"
+saml_jks_path="${CONFIG_LOCATION}/saml.jks"
+if [ "${CONTAINER}" == "gate" ]; then
+    if [ -f ${saml_pem_path} ]; then
+        echo "Loading ${saml_pem_path} into ${saml_jks_path}"
+        # Convert PEM to PKCS12 with a password.
+        openssl pkcs12 -export -out ${saml_pkcs12_path} -in ${saml_pem_path} -password pass:changeit -name saml
+        keytool -genkey -v -keystore ${saml_jks_path} -alias saml \
+                -keyalg RSA -keysize 2048 -validity 10000 \
+                -storepass changeit -keypass changeit -dname "CN=armory"
+        keytool -importkeystore \
+                -srckeystore ${saml_pkcs12_path} \
+                -srcstoretype PKCS12 \
+                -srcstorepass changeit \
+                -destkeystore ${saml_jks_path} \
+                -deststoretype JKS \
+                -storepass changeit \
+                -alias saml \
+                -destalias saml \
+                -noprompt
+    else
+        echo "No SAML IDP pemfile found at ${saml_pem_path}"
+    fi
+fi
+
+
+

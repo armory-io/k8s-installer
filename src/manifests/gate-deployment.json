@@ -55,7 +55,7 @@
               "-c"
             ],
             "args": [
-              "bash /opt/spinnaker/config/default/fetch.sh && cd /home/spinnaker/config && /opt/gate/bin/gate"
+              "bash /opt/spinnaker/config/default/fetch.sh gate && cd /home/spinnaker/config && /opt/gate/bin/gate"
             ],
             "envFrom": [
               {
