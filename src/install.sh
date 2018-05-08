@@ -421,6 +421,7 @@ function create_k8s_svcs_and_rs() {
 
 EOF
   export custom_credentials_secret_name="custom-credentials"
+  export nginx_certs_secret_name="nginx-certs"
   for filename in manifests/*.json; do
     envsubst < "$filename" > "$BUILD_DIR/$(basename $filename)"
   done
@@ -432,11 +433,11 @@ EOF
 
 function create_k8s_default_config() {
   kubectl ${KUBECTL_OPTIONS} create configmap default-config --from-file=$(pwd)/config/default
-  kubectl ${KUBECTL_OPTIONS} create configmap nginx-config --from-file=$(pwd)/config/nginx
 }
 
 function create_k8s_custom_config() {
   mkdir -p ${BUILD_DIR}/config/custom/
+  cp "config/custom/nginx.conf" "${BUILD_DIR}/config/custom/nginx.conf"
   for filename in config/custom/*.yml; do
     envsubst < $filename > ${BUILD_DIR}/config/custom/$(basename $filename)
   done
@@ -464,15 +465,22 @@ function create_k8s_custom_config() {
 
 function upload_custom_credentials() {
   local credentials_manifest="${BUILD_DIR}/custom-credentials.json"
+  local certificates_manifest="${BUILD_DIR}/nginx-certs.json"
   if [[ "${CONFIG_STORE}" == "S3" ]]; then
     aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
       "${credentials_manifest}" \
       "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
+    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+      "${certificates_manifest}" \
+      "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
   elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
     AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
       --endpoint-url=${MINIO_ENDPOINT} "${credentials_manifest}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
+    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
+      --endpoint-url=${MINIO_ENDPOINT} "${certificates_manifest}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
   elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
     gsutil cp "${credentials_manifest}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
+    gsutil cp "${certificates_manifest}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
   fi
 }
 
@@ -556,6 +564,7 @@ EOF
   echo "Creating..."
 
   export custom_credentials_secret_name=$(echo -ne \${\#stage\(\'Deploy Credentials\'\)[\'context\'][\'artifacts\'][0][\'reference\']})
+  export nginx_certs_secret_name=$(echo -ne \${\#stage\(\'Deploy Certificates\'\)[\'context\'][\'artifacts\'][0][\'reference\']})
 
   mkdir -p ${BUILD_DIR}/pipeline
   for filename in manifests/*-deployment.json; do
@@ -565,11 +574,13 @@ EOF
   if [[ "${S3_ENABLED}" == "true" ]]; then
     export CONFIG_ARTIFACT_URI=s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json
     export SECRET_ARTIFACT_URI=s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json
+    export CERT_ARTIFACT_URI=s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json
     export ARTIFACT_KIND=s3
     export ARTIFACT_ACCOUNT=armory-config-s3-account
   elif [[ "${GCS_ENABLED}" == "true" ]]; then
     export CONFIG_ARTIFACT_URI=gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json
     export SECRET_ARTIFACT_URI=gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json
+    export CERT_ARTIFACT_URI=gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json
     export ARTIFACT_KIND=gcs
     export ARTIFACT_ACCOUNT=armory-config-gcs-account
   else
@@ -610,6 +621,22 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "matchArtifact": {
         "kind": "${ARTIFACT_KIND}",
         "name": "${SECRET_ARTIFACT_URI}",
+        "type": "${ARTIFACT_KIND}/object"
+      },
+      "useDefaultArtifact": true,
+      "usePriorExecution": false
+    },
+    {
+      "defaultArtifact": {
+        "kind": "default.${ARTIFACT_KIND}",
+        "name": "${CERT_ARTIFACT_URI}",
+        "reference": "${CERT_ARTIFACT_URI}",
+        "type": "${ARTIFACT_KIND}/object"
+      },
+      "id": "ced981ba-4bf5-41e2-8ee0-07209f79d192",
+      "matchArtifact": {
+        "kind": "${ARTIFACT_KIND}",
+        "name": "${CERT_ARTIFACT_URI}",
         "type": "${ARTIFACT_KIND}/object"
       },
       "useDefaultArtifact": true,
@@ -658,6 +685,25 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
     {
       "account": "kubernetes",
       "cloudProvider": "kubernetes",
+      "manifestArtifactAccount": "${ARTIFACT_ACCOUNT}",
+      "manifestArtifactId": "ced981ba-4bf5-41e2-8ee0-07209f79d192",
+      "moniker": {
+        "app": "armory",
+        "cluster": "nginx-certs"
+      },
+      "name": "Deploy Certificates",
+      "refId": "2",
+      "relationships": {
+        "loadBalancers": [],
+        "securityGroups": []
+      },
+      "requisiteStageRefIds": [],
+      "source": "artifact",
+      "type": "deployManifest"
+    },
+    {
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
       "manifests": [
           $(cat ${BUILD_DIR}/pipeline/pipeline-rosco-deployment.json)
       ],
@@ -667,7 +713,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy Rosco",
       "refId": "10",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -683,7 +729,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy clouddriver",
       "refId": "11",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -699,7 +745,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy deck",
       "refId": "3",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -715,7 +761,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy echo",
       "refId": "4",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -731,7 +777,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy front50",
       "refId": "5",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -747,7 +793,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy gate",
       "refId": "6",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -763,7 +809,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy igor",
       "refId": "7",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -779,25 +825,25 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy lighthouse",
       "refId": "8",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
     {
-        "account": "kubernetes",
-        "cloudProvider": "kubernetes",
-        "manifests": [
-            $(cat ${BUILD_DIR}/pipeline/pipeline-dinghy-deployment.json)
-        ],
-        "moniker": {
-            "app": "armory",
-            "cluster": "dinghy"
-        },
-        "name": "Deploy dinghy",
-        "refId": "9",
-        "requisiteStageRefIds": ["1", "12"],
-        "source": "text",
-        "type": "deployManifest"
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-dinghy-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "dinghy"
+      },
+      "name": "Deploy dinghy",
+      "refId": "9",
+      "requisiteStageRefIds": ["1", "12"],
+      "source": "text",
+      "type": "deployManifest"
     },
     {
       "account": "kubernetes",
@@ -811,6 +857,38 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy orca",
       "refId": "13",
+      "requisiteStageRefIds": ["2", "1", "12"],
+      "source": "text",
+      "type": "deployManifest"
+    },
+    {
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-nginx-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "nginx"
+      },
+      "name": "Deploy nginx",
+      "refId": "14",
+      "requisiteStageRefIds": ["2", "1", "12"],
+      "source": "text",
+      "type": "deployManifest"
+    },
+    {
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-kayenta-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "kayenta"
+      },
+      "name": "Deploy kayenta",
+      "refId": "14",
       "requisiteStageRefIds": ["1", "12"],
       "source": "text",
       "type": "deployManifest"
@@ -822,110 +900,119 @@ EOF
   echo "Waiting for the API gateway to become ready, we'll then create an Armory deploy Armory pipeline!"
   echo "This may take several minutes."
   counter=0
+  set +e
   while true; do
-        if [ `curl -s -m 3 http://${NGINX_IP}/api/applications` ]; then
-          #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
-          http_code=$(curl -s -o /dev/null -w %{http_code} -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${NGINX_IP}/api/pipelines")
-          if [[ "$http_code" -lt "200" || "$http_code" -gt "399" ]]; then
-            echo "Received a error code from pipeline curl request: $http_code"
-            exit 10
-          else
-            break
-          fi
-        fi
-        if [ "$counter" -gt 200 ]; then
-            echo "ERROR: Timeout occurred waiting for http://NGINX_IP/api/applications to become available"
-            exit 2
-        fi
-        counter=$((counter+1))
-        echo -n "."
-        sleep 2
+    curl --max-time 10 -s -o /dev/null http://${NGINX_IP}/api/applications
+    exit_code=$?
+    if [[ "$exit_code" == "0" ]]; then
+      #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
+      http_code=$(curl --max-time 10 -s -o /dev/null -w %{http_code} -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${NGINX_IP}/api/pipelines")
+      exit_code=$?
+      if [[ "$exit_code" == "0" && "$http_code" -gt "199" && "$http_code" -lt "400" ]]; then
+        echo "The re-deploy pipeline has been added and will be able to be seen in the web interface."
+        break
+      fi
+      if [ "$counter" -gt 200 ]; then
+          echo "ERROR: Timeout occurred waiting for http://${NGINX_IP}/api to become available"
+          exit 2
+      fi
+    fi
+    counter=$((counter+1))
+    echo -n "."
+    sleep 2
   done
+  set -e
 }
 
 function set_profile_small() {
   export CLOUDDRIVER_CPU="100m"
   export DECK_CPU="100m"
+  export DINGHY_CPU="100m"
   export ECHO_CPU="100m"
   export FRONT50_CPU="100m"
   export GATE_CPU="100m"
   export IGOR_CPU="100m"
+  export KAYENTA_CPU="100m"
   export LIGHTHOUSE_CPU="100m"
-  export DINGHY_CPU="100m"
+  export NGINX_CPU="100m"
   export ORCA_CPU="100m"
   export REDIS_CPU="100m"
   export ROSCO_CPU="100m"
-  export NGINX_CPU="100m"
   export CLOUDDRIVER_MEMORY="128Mi"
   export DECK_MEMORY="128Mi"
+  export DINGHY_MEMORY="128Mi"
   export ECHO_MEMORY="128Mi"
   export FRONT50_MEMORY="128Mi"
   export GATE_MEMORY="128Mi"
   export IGOR_MEMORY="128Mi"
+  export KAYENTA_MEMORY="128Mi"
   export LIGHTHOUSE_MEMORY="128Mi"
-  export DINGHY_MEMORY="128Mi"
+  export NGINX_MEMORY="64Mi"
   export ORCA_MEMORY="128Mi"
   export REDIS_MEMORY="128Mi"
   export ROSCO_MEMORY="128Mi"
-  export NGINX_MEMORY="64Mi"
 }
 
 function set_profile_medium() {
   export CLOUDDRIVER_CPU="1000m"
   export DECK_CPU="500m"
+  export DINGHY_CPU="500m"
   export ECHO_CPU="500m"
   export FRONT50_CPU="500m"
   export GATE_CPU="500m"
   export IGOR_CPU="500m"
+  export KAYENTA_CPU="500m"
   export LIGHTHOUSE_CPU="500m"
-  export DINGHY_CPU="500m"
+  export NGINX_CPU="200m"
   export ORCA_CPU="1000m"
   export REDIS_CPU="500m"
   export ROSCO_CPU="500m"
-  export NGINX_CPU="200m"
   export CLOUDDRIVER_MEMORY="2Gi"
   export DECK_MEMORY="512Mi"
+  export DINGHY_MEMORY="512Mi"
   export ECHO_MEMORY="512Mi"
   export FRONT50_MEMORY="1Gi"
   export GATE_MEMORY="1Gi"
   export IGOR_MEMORY="1Gi"
+  export KAYENTA_MEMORY="512Mi"
   export LIGHTHOUSE_MEMORY="512Mi"
-  export DINGHY_MEMORY="512Mi"
+  export NGINX_MEMORY="128Mi"
   export ORCA_MEMORY="2Gi"
   export REDIS_MEMORY="2Gi"
   export ROSCO_MEMORY="1Gi"
-  export NGINX_MEMORY="128Mi"
 }
 
 function set_profile_large() {
   export CLOUDDRIVER_CPU="2000m"
   export DECK_CPU="1000m"
+  export DINGHY_CPU="500m"
   export ECHO_CPU="1000m"
   export FRONT50_CPU="1000m"
   export GATE_CPU="1000m"
   export IGOR_CPU="1000m"
+  export KAYENTA_CPU="500m"
   export LIGHTHOUSE_CPU="500m"
-  export DINGHY_CPU="500m"
+  export NGINX_CPU="500m"
   export ORCA_CPU="2000m"
   export REDIS_CPU="1000m"
   export ROSCO_CPU="1000m"
-  export NGINX_CPU="500m"
   export CLOUDDRIVER_MEMORY="8Gi"
   export DECK_MEMORY="512Mi"
+  export DINGHY_MEMORY="512Mi"
   export ECHO_MEMORY="1Gi"
   export FRONT50_MEMORY="2Gi"
   export GATE_MEMORY="2Gi"
   export IGOR_MEMORY="2Gi"
+  export KAYENTA_MEMORY="512Mi"
   export LIGHTHOUSE_MEMORY="512Mi"
-  export DINGHY_MEMORY="512Mi"
+  export NGINX_MEMORY="256Mi"
   export ORCA_MEMORY="4Gi"
   export REDIS_MEMORY="16Gi"
   export ROSCO_MEMORY="1Gi"
-  export NGINX_MEMORY="256Mi"
 }
 
 function set_custom_profile() {
-  cpu_vars=("CLOUDDRIVER_CPU" "DECK_CPU" "ECHO_CPU" "FRONT50_CPU" "GATE_CPU" "IGOR_CPU" "LIGHTHOUSE_CPU" "ORCA_CPU" "REDIS_CPU" "ROSCO_CPU" "DINGHY_CPU")
+  cpu_vars=("CLOUDDRIVER_CPU" "DECK_CPU" "DINGHY_CPU" "ECHO_CPU" "FRONT50_CPU" "GATE_CPU" "IGOR_CPU" "KAYENTA_CPU" "LIGHTHOUSE_CPU" "ORCA_CPU" "REDIS_CPU" "ROSCO_CPU")
   for v in "${cpu_vars[@]}"; do
     echo "What allocation would you like for $v?"
     options=("500m" "1000m" "1500m" "2000m" "2500m")
@@ -942,7 +1029,7 @@ function set_custom_profile() {
       esac
     done
   done
-  mem_vars=("CLOUDDRIVER_MEMORY" "DECK_MEMORY" "ECHO_MEMORY" "FRONT50_MEMORY" "GATE_MEMORY" "IGOR_MEMORY" "LIGHTHOUSE_MEMORY" "ORCA_MEMORY" "REDIS_MEMORY" "ROSCO_MEMORY" "DINGHY_MEMORY")
+  mem_vars=("CLOUDDRIVER_MEMORY" "DECK_MEMORY" "DINGHY_MEMORY" "ECHO_MEMORY" "FRONT50_MEMORY" "GATE_MEMORY" "IGOR_MEMORY" "KAYENTA_MEMORY" "LIGHTHOUSE_MEMORY" "ORCA_MEMORY" "REDIS_MEMORY" "ROSCO_MEMORY")
   for v in "${mem_vars[@]}"; do
     echo "What allocation would you like for $v?"
     options=("512Mi" "1Gi" "2Gi" "4Gi" "8Gi" "16Gi")
@@ -988,19 +1075,19 @@ EOF
   echo "       Total MEMORY: 2048Mi (~2 GB)"
   echo ""
   echo "  'Medium'"
-  echo "       CPU: 500m for deck, dinghy, echo, front50, gate, igor, lighthouse, redis, & rosco"
+  echo "       CPU: 500m for deck, dinghy, echo, front50, gate, igor, kayenta, lighthouse, redis, & rosco"
   echo "            1000m for clouddriver, & orca"
-  echo "       MEMORY: 512Mi for deck, dinghy, echo, lighthouse, & rosco"
+  echo "       MEMORY: 512Mi for deck, dinghy, echo, kayenta, lighthouse, & rosco"
   echo "               1Gi for front50, gate, igor, & rosco"
   echo "               2Gi for clouddriver, orca, & redis"
   echo "       Total CPU: 10000m (10 vCPUs)"
   echo "       Total MEMORY: 18.5Gi (~19.86 GB)"
   echo ""
   echo "  'Large'"
-  echo "       CPU: 500m for lighthouse"
+  echo "       CPU: 500m for kayenta & lighthouse"
   echo "            1000m for deck, dinghy, echo, front50, gate, igor, redis, & rosco"
   echo "            2000m for clouddriver, & orca"
-  echo "       MEMORY: 521Mi for deck, dinghy, & lighthouse"
+  echo "       MEMORY: 521Mi for deck, dinghy, kayenta, & lighthouse"
   echo "               1Gi for echo, & rosco"
   echo "               2Gi for front50, gate & igor"
   echo "               4Gi for orca"

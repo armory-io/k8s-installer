@@ -1,0 +1,20 @@
+{
+    "kind": "Service",
+    "apiVersion": "v1",
+    "metadata": {
+      "name": "kayenta",
+      "namespace": "${NAMESPACE}"
+    },
+    "spec": {
+      "selector": {
+        "app": "kayenta"
+      },
+      "ports": [
+        {
+          "protocol": "TCP",
+          "port": 8090,
+          "targetPort": 8090
+        }
+      ]
+    }
+}
