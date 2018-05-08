@@ -16,4 +16,4 @@ export gate_armory_version=d95a452-release-1.7.x-7f71995
 export gate_version=release-1.7.x-7f71995
 export echo_armory_version=00219be-release-1.7.x-4a9f9c0
 export echo_version=release-1.7.x-4a9f9c0
-export deck_armory_version=4304cd1-release-1.7.x-4b39044
+export deck_armory_version=87b2579-release-1.7.x-e2296bd
