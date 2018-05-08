@@ -17,19 +17,34 @@ for filename in /opt/spinnaker/config/custom/*; do
     cp $filename ${CONFIG_LOCATION}
 done
 
-# if CA exists, mount it into the default JKS store
-ca_cert_path="${CONFIG_LOCATION}/certs/ca.crt"
-jks_path="/etc/ssl/certs/java/cacerts"
-if [  -f ${ca_cert_path} ]; then
-    echo "Loading CA cert into the Java Keystore located at ${jks_path}"
-    keytool -importcert \
-        -file ${ca_cert_path} \
-        -keystore ${jks_path} \
-        -alias custom-ca \
-        -storepass changeit \
-        -noprompt
+add_ca_certs() {
+  # if CA exists, mount it into the default JKS store
+  ca_cert_path="${CONFIG_LOCATION}/ca.crt"
+  jks_path="/etc/ssl/certs/java/cacerts"
+
+  if [[ "$(whoami)" != "root" ]]; then
+    echo "INFO: I do not have proper permisions to add CA roots"
+    return
+  fi
+
+  if [[ ! -f ${ca_cert_path} ]]; then
+    echo "INFO: No CA cert found at ${ca_cert_path}"
+    return
+  fi
+  keytool -importcert \
+      -file ${ca_cert_path} \
+      -keystore ${jks_path} \
+      -alias custom-ca \
+      -storepass changeit \
+      -noprompt
+}
+
+if type keytool > /dev/null; then
+  echo "INFO: Keytool found adding certs where appropriate"
+  add_ca_certs
+  #we'll want to add saml, oauth, authn/authz stuff here too
 else
-    echo "No CA cert found at ${ca_cert_path}"
+  echo "INFO: Keytool not found, not adding any certs/private keys"
 fi
 
 saml_pem_path="/opt/spinnaker/config/custom/saml.pem"
