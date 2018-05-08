@@ -36,8 +36,8 @@ saml_pem_path="/opt/spinnaker/config/custom/saml/saml.pem"
 saml_pkcs12_path="/tmp/saml.pkcs12"
 saml_jks_path="${CONFIG_LOCATION}/saml.jks"
 if [ "${CONTAINER}" == "gate" ]; then
-    if [ -f ${saml_cert_path} ]; then
-        echo "Loading ${saml_cert_path} into ${saml_jks_path}"
+    if [ -f ${saml_pem_path} ]; then
+        echo "Loading ${saml_pem_path} into ${saml_jks_path}"
         # Convert PEM to PKCS12 with a password.
         openssl pkcs12 -export -out ${saml_pkcs12_path} -in ${saml_pem_path} -password pass:changeit -name saml
         keytool -genkey -v -keystore ${saml_jks_path} -alias saml \
@@ -54,7 +54,7 @@ if [ "${CONTAINER}" == "gate" ]; then
                 -destalias saml \
                 -noprompt
     else
-        echo "No SAML IDP pemfile found at ${saml_cert_path}"
+        echo "No SAML IDP pemfile found at ${saml_pem_path}"
     fi
 fi
 
