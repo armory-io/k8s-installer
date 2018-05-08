@@ -6,4 +6,7 @@ saml:
   keyStore: file:/home/spinnaker/config/saml.jks
   keyStorePassword: changeit
   keyStoreAliasName: saml
+  metadataUrl: file:/opt/spinnaker/config/default/metadata.xml
+  issuerId:  foo
+  redirectHostname:  bar
 
