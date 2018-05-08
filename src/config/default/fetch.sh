@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash -xe
 
 CONFIG_LOCATION=${SPINNAKER_HOME:-"/opt/spinnaker"}/config/
 
@@ -12,7 +12,7 @@ for filename in /opt/spinnaker/config/default/*.yml; do
 done
 
 # User specific config
-for filename in /opt/spinnaker/config/custom/*.yml; do
+for filename in /opt/spinnaker/config/custom/*; do
     cp $filename ${CONFIG_LOCATION}
 done
 

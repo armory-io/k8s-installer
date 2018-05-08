@@ -3,15 +3,18 @@ kubernetes:
   accounts:
     - name: kubernetes
       providerVersion: v2
-      serviceAccount: true
+      serviceAccount: ${USE_SERVICE_ACCOUNT}
       namespaces:
         - ${NAMESPACE}
+      ${KUBECONFIG_CONFIG_ENTRY}
 
 artifacts:
   s3:
     enabled: ${S3_ENABLED}
     accounts:
     - name: armory-config-s3-account
+      apiEndpoint: ${MINIO_ENDPOINT}
+      apiRegion: us-east-1
   gcs:
     enabled: ${GCS_ENABLED}
     accounts:
