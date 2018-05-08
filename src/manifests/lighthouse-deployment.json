@@ -46,7 +46,7 @@
         "containers": [
           {
             "name": "lighthouse",
-            "image": "docker.io/armory/lighthouse:${lighthouse_version}",
+            "image": "${DOCKER_REGISTRY}/lighthouse:${lighthouse_version}",
             "command": [
               "bash",
               "-c"

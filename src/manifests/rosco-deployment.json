@@ -47,7 +47,7 @@
         "containers": [
           {
             "name": "rosco",
-            "image": "docker.io/armory/spinnaker-rosco-slim:${rosco_version}",
+            "image": "${DOCKER_REGISTRY}/spinnaker-rosco-slim:${rosco_version}",
             "command": [
               "bash",
               "-c"

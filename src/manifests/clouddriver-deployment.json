@@ -47,7 +47,7 @@
         "containers": [
           {
             "name": "clouddriver",
-            "image": "docker.io/armory/spinnaker-clouddriver-slim:${clouddriver_version}",
+            "image": "${DOCKER_REGISTRY}/spinnaker-clouddriver-slim:${clouddriver_version}",
             "command": [
               "bash",
               "-c"

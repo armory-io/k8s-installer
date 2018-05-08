@@ -46,7 +46,7 @@
         "containers": [
           {
             "name": "echo",
-            "image": "docker.io/armory/echo-armory:${echo_armory_version}",
+            "image": "${DOCKER_REGISTRY}/echo-armory:${echo_armory_version}",
             "command": [
               "bash",
               "-c"

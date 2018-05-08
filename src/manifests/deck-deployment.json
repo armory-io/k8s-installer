@@ -46,7 +46,7 @@
         "containers": [
           {
             "name": "deck",
-            "image": "docker.io/armory/deck-armory:${deck_armory_version}",
+            "image": "${DOCKER_REGISTRY}/deck-armory:${deck_armory_version}",
             "envFrom": [
               {
                 "configMapRef": {
