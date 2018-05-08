@@ -841,7 +841,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy dinghy",
       "refId": "9",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
