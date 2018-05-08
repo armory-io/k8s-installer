@@ -46,7 +46,7 @@
         "containers": [
           {
             "name": "igor",
-            "image": "docker.io/armory/spinnaker-igor-slim:${igor_version}",
+            "image": "${DOCKER_REGISTRY}/spinnaker-igor-slim:${igor_version}",
             "command": [
               "bash",
               "-c"

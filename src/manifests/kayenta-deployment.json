@@ -46,7 +46,7 @@
           "containers": [
             {
               "name": "kayenta",
-              "image": "docker.io/armory/spinnaker-kayenta-slim:${kayenta_version}",
+              "image": "${DOCKER_REGISTRY}/spinnaker-kayenta-slim:${kayenta_version}",
               "envFrom": [
                 {
                   "configMapRef": {

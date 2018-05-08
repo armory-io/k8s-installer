@@ -46,7 +46,7 @@
         "containers": [
           {
             "name": "gate",
-            "image": "docker.io/armory/gate-armory:${gate_armory_version}",
+            "image": "${DOCKER_REGISTRY}/gate-armory:${gate_armory_version}",
             "command": [
               "bash",
               "-c"

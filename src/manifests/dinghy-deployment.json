@@ -46,7 +46,7 @@
         "containers": [
           {
             "name": "dinghy",
-            "image": "docker.io/armory/dinghy:${dinghy_version}",
+            "image": "${DOCKER_REGISTRY}/dinghy:${dinghy_version}",
             "envFrom": [
               {
                 "configMapRef": {
