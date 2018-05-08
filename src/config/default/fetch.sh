@@ -12,7 +12,7 @@ for filename in /opt/spinnaker/config/default/*.yml; do
 done
 
 # User specific config
-for filename in /opt/spinnaker/config/custom/*.yml; do
+for filename in /opt/spinnaker/config/custom/*; do
     cp $filename ${CONFIG_LOCATION}
 done
 
