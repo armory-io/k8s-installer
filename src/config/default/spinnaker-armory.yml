@@ -11,9 +11,9 @@ features:
   configuratorEnabled:
     enabled: ${CONFIGURATOR_ENABLED:true}
   configuratorWizard:
-    enabled: ${CONFIGURATOR_WIZARD:true}
+    enabled: ${CONFIGURATOR_WIZARD:false}
   configuratorCerts:
-    enabled: ${CONFIGURATOR_CERTS:true}
+    enabled: ${CONFIGURATOR_CERTS:false}
   loadtestStage:
     enabled: ${LOADTEST_ENABLED:false}
   jira:
