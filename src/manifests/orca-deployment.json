@@ -47,7 +47,7 @@
         "containers": [
           {
             "name": "orca",
-            "image": "docker.io/armory/spinnaker-orca-slim:${orca_version}",
+            "image": "${DOCKER_REGISTRY}/spinnaker-orca-slim:${orca_version}",
             "command": [
               "bash",
               "-c"

@@ -43,16 +43,19 @@
         }
       },
       "spec": {
+        "securityContext": {
+          "runAsUser": 0
+        },
         "containers": [
           {
             "name": "gate",
-            "image": "docker.io/armory/gate-armory:${gate_armory_version}",
+            "image": "${DOCKER_REGISTRY}/gate-armory:${gate_armory_version}",
             "command": [
               "bash",
               "-c"
             ],
             "args": [
-              "bash /opt/spinnaker/config/default/fetch.sh && cd /home/spinnaker/config && /opt/gate/bin/gate"
+              "bash /opt/spinnaker/config/default/fetch.sh gate && cd /home/spinnaker/config && /opt/gate/bin/gate"
             ],
             "envFrom": [
               {
