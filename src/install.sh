@@ -68,7 +68,7 @@ cat <<EOF > version.manifest
 ## Committing this file means you'll be pinning the installer with the versions listed below.
 ##
 ## To fetch the latest stable/edge versions of Armory, see:
-##   ../src/install.sh --help
+##   ./src/install.sh --help
 
 EOF
 
