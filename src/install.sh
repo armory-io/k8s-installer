@@ -59,7 +59,7 @@ function fetch_latest_version_manifest() {
   fi
 
   if [[ ! -f "version.manifest" || ${FETCH_LATEST_STABLE_VERSION} == true ]]; then
-    echo "Fetching latest src/version.manifest..."
+    echo "Fetching latest stable src/version.manifest..."
     curl -sS "https://s3-us-west-2.amazonaws.com/armory-web/install/release/armoryspinnaker-latest-version.manifest" > build/armoryspinnaker-latest-version.manifest
     source build/armoryspinnaker-latest-version.manifest
 
