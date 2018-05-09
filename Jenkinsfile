@@ -1,7 +1,28 @@
 #!/usr/bin/env groovy
 
+properties(
+  [
+    parameters([
+      string(name: 'PUBLIC_ARMORY_JENKINS_JOB_VERSION', defaultValue: '',
+        description: """Optional. Set this if we're releasing this version of ArmorySpinnaker to the world.
+        This is a Jenkins job id that looks like:
+        lastSuccessfulBuild or 1864"""
+      ),
+    ]),
+    disableConcurrentBuilds(),
+  ]
+)
+
 node {
   checkout scm
+
+  if (params.PUBLIC_ARMORY_JENKINS_JOB_VERSION != '') {
+    stage('Fetch latest Armory version') {
+      sh("""
+      ./bin/fetch-latest-armory-version.sh
+    """)
+    }
+  }
 
   stage('Testing') {
     def runner = { testName ->
@@ -26,6 +47,16 @@ node {
       sh('''
           export S3_PREFIX=/dev/
           arm build
+        ''')
+    }
+  }
+
+  // Since we've provided PUBLIC_ARMORY_JENKINS_JOB_VERSION, and tests pass successfully, we'll upload manifest as
+  // "latest" so that public people can pull it down and use it.
+  if (params.PUBLIC_ARMORY_JENKINS_JOB_VERSION != '') {
+    stage('Promote latest Armory version') {
+      sh('''
+          ./bin/promote-latest-armory-version.sh
         ''')
     }
   }
