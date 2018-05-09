@@ -397,6 +397,12 @@ function create_k8s_namespace() {
 }
 
 function create_k8s_nginx_load_balancer() {
+  if [[ "${LB_TYPE}" == "ClusterIP" ]]; then
+    #we use loopback because we create a tunnel later
+    export NGINX_IP="127.0.0.1"
+    return
+  fi
+
   echo "Creating load balancer for the Web UI."
   envsubst < manifests/nginx-svc.json > ${BUILD_DIR}/nginx-svc.json
   # Wait for IP
@@ -1137,21 +1143,22 @@ function set_lb_type() {
   cat <<EOF
 
   *****************************************************************************
-  * When the Armory Platform runs it uses two load balancers. One for the API *
-  * gateway and one to serve the Web UI. Depending on how your network is     *
-  * configured, you will want these load balancers to either be 'internal' or *
-  * 'external'. After installation, it is also recommended that you configure *
+  * When the Armory Platform runs it exposes one loadbalancer to users.       *
+  * Depending on how your network is configured, you will want these load     *
+  * balancers to either be 'internal', 'external' or a 'clusterIP'.  For      *
+  * clusterIP deployments it uses `kubectl` to create a tunnel to the         *
+  * cluster. After installation, it is also recommended that you configure    *
   * a firewall rule or security group to only allow access to whitelisted IPs.*
   *****************************************************************************
 
 EOF
   echo "Load balancer types: "
-  options=("Internal" "External")
+  options=("Internal" "External" "ClusterIP")
   PS3='Select the LB type you want to use: '
   select opt in "${options[@]}"
   do
     case $opt in
-        "Internal"|"External")
+        "Internal"|"External"|"ClusterIP")
             export LB_TYPE="$opt"
             echo "Using LB type: $opt"
             break
@@ -1159,6 +1166,13 @@ EOF
         *) echo "Invalid option";;
     esac
   done
+
+  if [[ "${LB_TYPE}" == "ClusterIP" ]]; then
+    export SERVICE_TYPE="LoadBlancer"
+  else
+    export SERVICE_TYPE="ClusterIP"
+  fi
+
 }
 
 function make_bucket() {
