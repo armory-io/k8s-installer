@@ -427,8 +427,13 @@ EOF
     envsubst < "$filename" > "$BUILD_DIR/$(basename $filename)"
   done
   for filename in build/*.json; do
-    echo "Applying $filename..."
-    kubectl ${KUBECTL_OPTIONS} apply -f "$filename"
+    if [[ "$filename" =~ "fiat-deployment.json" ]]; then
+      echo "Skipping $filename... needs configuration before deployment"
+    else
+      echo "Applying $filename..."
+      kubectl ${KUBECTL_OPTIONS} apply -f "$filename"
+    fi
+
   done
 }
 
@@ -908,6 +913,10 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "refId": "14",
       "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
+      "stageEnabled": {
+        "expression": "false",
+        "type": "expression"
+      },
       "type": "deployManifest"
     }
   ]
