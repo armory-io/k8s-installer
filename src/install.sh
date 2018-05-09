@@ -5,8 +5,6 @@ if [ ! -z "${ARMORY_DEBUG}" ]; then
   set +e
 fi
 
-source version.manifest
-
 export NAMESPACE=${NAMESPACE:-armory}
 export BUILD_DIR=build/
 export ARMORY_CONF_STORE_PREFIX=front50
@@ -51,6 +49,32 @@ function error() {
   >&2 echo $1
   exit 1
 }
+
+function fetch_latest_version_manifest() {
+  mkdir -p build
+
+  if [[ ! -f "version.manifest" || ${FETCH_LATEST_VERSION_MANIFEST} == true ]]; then
+    echo "Fetching latest src/version.manifest..."
+    curl -sS "https://s3-us-west-2.amazonaws.com/armory-web/install/release/armoryspinnaker-latest-version.manifest" > build/armoryspinnaker-latest-version.manifest
+    source build/armoryspinnaker-latest-version.manifest
+
+cat <<EOF > version.manifest
+## INFO: this file has been created as an untracked file so that the installer can run idempotently with pinned versions below.
+## Committing this file means you'll be pinning the installer the versions below
+## To fetch the latest released version you can either:
+##   - delete this file and rerun the installer
+##   - run  ./src/install.sh --use-edge
+
+EOF
+
+      curl -sS "${armoryspinnaker_version_manifest_url}" >> version.manifest
+
+      echo "Pinned latest manifest in src/version.manifest"
+  else
+    echo "Using pinned versions found in src/version.manifests!"
+  fi
+}
+
 
 function check_kubectl_version() {
   version=$(kubectl version help | grep "^Client Version" | sed 's/^.*GitVersion:"v\([0-9\.v]*\)".*$/\1/')
@@ -1206,6 +1230,52 @@ function make_bucket() {
     echo "Using existing bucket: $ARMORY_CONF_STORE_BUCKET"
   fi
 }
+
+function print_options_message() {
+cat <<EOF
+
+Armory Platform installer for Kubernetes.
+
+usage: [--fetch-latest-versions]
+
+  --fetch-latest-versions   fetch the latest stable release of Armory's version.manifest
+
+EOF
+}
+
+OPTSPEC=":hv-:"
+while getopts "$OPTSPEC" optchar; do
+  case "${optchar}" in
+    -)
+      case "${OPTARG}" in
+        help)
+          print_options_message
+          exit 0
+          ;;
+        fetch-latest-versions)
+          FETCH_LATEST_VERSION_MANIFEST=true
+          ;;
+        *)
+          echo "Unknown option --${OPTARG}" >&2
+          print_options_message
+          exit 2
+          ;;
+      esac;;
+    h)
+      print_options_message
+      exit 0
+      ;;
+    *)
+      if [ "$OPTERR" != 1 ] || [ "${OPTSPEC:0:1}" = ":" ]; then
+        echo "Non-option argument: '-${OPTARG}'" >&2
+      fi
+      ;;
+  esac
+done
+
+
+fetch_latest_version_manifest
+source version.manifest
 
 function main() {
   describe_installer
