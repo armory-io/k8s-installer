@@ -1,22 +1,26 @@
 server:
-  port: 7003
+  port: ${services.fiat.port:7003}
+  address: ${services.fiat.host:localhost}
 
 redis:
   connection: ${services.redis.connection:redis://localhost:6379}
 
-okHttpClient:
-  retries:
-    maxElapsedBackoffMs: 5000
+spectator:
+  applicationName: ${spring.application.name}
+  webEndpoint:
+    enabled: ${services.spectator.webEndpoint.enabled:false}
+    prototypeFilter:
+      path: ${services.spectator.webEndpoint.prototypeFilter.path:}
 
-endpoints:
-  health:
-    sensitive: false
-
-# For options, see com.netflix.spinnaker.fiat.config.FiatServerConfigurationProperties
-
-logging:
-  config: classpath:logback-defaults.xml
+  stackdriver:
+    enabled: ${services.stackdriver.enabled}
+    projectName: ${services.stackdriver.projectName}
+    credentialsPath: ${services.stackdriver.credentialsPath}
 
 hystrix:
  command:
    default.execution.isolation.thread.timeoutInMilliseconds: 20000
+
+logging:
+  level:
+    com.netflix.spinnaker.fiat: DEBUG
