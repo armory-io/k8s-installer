@@ -70,7 +70,6 @@ EOF
       curl -sS "${armoryspinnaker_version_manifest_url}" >> version.manifest
 
       echo "Pinned latest manifest in src/version.manifest"
-      source version.manifest
   else
     echo "Using pinned versions found in src/version.manifests!"
   fi
@@ -1243,8 +1242,11 @@ while getopts "$OPTSPEC" optchar; do
   esac
 done
 
+
+fetch_latest_version_manifest
+source version.manifest
+
 function main() {
-  fetch_latest_version_manifest
   describe_installer
   prompt_user
   check_prereqs
