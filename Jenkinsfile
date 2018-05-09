@@ -57,7 +57,7 @@ node {
 
   // Since we've provided PUBLIC_ARMORY_JENKINS_JOB_VERSION, and tests pass successfully, we'll upload manifest as
   // "latest" so that public people can pull it down and use it.
-  if (params.RELEASE_ARMORY_VERSION_IF_PASSING != 'true') {
+  if (params.RELEASE_ARMORY_VERSION_IF_PASSING == 'true') {
     stage('Promote latest Armory version') {
       sh('''
           ./bin/promote-latest-armory-version.sh
