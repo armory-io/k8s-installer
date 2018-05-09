@@ -4,8 +4,9 @@ properties(
   [
     parameters([
       string(name: 'PUBLIC_ARMORY_JENKINS_JOB_VERSION', defaultValue: '',
-        description: "Optional. Use to explicitly set the version of Armory platform to make public using Jenkins job id." +
-        "ex: lastSuccessfulBuild or 1864"
+        description: """Optional. Set this if we're releasing this version of ArmorySpinnaker to the world.
+        This is a Jenkins job id that looks like:
+        lastSuccessfulBuild or 1864"""
       ),
     ]),
     disableConcurrentBuilds(),
@@ -50,6 +51,8 @@ node {
     }
   }
 
+  // Since we've provided PUBLIC_ARMORY_JENKINS_JOB_VERSION, and tests pass successfully, we'll upload manifest as
+  // "latest" so that public people can pull it down and use it.
   if (params.PUBLIC_ARMORY_JENKINS_JOB_VERSION != '') {
     stage('Promote latest Armory version') {
       sh('''
