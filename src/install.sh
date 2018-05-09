@@ -55,7 +55,7 @@ function fetch_latest_version_manifest() {
 
   if [[ ! -f "version.manifest" || ${FETCH_LATEST_VERSION_MANIFEST} == true ]]; then
     echo "Fetching latest src/version.manifest..."
-    curl -o build/armoryspinnaker-latest-version.manifest -sS "https://s3-us-west-2.amazonaws.com/armory-web/install/release/armoryspinnaker-latest-version.manifest"
+    curl -sS "https://s3-us-west-2.amazonaws.com/armory-web/install/release/armoryspinnaker-latest-version.manifest" > build/armoryspinnaker-latest-version.manifest
     source build/armoryspinnaker-latest-version.manifest
 
 cat <<EOF > version.manifest
@@ -69,9 +69,10 @@ EOF
 
       curl -sS "${armoryspinnaker_version_manifest_url}" >> version.manifest
 
+      echo "Pinned latest manifest in src/version.manifest"
       source version.manifest
   else
-    echo "Pinned versions found in src/version.manifests!"
+    echo "Using pinned versions found in src/version.manifests!"
   fi
 }
 
