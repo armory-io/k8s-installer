@@ -10,6 +10,7 @@ source version.manifest
 export NAMESPACE=${NAMESPACE:-armory}
 export BUILD_DIR=build/
 export ARMORY_CONF_STORE_PREFIX=front50
+export DOCKER_REGISTRY=${DOCKER_REGISTRY:-docker.io/armory}
 # Start from a fresh build dir
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"

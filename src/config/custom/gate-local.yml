@@ -1,0 +1,15 @@
+# To use SAML for authentication, uncomment this section and update the
+# issuerId, redirectHostname (which should end with /api) appropriately.
+# This configuration will expect your Metadata XML file to be uploaded into
+# config/metadata.xml and the PEM key uploaded into config/saml.pem, both of
+# which can be done in the Configurator
+
+#saml:
+#  enabled: true
+#  issuerId:  https://accounts.google.com/o/saml2?idpid=C12345679
+#  redirectHostname:  this.hostname/api
+#  metadataUrl: file:/opt/spinnaker/config/custom/metadata.xml
+#  keyStore: file:/home/spinnaker/config/saml.jks
+#  keyStorePassword: changeit
+#  keyStoreAliasName: saml
+
