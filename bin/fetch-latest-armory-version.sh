@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/bash -e
 cd "$(dirname "$0")"
 
 PUBLIC_ARMORY_JENKINS_JOB_VERSION=${PUBLIC_ARMORY_JENKINS_JOB_VERSION:-"lastSuccessfulBuild"}
