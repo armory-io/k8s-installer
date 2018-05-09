@@ -66,7 +66,7 @@ cat <<EOF > version.manifest
 
 EOF
 
-      curl -sS "${armoryspinnaker_version_manifest}" >> version.manifest
+      curl -sS "${armoryspinnaker_version_manifest_url}" >> version.manifest
 
       source version.manifest
   else
