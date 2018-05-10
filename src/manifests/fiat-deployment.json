@@ -1,0 +1,159 @@
+{
+    "apiVersion": "extensions/v1beta1",
+    "kind": "Deployment",
+    "metadata": {
+      "annotations": {
+        "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
+        "artifact.spinnaker.io/name": "\"armory-fiat\"",
+        "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
+        "moniker.spinnaker.io/application": "\"armory\"",
+        "moniker.spinnaker.io/cluster": "\"fiat\""
+      },
+      "name": "fiat",
+      "namespace": "${NAMESPACE}",
+      "labels": {
+        "app": "fiat"
+      }
+    },
+    "spec": {
+      "strategy": {
+        "type": "RollingUpdate",
+        "rollingUpdate": {
+          "maxUnavailable": 0,
+          "maxSurge": "100%"
+        }
+      },
+      "replicas": 2,
+      "selector": {
+        "matchLabels": {
+          "app": "fiat"
+        }
+      },
+      "template": {
+        "metadata": {
+          "annotations": {
+            "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
+            "artifact.spinnaker.io/name": "\"armory-fiat\"",
+            "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
+            "moniker.spinnaker.io/application": "\"armory\"",
+            "moniker.spinnaker.io/cluster": "\"fiat\""
+          },
+          "labels": {
+            "app": "fiat"
+          }
+        },
+        "spec": {
+          "containers": [
+            {
+              "name": "fiat",
+              "image": "docker.io/armory/spinnaker-fiat-slim:${fiat_version}",
+              "envFrom": [
+                {
+                  "configMapRef": {
+                    "name": "init-env"
+                  }
+                }
+              ],
+              "env": [
+                {
+                    "name": "SPINNAKER_HOME",
+                    "value": "/home/spinnaker"
+                },
+                {
+                  "name": "FIAT_PORT_MAPPING",
+                  "value": "-7003:7003"
+                },
+                {
+                  "name": "LOG_LEVEL",
+                  "value": "DEBUG"
+                },
+                {
+                  "name": "NAMESPACE",
+                  "valueFrom": {
+                    "fieldRef": {
+                      "fieldPath": "metadata.namespace"
+                    }
+                  }
+                }
+              ],
+              "command": [
+                "bash",
+                "-c"
+              ],
+              "args": [
+                "bash /opt/spinnaker/config/default/fetch.sh && cd /home/spinnaker/config && /opt/fiat/bin/fiat"
+              ],
+              "resources": {
+                "requests": {
+                  "cpu": "${FIAT_CPU}",
+                  "memory": "${FIAT_MEMORY}"
+                }
+              },
+              "ports": [
+                {
+                  "containerPort": 7003
+                }
+              ],
+              "livenessProbe": {
+                "httpGet": {
+                  "path": "/health",
+                  "port": 7003
+                },
+                "initialDelaySeconds": 60,
+                "periodSeconds": 3
+              },
+              "volumeMounts": [
+                {
+                  "name": "podinfo",
+                  "mountPath": "/etc/podinfo",
+                  "readOnly": false
+                },
+                {
+                  "name": "default-config",
+                  "mountPath": "/opt/spinnaker/config/default"
+                },
+                {
+                  "name": "custom-config",
+                  "mountPath": "/opt/spinnaker/config/custom"
+                }
+              ]
+            }
+          ],
+          "volumes": [
+            {
+              "name": "custom-config",
+              "configMap": {
+                "name": "custom-config"
+              }
+            },
+            {
+              "name": "default-config",
+              "configMap": {
+                "name": "default-config"
+              }
+            },
+            {
+              "name": "podinfo",
+              "downwardAPI": {
+                "items": [
+                  {
+                    "path": "labels",
+                    "fieldRef": {
+                      "fieldPath": "metadata.labels"
+                    }
+                  },
+                  {
+                    "path": "annotations",
+                    "fieldRef": {
+                      "fieldPath": "metadata.annotations"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+  

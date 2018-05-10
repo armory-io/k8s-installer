@@ -1,0 +1,20 @@
+{
+    "kind": "Service",
+    "apiVersion": "v1",
+    "metadata": {
+      "name": "fiat",
+      "namespace": "${NAMESPACE}"
+    },
+    "spec": {
+      "selector": {
+        "app": "fiat"
+      },
+      "ports": [
+        {
+          "protocol": "TCP",
+          "port": 7003,
+          "targetPort": 7003
+        }
+      ]
+    }
+}
