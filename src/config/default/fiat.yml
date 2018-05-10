@@ -16,3 +16,11 @@ spectator:
     enabled: ${services.stackdriver.enabled}
     projectName: ${services.stackdriver.projectName}
     credentialsPath: ${services.stackdriver.credentialsPath}
+
+hystrix:
+ command:
+   default.execution.isolation.thread.timeoutInMilliseconds: 20000
+
+logging:
+  level:
+    com.netflix.spinnaker.fiat: DEBUG
