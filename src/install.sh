@@ -181,8 +181,37 @@ function get_var() {
 }
 
 function prompt_user() {
+  cat <<EOF
+  *****************************************************************************
+  * A kubeconfig file is needed to install The Armory Platform inside a       *
+  * kubernetes cluster within a namespace. The same kubeconfig file can also  *
+  * be added to the cluster as a secret. Alternatively, we can create a       *
+  * service account in the cluster to allow The Armory Platform to redeploy   *
+  * itself.                                                                   *
+  *                                                                           *
+  * Note: If you choose to add a kubeconfig to the cluster it must only have  *
+  * one context. Specifically, context for the cluster where we are installing*
+  *****************************************************************************
+
+EOF
+  get_var "What Kubernetes namespace would you like to use? [default: armory]: " NAMESPACE "" "" "armory"
+  export KUBECTL_OPTIONS="--namespace=${NAMESPACE}"
+
+  get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
+  get_var "Would you like us to use a service account? If not the kubeconfig file will be added to the cluster as a secret. [y/n]: " CREATE_SERVICE_ACCOUNT validate_create_service_account "" "y"
+  if [[ "$CREATE_SERVICE_ACCOUNT" == "y" ]]; then
+    export USE_SERVICE_ACCOUNT=true
+  else
+    export USE_SERVICE_ACCOUNT=false
+    export KUBECONFIG_CONFIG_ENTRY="kubeconfigFile: /opt/spinnaker/credentials/custom/default-kubeconfig"
+    encode_kubeconfig
+  fi
+
   prompt_user_for_config_store
-  get_var "${CONFIG_STORE} bucket to use [if blank, a bucket will be generated for you]: " ARMORY_CONF_STORE_BUCKET "" "" ""
+
+  local bucket_name=$(awk '{ print tolower($0) }' <<< ${NAMESPACE}-platform-$(uuidgen) | cut -c 1-51)
+  get_var "${CONFIG_STORE} bucket to use [if blank, a bucket will be generated for you]: " ARMORY_CONF_STORE_BUCKET "" "" $bucket_name
+
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     export S3_ENABLED=true
     export GCS_ENABLED=false
@@ -235,32 +264,6 @@ EOF
     export GCS_ENABLED=true
     export S3_ENABLED=false
     export GCP_CREDS_MNT_PATH="/home/spinnaker/.gcp/gcp.json"
-    # get_var "Enter path to GCP service account creds: " GCP_CREDS validate_gcp_creds
-  fi
-  cat <<EOF
-  *****************************************************************************
-  * A kubeconfig file is needed to install The Armory Platform inside a       *
-  * kubernetes cluster within a namespace. The same kubeconfig file can also  *
-  * be added to the cluster as a secret. Alternatively, we can create a       *
-  * service account in the cluster to allow The Armory Platform to redeploy   *
-  * itself.                                                                   *
-  *                                                                           *
-  * Note: If you choose to add a kubeconfig to the cluster it must only have  *
-  * one context. Specifically, context for the cluster where we are installing*
-  *****************************************************************************
-
-EOF
-  get_var "What kubernetes namespace would you like to use? [default: armory]: " NAMESPACE "" "" "armory"
-  export KUBECTL_OPTIONS="--namespace=${NAMESPACE}"
-
-  get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
-  get_var "Would you like us to use a service account? If not the kubeconfig file will be added to the cluster as a secret. [y/n]: " CREATE_SERVICE_ACCOUNT validate_create_service_account "" "y"
-  if [[ "$CREATE_SERVICE_ACCOUNT" == "y" ]]; then
-    export USE_SERVICE_ACCOUNT=true
-  else
-    export USE_SERVICE_ACCOUNT=false
-    export KUBECONFIG_CONFIG_ENTRY="kubeconfigFile: /opt/spinnaker/credentials/custom/default-kubeconfig"
-    encode_kubeconfig
   fi
 }
 
@@ -323,6 +326,10 @@ function select_kubectl_context() {
 }
 
 function select_gcp_service_account_and_encode_creds() {
+  if [[ ! -z $B64CREDENTIALS ]]; then
+    return
+  fi
+
   export PROJECT_ID=$(gcloud config get-value core/project)
   export SERVICE_ACCOUNT_NAME="$(mktemp -u $NAMESPACE-svc-acct-XXXXXXXXXXXX | tr '[:upper:]' '[:lower:]' | cut -c 1-30)"
   mkdir -p ${BUILD_DIR}/credentials
@@ -382,6 +389,7 @@ EOF
         *) echo "Invalid option";;
     esac
   done
+  save_response B64CREDENTIALS
 }
 
 
@@ -393,8 +401,10 @@ function make_s3_bucket() {
   echo "Creating S3 bucket '${ARMORY_CONF_STORE_BUCKET}' to store configuration and persist data."
   aws --profile "${AWS_PROFILE}" --region us-east-1 s3 mb "s3://${ARMORY_CONF_STORE_BUCKET}"
 }
-
-function make_gcs_bucket() {
+function get_gcloud_project() {
+  if [[ ! -z  $GCLOUD_PROJECT ]]; then
+    return
+  fi
   echo "Found the following gcloud projects: "
   options=($(gcloud projects list | grep -v PROJECT_ID | awk '{print $1}'))
   PS3='Please select the project where you want to create the bucket: '
@@ -406,9 +416,16 @@ function make_gcs_bucket() {
       echo "Invalid Choice"
     fi
   done
+  export GCLOUD_PROJECT=$opt
+  save_response GCLOUD_PROJECT
+}
 
-  echo "Creating GCS bucket to store configuration and persist data."
-  gsutil mb -p "$opt" "gs://${ARMORY_CONF_STORE_BUCKET}/"
+function make_gcs_bucket() {
+  get_gcloud_project
+  gsutil ls -p "$GCLOUD_PROJECT" "gs://${ARMORY_CONF_STORE_BUCKET}/" || {
+        echo "Creating GCS bucket to store configuration and persist data."
+        gsutil mb -p "$GCLOUD_PROJECT" "gs://${ARMORY_CONF_STORE_BUCKET}/"
+  }
 }
 
 function create_k8s_namespace() {
@@ -1234,7 +1251,7 @@ EOF
 }
 
 function save_response() {
-  echo "${1}=${!1}" >> $CONTINUE_FILE
+  echo "export ${1}=${!1}" >> $CONTINUE_FILE
 }
 
 function continue_env() {
@@ -1254,19 +1271,13 @@ function continue_env() {
 }
 
 function make_bucket() {
-  if [[ "$ARMORY_CONF_STORE_BUCKET" == "" ]]; then
-    export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< ${NAMESPACE}-platform-$(uuidgen) | cut -c 1-51)
-    if [ "$CONFIG_STORE" == "S3" ]; then
-      make_s3_bucket
-    elif [ "$CONFIG_STORE" == "GCS" ]; then
-      make_gcs_bucket
-    elif [ "$CONFIG_STORE" == "MINIO" ]; then
-      make_minio_bucket
-    fi
-  else
-    echo "Using existing bucket: $ARMORY_CONF_STORE_BUCKET"
+  if [ "$CONFIG_STORE" == "S3" ]; then
+    make_s3_bucket
+  elif [ "$CONFIG_STORE" == "GCS" ]; then
+    make_gcs_bucket
+  elif [ "$CONFIG_STORE" == "MINIO" ]; then
+    make_minio_bucket
   fi
-  save_response ARMORY_CONF_STORE_BUCKET
 }
 
 function print_options_message() {
