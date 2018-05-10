@@ -392,15 +392,25 @@ EOF
   save_response B64CREDENTIALS
 }
 
-
 function make_minio_bucket() {
-  echo "Creating Minio bucket to store configuration and persist data."
-  AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} aws s3 mb --endpoint-url ${MINIO_ENDPOINT} "s3://${ARMORY_CONF_STORE_BUCKET}"
+  AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} aws s3 ls --endpoint-url ${MINIO_ENDPOINT} "s3://${ARMORY_CONF_STORE_BUCKET}" > /dev/null 2>&1
+  result=$?
+  if [[ $result -eq 0 ]]; then
+    echo "Bucket already exists"
+    return
+  else
+    echo "Creating Minio bucket to store configuration and persist data."
+    AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} aws s3 mb --endpoint-url ${MINIO_ENDPOINT} "s3://${ARMORY_CONF_STORE_BUCKET}"
+  fi
 }
+
 function make_s3_bucket() {
-  echo "Creating S3 bucket '${ARMORY_CONF_STORE_BUCKET}' to store configuration and persist data."
-  aws --profile "${AWS_PROFILE}" --region us-east-1 s3 mb "s3://${ARMORY_CONF_STORE_BUCKET}"
+  aws --profile "${AWS_PROFILE}" --region us-east-1 s3 ls "s3://${ARMORY_CONF_STORE_BUCKET}" > /dev/null 2>&1 || {
+    echo "Creating S3 bucket '${ARMORY_CONF_STORE_BUCKET}' to store configuration and persist data."
+    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 mb "s3://${ARMORY_CONF_STORE_BUCKET}"
+  }
 }
+
 function get_gcloud_project() {
   if [[ ! -z  $GCLOUD_PROJECT ]]; then
     return
