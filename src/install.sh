@@ -7,7 +7,6 @@ fi
 
 source version.manifest
 
-export NAMESPACE=${NAMESPACE:-armory}
 export BUILD_DIR=build/
 export CONTINUE_FILE=/tmp/armory.env
 export ARMORY_CONF_STORE_PREFIX=front50
@@ -15,7 +14,6 @@ export DOCKER_REGISTRY=${DOCKER_REGISTRY:-docker.io/armory}
 # Start from a fresh build dir
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
-export KUBECTL_OPTIONS="--namespace=${NAMESPACE}"
 
 function describe_installer() {
   if [ ! -z "${NOPROMPT}" ]; then
@@ -214,15 +212,19 @@ EOF
   cat <<EOF
   *****************************************************************************
   * A kubeconfig file is needed to install The Armory Platform inside a       *
-  * kubernetes cluster. The same kubeconfig file can also be added to the     *
-  * cluster as a secret. Alternatively, we can create a service account in    *
-  * the cluster to allow The Armory Platform to redeploy itself.              *
+  * kubernetes cluster within a namespace. The same kubeconfig file can also  *
+  * be added to the cluster as a secret. Alternatively, we can create a       *
+  * service account in the cluster to allow The Armory Platform to redeploy   *
+  * itself.                                                                   *
   *                                                                           *
   * Note: If you choose to add a kubeconfig to the cluster it must only have  *
   * one context. Specifically, context for the cluster where we are installing*
   *****************************************************************************
 
 EOF
+  get_var "What kubernetes namespace would you like to use? [default: armory]: " NAMESPACE "" "" "armory"
+  export KUBECTL_OPTIONS="--namespace=${NAMESPACE}"
+
   get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
   get_var "Would you like us to use a service account? If not the kubeconfig file will be added to the cluster as a secret. [y/n]: " CREATE_SERVICE_ACCOUNT validate_create_service_account "" "y"
   if [[ "$CREATE_SERVICE_ACCOUNT" == "y" ]]; then
@@ -232,7 +234,6 @@ EOF
     export KUBECONFIG_CONFIG_ENTRY="kubeconfigFile: /opt/spinnaker/credentials/custom/default-kubeconfig"
     encode_kubeconfig
   fi
-
 }
 
 function prompt_user_for_config_store() {
@@ -387,17 +388,14 @@ function create_k8s_namespace() {
     return
   fi
 
-  kubectl ${KUBECTL_OPTIONS} create namespace ${NAMESPACE} || { echo "If this is not the first time you have ran this installer, a previous run might have created a namespace. If so, please manually delete it by running 'kubectl delete namespace ${NAMESPACE}'. " 1>&2 && exit 1; }
+  kubectl ${KUBECTL_OPTIONS} get ns ${NAMESPACE} || kubectl ${KUBECTL_OPTIONS} create namespace ${NAMESPACE}
 }
 
 function create_k8s_nginx_load_balancer() {
-
-
   echo "Creating load balancer for the Web UI."
   envsubst < manifests/nginx-svc.json > ${BUILD_DIR}/nginx-svc.json
   # Wait for IP
   kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/nginx-svc.json
-
   if [[ "${LB_TYPE}" == "ClusterIP" ]]; then
     #we use loopback because we create a tunnel later
     export NGINX_IP="127.0.0.1"
@@ -436,7 +434,7 @@ EOF
 
 function remove_k8s_configmaps() {
   echo "Deleting config maps and secrets if they exists"
-  kubectl $KUBECTL_OPTIONS get cm -n ii -o=custom-columns=NAME:.metadata.name  \
+  kubectl $KUBECTL_OPTIONS get cm default-config custom-config init-env -o=custom-columns=NAME:.metadata.name  \
     | tail -n +2 \
     | xargs kubectl $KUBECTL_OPTIONS delete cm
 }
@@ -495,6 +493,10 @@ function upload_custom_credentials() {
 }
 
 function create_k8s_port_forward() {
+  if [ "$SERVICE_TYPE" != "ClusterIP" ]; then
+    return
+  fi
+
   nginx_pod=$(kubectl $KUBECTL_OPTIONS get pods -o=custom-columns=NAME:.metadata.name | grep nginx | tail -1)
   cat <<EOL
 
