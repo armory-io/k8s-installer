@@ -19,8 +19,7 @@ function describe_installer() {
     return
   fi
   echo "
-
-  This installer will launch the Armory Platform into your Kubernetes cluster.
+  This installer will launch v${armoryspinnaker_version} Armory Platform into your Kubernetes cluster.
   The following are required:
     - An existing Kubernetes cluster.
     - S3, GCS, or Minio
@@ -53,12 +52,12 @@ function error() {
 function fetch_latest_version_manifest() {
   mkdir -p build
 
+  echo
   if [[ ${FETCH_LATEST_EDGE_VERSION} == true ]]; then
     echo "Fetching edge version of src/version.manifest..."
     ../bin/fetch-latest-armory-version.sh
-  fi
-
-  if [[ ! -f "version.manifest" || ${FETCH_LATEST_STABLE_VERSION} == true ]]; then
+    echo "Pinned the latest edge version in src/version.manifest!"
+  elif [[ ! -f "version.manifest" || ${FETCH_LATEST_STABLE_VERSION} == true ]]; then
     echo "Fetching latest stable src/version.manifest..."
     curl -sS "https://s3-us-west-2.amazonaws.com/armory-web/install/release/armoryspinnaker-latest-version.manifest" > build/armoryspinnaker-latest-version.manifest
     source build/armoryspinnaker-latest-version.manifest
@@ -74,7 +73,7 @@ EOF
 
       curl -sS "${armoryspinnaker_version_manifest_url}" >> version.manifest
 
-      echo "Pinned latest manifest in src/version.manifest"
+      echo "Pinned the latest stable version in src/version.manifest!"
   else
     echo "Using pinned versions found in src/version.manifests!"
   fi
