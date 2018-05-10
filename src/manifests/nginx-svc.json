@@ -29,6 +29,6 @@
         "selector": {
             "app": "nginx"
         },
-        "type": "LoadBalancer"
+        "type": "${SERVICE_TYPE}"
     }
 }
