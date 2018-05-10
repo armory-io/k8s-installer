@@ -16,7 +16,8 @@ RUN apk add --update \
     musl-dev \
     openssl \
     openssl-dev \
-    curl
+    curl \
+    bash
 
 RUN pip install \
     gsutil \
@@ -33,3 +34,7 @@ RUN curl -L -o /usr/bin/kubectl https://storage.googleapis.com/kubernetes-releas
     kubectl version --client
 
 RUN rm /var/cache/apk/*
+
+COPY src/ /src/
+
+CMD ["/src/install.sh"]

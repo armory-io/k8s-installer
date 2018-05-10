@@ -5,19 +5,16 @@ if [ ! -z "${ARMORY_DEBUG}" ]; then
   set +e
 fi
 
+trap 'exit 0' INT
+
 export BUILD_DIR=build/
 export CONTINUE_FILE=/tmp/armory.env
 export ARMORY_CONF_STORE_PREFIX=front50
-export DOCKER_REGISTRY=${DOCKER_REGISTRY:-docker.io/armory}
 # Start from a fresh build dir
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
-export DOCKER_REGISTRY=${DOCKER_REGISTRY:-docker.io/armory}
-export DOCKER_IMAGE="${DOCKER_REGISTRY}/k8s-installer"
-
 function describe_installer() {
-  runcmd aws
   if [ ! -z "${NOPROMPT}" ]; then
     return
   fi
@@ -51,16 +48,6 @@ Press 'Enter' key to continue. Ctrl+C to quit.
 function error() {
   >&2 echo $1
   exit 1
-}
-
-function runcmd() {
-  local cmd=$1
-  local docker_opts=$2
-  docker run \
-    --rm -i -t \
-    --env-file /tmp/armory.env \
-    -v $(pwd)/src:/src \
-    $docker_opts $DOCKER_IMAGE $cmd
 }
 
 function fetch_latest_version_manifest() {
@@ -105,19 +92,8 @@ function check_kubectl_version() {
 }
 
 function check_prereqs() {
-  if [[ "$CONFIG_STORE" == "S3" ]]; then
-    type aws >/dev/null 2>&1 || { echo "I require aws but it's not installed. Ref: http://docs.aws.amazon.com/cli/latest/userguide/installing.html" 1>&2 && exit 1; }
-  fi
   type kubectl >/dev/null 2>&1 || { echo "I require 'kubectl' but it's not installed. Ref: https://kubernetes.io/docs/tasks/tools/install-kubectl/" 1>&2 && exit 1; }
   check_kubectl_version
-  if [[ "$CONFIG_STORE" == "GCS" ]]; then
-    type gsutil >/dev/null 2>&1 || { echo "I require 'gsutil' but it's not installed. Ref: https://cloud.google.com/storage/docs/gsutil_install#sdk-install" 1>&2 && exit 1; }
-  fi
-  type envsubst >/dev/null 2>&1 || { echo -e "I require 'envsubst' but it's not installed. Please install the 'gettext' package." 1>&2;
-                                     echo -e "On Mac OS X, you can run:\n   brew install gettext && brew link --force gettext" 1>&2 && exit 1; }
-
-  type jq >/dev/null 2>&1 || { echo -e "I require 'jq' but it's not installed. Please install the 'jq' package: https://stedolan.github.io/jq/download/" 1>&2;
-                                     echo -e "On Mac OS X, you can run:\n   brew install jq && brew link --force jq" 1>&2 && exit 1; }
 }
 
 function validate_profile() {
@@ -435,7 +411,7 @@ function create_k8s_namespace() {
 
 function create_k8s_nginx_load_balancer() {
   echo "Creating load balancer for the Web UI."
-  runcmd envsubst < manifests/nginx-svc.json > ${BUILD_DIR}/nginx-svc.json
+  envsubst < manifests/nginx-svc.json > ${BUILD_DIR}/nginx-svc.json
   # Wait for IP
   kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/nginx-svc.json
   if [[ "${LB_TYPE}" == "ClusterIP" ]]; then
@@ -466,7 +442,7 @@ EOF
   export custom_credentials_secret_name="custom-credentials"
   export nginx_certs_secret_name="nginx-certs"
   for filename in manifests/*.json; do
-    runcmd envsubst < "$filename" > "$BUILD_DIR/$(basename $filename)"
+    envsubst < "$filename" > "$BUILD_DIR/$(basename $filename)"
   done
   for filename in build/*.json; do
     echo "Applying $filename..."
@@ -489,7 +465,7 @@ function create_k8s_custom_config() {
   mkdir -p ${BUILD_DIR}/config/custom/
   cp "config/custom/nginx.conf" "${BUILD_DIR}/config/custom/nginx.conf"
   for filename in config/custom/*.yml; do
-    runcmd envsubst < $filename > ${BUILD_DIR}/config/custom/$(basename $filename)
+    envsubst < $filename > ${BUILD_DIR}/config/custom/$(basename $filename)
   done
   # dump to a file to upload to S3. Used when we deploy, we use dry-run to accomplish this
   kubectl ${KUBECTL_OPTIONS} create configmap custom-config \
