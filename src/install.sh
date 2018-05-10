@@ -1239,10 +1239,10 @@ cat <<EOF
 
 Armory Platform installer for Kubernetes.
 
-usage: [--stable][--edge][--help]
+usage: [--stable, -s][--edge, -e][--help, -h]
 
   -s, --stable   fetch the latest stable build of Armory.
-  -s, --edge     fetch the latest edge build of Armory.
+  -e, --edge     fetch the latest edge build of Armory.
   -h, --help     show this message
 
 EOF
