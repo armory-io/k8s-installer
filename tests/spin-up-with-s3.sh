@@ -27,6 +27,7 @@ export CONFIG_STORE=S3
 export KUBECONFIG="${HOME}/.kube/config"
 export GOOGLE_APPLICATION_CREDENTIALS="${HOME}/.kube/gcp_key.json"
 export KUBE_CONTEXT=gke_cloud-armory_us-central1-c_armory-kube
+export SERVICE_TYPE=LoadBalancer
 if [[ -z "${JENKINS_HOME}" ]]; then
   # not on jenkins
   export LB_TYPE=external
