@@ -9,6 +9,7 @@ source version.manifest
 
 export NAMESPACE=${NAMESPACE:-armory}
 export BUILD_DIR=build/
+export CONTINUE_FILE=/tmp/armory.env
 export ARMORY_CONF_STORE_PREFIX=front50
 export DOCKER_REGISTRY=${DOCKER_REGISTRY:-docker.io/armory}
 # Start from a fresh build dir
@@ -107,20 +108,6 @@ function validate_kubeconfig() {
   return 0
 }
 
-function validate_config_store() {
-  if [ "$1" == "GCS" ]; then
-    echo "GCS selected as config store."
-  elif [ "$1" == "S3" ]; then
-    echo "S3 selected as config store."
-  elif [ "$1" == "MINIO" ]; then
-    echo "MINIO selected as config store."
-  else
-    echo "Config store has to be one of GCS or S3" 1>&2
-    return 1
-  fi
-  return 0
-}
-
 function validate_gcp_creds() {
   # might need more robust validation of creds
   if [ ! -f "$1" ]; then
@@ -155,12 +142,15 @@ function get_var() {
       else
         echo "Using default ${default_val}"
         export ${var_name}=${default_val}
+        save_response ${var_name}
       fi
     elif [ ! -z "$val_func" ] && ! $val_func ${value}; then
       get_var "$1" $2 $3
     else
       export ${var_name}=${value}
+      save_response ${var_name}
     fi
+    #as vars are set they are saved
   fi
 }
 
@@ -234,7 +224,7 @@ EOF
 
 EOF
   get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
-  get_var "Would you like us to use a service account? If not the kubeconfig file will be added to the cluster as a secret. [Y/n]: " CREATE_SERVICE_ACCOUNT validate_create_service_account "" "y"
+  get_var "Would you like us to use a service account? If not the kubeconfig file will be added to the cluster as a secret. [y/n]: " CREATE_SERVICE_ACCOUNT validate_create_service_account "" "y"
   if [[ "$CREATE_SERVICE_ACCOUNT" == "y" ]]; then
     export USE_SERVICE_ACCOUNT=true
   else
@@ -242,6 +232,7 @@ EOF
     export KUBECONFIG_CONFIG_ENTRY="kubeconfigFile: /opt/spinnaker/credentials/custom/default-kubeconfig"
     encode_kubeconfig
   fi
+
 }
 
 function prompt_user_for_config_store() {
@@ -273,6 +264,7 @@ EOF
         *) echo "Invalid option";;
     esac
   done
+  save_response CONFIG_STORE
 }
 
 
@@ -294,6 +286,8 @@ function select_kubectl_context() {
     select opt in "${options[@]}"
     do
       kubectl config use-context "$opt"
+      export KUBE_CONTEXT=$opt
+      save_response KUBE_CONTEXT
       break
     done
   fi
@@ -397,25 +391,28 @@ function create_k8s_namespace() {
 }
 
 function create_k8s_nginx_load_balancer() {
-  if [[ "${LB_TYPE}" == "ClusterIP" ]]; then
-    #we use loopback because we create a tunnel later
-    export NGINX_IP="127.0.0.1"
-    return
-  fi
+
 
   echo "Creating load balancer for the Web UI."
   envsubst < manifests/nginx-svc.json > ${BUILD_DIR}/nginx-svc.json
   # Wait for IP
   kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/nginx-svc.json
-  local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep nginx | awk '{ print $4 }')
-  echo -n "Waiting for load balancer to receive an IP..."
-  while [ "$IP" == "<pending>" ] || [ -z "$IP" ]; do
-    sleep 5
+
+  if [[ "${LB_TYPE}" == "ClusterIP" ]]; then
+    #we use loopback because we create a tunnel later
+    export NGINX_IP="127.0.0.1"
+
+  else
     local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep nginx | awk '{ print $4 }')
-    echo -n "."
-  done
-  echo "Found IP $IP"
-  export NGINX_IP=$IP
+    echo -n "Waiting for load balancer to receive an IP..."
+    while [ "$IP" == "<pending>" ] || [ -z "$IP" ]; do
+      sleep 5
+      local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep nginx | awk '{ print $4 }')
+      echo -n "."
+    done
+    echo "Found IP $IP"
+    export NGINX_IP=$IP
+  fi
 }
 
 function create_k8s_svcs_and_rs() {
@@ -491,12 +488,34 @@ function upload_custom_credentials() {
   fi
 }
 
+function create_k8s_port_forward() {
+
+  nginx_pod=$(kubectl $KUBECTL_OPTIONS get pods -o=custom-columns=NAME:.metadata.name | grep nginx | tail -1)
+
+  cat <<EOL
+
+********************************************************************************
+
+ ClusterIP service type requires port forwarding using 'kubectl port-forward'
+ Please run the following command in another shell:
+
+
+ sudo kubectl $KUBECTL_OPTIONS port-forward $nginx_pod 80:80
+
+********************************************************************************
+
+EOL
+
+  get_var "Press enter to continue after you've executed the command in another shell: " SKIP_PORT_FORWARD
+}
+
 function create_k8s_resources() {
   create_k8s_namespace
   create_k8s_nginx_load_balancer
   create_k8s_default_config
   create_k8s_custom_config
   create_k8s_svcs_and_rs
+  create_k8s_port_forward
 }
 
 function set_aws_vars() {
@@ -1146,7 +1165,7 @@ function set_lb_type() {
   * When the Armory Platform runs it exposes one loadbalancer to users.       *
   * Depending on how your network is configured, you will want these load     *
   * balancers to either be 'internal', 'external' or a 'clusterIP'.  For      *
-  * clusterIP deployments it uses `kubectl` to create a tunnel to the         *
+  * clusterIP deployments it uses 'kubectl' to create a tunnel to the         *
   * cluster. After installation, it is also recommended that you configure    *
   * a firewall rule or security group to only allow access to whitelisted IPs.*
   *****************************************************************************
@@ -1168,10 +1187,29 @@ EOF
   done
 
   if [[ "${LB_TYPE}" == "ClusterIP" ]]; then
-    export SERVICE_TYPE="LoadBlancer"
+    export SERVICE_TYPE="LoadBalancer"
   else
     export SERVICE_TYPE="ClusterIP"
   fi
+
+  save_response SERVICE_TYPE
+  save_response LB_TYPE
+}
+
+function save_response() {
+  echo "export ${1}=${!1}" >> $CONTINUE_FILE
+}
+
+function continue_env() {
+    if [[ -f $CONTINUE_FILE ]]; then
+        get_var "Found continue file at $CONTINUE_FILE from previous run, would you like to use it? (y/n): " USE_CONTINUE_FILE
+        if [[ "$USE_CONTINUE_FILE" == "y" ]]; then
+          source $CONTINUE_FILE
+        else
+          echo "removing continue file at $CONTINUE_FILE"
+          rm $CONTINUE_FILE
+        fi
+    fi
 
 }
 
@@ -1188,10 +1226,12 @@ function make_bucket() {
   else
     echo "Using existing bucket: $ARMORY_CONF_STORE_BUCKET"
   fi
+  save_response ARMORY_CONF_STORE_BUCKET $ARMORY_CONF_STORE_BUCKET
 }
 
 function main() {
   describe_installer
+  continue_env
   prompt_user
   check_prereqs
   select_kubectl_context
