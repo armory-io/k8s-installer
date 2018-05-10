@@ -4,4 +4,13 @@ cd "$(dirname "$0")"
 PUBLIC_ARMORY_JENKINS_JOB_VERSION=${PUBLIC_ARMORY_JENKINS_JOB_VERSION:-"lastSuccessfulBuild"}
 
 echo "Querying ArmorySpinnaker's Jenkins Job for '${PUBLIC_ARMORY_JENKINS_JOB_VERSION}'"
-arm jenkins "/job/armory/job/armoryspinnaker/job/master/${PUBLIC_ARMORY_JENKINS_JOB_VERSION}/artifact/src/spinnaker/version.manifest" > ../src/version.manifest
+
+cat <<EOF > ../src/version.manifest
+## INFO: this file has been created as an untracked file so that the installer can run idempotently with pinned versions below.
+## Committing this file means you'll be pinning the installer with the versions listed below.
+##
+## To fetch the latest stable/edge versions of Armory, see:
+##   ./src/install.sh --help
+
+EOF
+arm jenkins "/job/armory/job/armoryspinnaker/job/master/${PUBLIC_ARMORY_JENKINS_JOB_VERSION}/artifact/src/spinnaker/version.manifest" >> ../src/version.manifest
