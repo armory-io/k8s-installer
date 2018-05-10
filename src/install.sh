@@ -1267,7 +1267,7 @@ function make_bucket() {
   else
     echo "Using existing bucket: $ARMORY_CONF_STORE_BUCKET"
   fi
-  save_response ARMORY_CONF_STORE_BUCKET $ARMORY_CONF_STORE_BUCKET
+  save_response ARMORY_CONF_STORE_BUCKET
 }
 
 function print_options_message() {
