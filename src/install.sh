@@ -401,7 +401,6 @@ function create_k8s_nginx_load_balancer() {
   if [[ "${LB_TYPE}" == "ClusterIP" ]]; then
     #we use loopback because we create a tunnel later
     export NGINX_IP="127.0.0.1"
-
   else
     local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep nginx | awk '{ print $4 }')
     echo -n "Waiting for load balancer to receive an IP..."
@@ -435,8 +434,15 @@ EOF
   done
 }
 
+function remove_k8s_configmaps() {
+  echo "Deleting config maps and secrets if they exists"
+  kubectl $KUBECTL_OPTIONS get cm -n ii -o=custom-columns=NAME:.metadata.name  \
+    | tail -n +2 \
+    | xargs kubectl $KUBECTL_OPTIONS delete cm
+}
+
 function create_k8s_default_config() {
-  kubectl ${KUBECTL_OPTIONS} create configmap default-config --from-file=$(pwd)/config/default
+  kubectl ${KUBECTL_OPTIONS} create cm default-config --from-file=$(pwd)/config/default
 }
 
 function create_k8s_custom_config() {
@@ -489,9 +495,7 @@ function upload_custom_credentials() {
 }
 
 function create_k8s_port_forward() {
-
   nginx_pod=$(kubectl $KUBECTL_OPTIONS get pods -o=custom-columns=NAME:.metadata.name | grep nginx | tail -1)
-
   cat <<EOL
 
 ********************************************************************************
@@ -505,13 +509,14 @@ function create_k8s_port_forward() {
 ********************************************************************************
 
 EOL
-
   get_var "Press enter to continue after you've executed the command in another shell: " SKIP_PORT_FORWARD
 }
 
 function create_k8s_resources() {
   create_k8s_namespace
   create_k8s_nginx_load_balancer
+  #remove the configmaps so this script is more idempotent
+  remove_k8s_configmaps
   create_k8s_default_config
   create_k8s_custom_config
   create_k8s_svcs_and_rs
@@ -931,6 +936,8 @@ EOF
     curl --max-time 10 -s -o /dev/null http://${NGINX_IP}/api/applications
     exit_code=$?
     if [[ "$exit_code" == "0" ]]; then
+      #we want to delete any existing pipeline if we're re-running the installer
+      curl --max-time 10 -s -o /dev/null -X DELETE "http://${NGINX_IP}/api/pipelines/armory/Deploy"
       #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
       http_code=$(curl --max-time 10 -s -o /dev/null -w %{http_code} -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${NGINX_IP}/api/pipelines")
       exit_code=$?
@@ -1187,9 +1194,9 @@ EOF
   done
 
   if [[ "${LB_TYPE}" == "ClusterIP" ]]; then
-    export SERVICE_TYPE="LoadBalancer"
+    export SERVICE_TYPE=$LB_TYPE
   else
-    export SERVICE_TYPE="ClusterIP"
+    export SERVICE_TYPE="LoadBalancer"
   fi
 
   save_response SERVICE_TYPE
@@ -1201,6 +1208,10 @@ function save_response() {
 }
 
 function continue_env() {
+    if [[ ! -z  $NOPROMPT ]]; then
+      return
+    fi
+
     if [[ -f $CONTINUE_FILE ]]; then
         get_var "Found continue file at $CONTINUE_FILE from previous run, would you like to use it? (y/n): " USE_CONTINUE_FILE
         if [[ "$USE_CONTINUE_FILE" == "y" ]]; then
@@ -1210,7 +1221,6 @@ function continue_env() {
           rm $CONTINUE_FILE
         fi
     fi
-
 }
 
 function make_bucket() {
