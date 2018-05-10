@@ -1234,7 +1234,7 @@ EOF
 }
 
 function save_response() {
-  echo "export ${1}=${!1}" >> $CONTINUE_FILE
+  echo "${1}=${!1}" >> $CONTINUE_FILE
 }
 
 function continue_env() {
