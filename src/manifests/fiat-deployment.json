@@ -96,7 +96,7 @@
               ],
               "livenessProbe": {
                 "httpGet": {
-                  "path": "/",
+                  "path": "/health",
                   "port": 7003
                 },
                 "initialDelaySeconds": 60,
