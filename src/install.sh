@@ -960,7 +960,6 @@ EOF
     curl --max-time 10 -s -o /dev/null http://${NGINX_IP}/api/applications
     exit_code=$?
     if [[ "$exit_code" == "0" ]]; then
-      #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
       http_code=$(curl --max-time 10 -s -o /dev/null -w %{http_code} -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${NGINX_IP}/api/pipelines")
       exit_code=$?
       if [[ "$exit_code" == "0" && "$http_code" -gt "199" && "$http_code" -lt "400" ]]; then
