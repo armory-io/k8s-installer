@@ -456,8 +456,13 @@ EOF
     envsubst < "$filename" > "$BUILD_DIR/$(basename $filename)"
   done
   for filename in build/*.json; do
-    echo "Applying $filename..."
-    kubectl ${KUBECTL_OPTIONS} apply -f "$filename"
+    if [[ "$filename" =~ "fiat-deployment.json" ]]; then
+      echo "Skipping $filename... needs configuration before deployment"
+    else
+      echo "Applying $filename..."
+      kubectl ${KUBECTL_OPTIONS} apply -f "$filename"
+    fi
+
   done
 }
 
@@ -871,7 +876,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy dinghy",
       "refId": "9",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -918,9 +923,29 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
           "cluster": "kayenta"
       },
       "name": "Deploy kayenta",
-      "refId": "14",
-      "requisiteStageRefIds": ["1", "12"],
+      "refId": "15",
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
+      "type": "deployManifest"
+    },
+    {
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-fiat-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "fiat"
+      },
+      "name": "Deploy fiat",
+      "refId": "16",
+      "requisiteStageRefIds": ["2", "1", "12"],
+      "source": "text",
+      "stageEnabled": {
+        "expression": "false",
+        "type": "expression"
+      },
       "type": "deployManifest"
     }
   ]
@@ -959,6 +984,7 @@ function set_profile_small() {
   export DECK_CPU="100m"
   export DINGHY_CPU="100m"
   export ECHO_CPU="100m"
+  export FIAT_CPU="100m"
   export FRONT50_CPU="100m"
   export GATE_CPU="100m"
   export IGOR_CPU="100m"
@@ -972,6 +998,7 @@ function set_profile_small() {
   export DECK_MEMORY="128Mi"
   export DINGHY_MEMORY="128Mi"
   export ECHO_MEMORY="128Mi"
+  export FIAT_MEMORY="128Mi"
   export FRONT50_MEMORY="128Mi"
   export GATE_MEMORY="128Mi"
   export IGOR_MEMORY="128Mi"
@@ -988,6 +1015,7 @@ function set_profile_medium() {
   export DECK_CPU="500m"
   export DINGHY_CPU="500m"
   export ECHO_CPU="500m"
+  export FIAT_CPU="500m"
   export FRONT50_CPU="500m"
   export GATE_CPU="500m"
   export IGOR_CPU="500m"
@@ -1001,6 +1029,7 @@ function set_profile_medium() {
   export DECK_MEMORY="512Mi"
   export DINGHY_MEMORY="512Mi"
   export ECHO_MEMORY="512Mi"
+  export FIAT_MEMORY="512Mi"
   export FRONT50_MEMORY="1Gi"
   export GATE_MEMORY="1Gi"
   export IGOR_MEMORY="1Gi"
@@ -1017,6 +1046,7 @@ function set_profile_large() {
   export DECK_CPU="1000m"
   export DINGHY_CPU="500m"
   export ECHO_CPU="1000m"
+  export FIAT_CPU="500m"
   export FRONT50_CPU="1000m"
   export GATE_CPU="1000m"
   export IGOR_CPU="1000m"
@@ -1030,6 +1060,7 @@ function set_profile_large() {
   export DECK_MEMORY="512Mi"
   export DINGHY_MEMORY="512Mi"
   export ECHO_MEMORY="1Gi"
+  export FIAT_MEMORY="512Mi"
   export FRONT50_MEMORY="2Gi"
   export GATE_MEMORY="2Gi"
   export IGOR_MEMORY="2Gi"
@@ -1042,7 +1073,7 @@ function set_profile_large() {
 }
 
 function set_custom_profile() {
-  cpu_vars=("CLOUDDRIVER_CPU" "DECK_CPU" "DINGHY_CPU" "ECHO_CPU" "FRONT50_CPU" "GATE_CPU" "IGOR_CPU" "KAYENTA_CPU" "LIGHTHOUSE_CPU" "ORCA_CPU" "REDIS_CPU" "ROSCO_CPU")
+  cpu_vars=("CLOUDDRIVER_CPU" "DECK_CPU" "DINGHY_CPU" "ECHO_CPU" "FIAT_CPU" "FRONT50_CPU" "GATE_CPU" "IGOR_CPU" "KAYENTA_CPU" "LIGHTHOUSE_CPU" "ORCA_CPU" "REDIS_CPU" "ROSCO_CPU")
   for v in "${cpu_vars[@]}"; do
     echo "What allocation would you like for $v?"
     options=("500m" "1000m" "1500m" "2000m" "2500m")
@@ -1059,7 +1090,7 @@ function set_custom_profile() {
       esac
     done
   done
-  mem_vars=("CLOUDDRIVER_MEMORY" "DECK_MEMORY" "DINGHY_MEMORY" "ECHO_MEMORY" "FRONT50_MEMORY" "GATE_MEMORY" "IGOR_MEMORY" "KAYENTA_MEMORY" "LIGHTHOUSE_MEMORY" "ORCA_MEMORY" "REDIS_MEMORY" "ROSCO_MEMORY")
+  mem_vars=("CLOUDDRIVER_MEMORY" "DECK_MEMORY" "DINGHY_MEMORY" "ECHO_MEMORY" "FIAT_MEMORY" "FRONT50_MEMORY" "GATE_MEMORY" "IGOR_MEMORY" "KAYENTA_MEMORY" "LIGHTHOUSE_MEMORY" "ORCA_MEMORY" "REDIS_MEMORY" "ROSCO_MEMORY")
   for v in "${mem_vars[@]}"; do
     echo "What allocation would you like for $v?"
     options=("512Mi" "1Gi" "2Gi" "4Gi" "8Gi" "16Gi")
@@ -1105,9 +1136,9 @@ EOF
   echo "       Total MEMORY: 2048Mi (~2 GB)"
   echo ""
   echo "  'Medium'"
-  echo "       CPU: 500m for deck, dinghy, echo, front50, gate, igor, kayenta, lighthouse, redis, & rosco"
+  echo "       CPU: 500m for deck, dinghy, echo, fiat, front50, gate, igor, kayenta, lighthouse, redis, & rosco"
   echo "            1000m for clouddriver, & orca"
-  echo "       MEMORY: 512Mi for deck, dinghy, echo, kayenta, lighthouse, & rosco"
+  echo "       MEMORY: 512Mi for deck, dinghy, fiat, echo, kayenta, lighthouse, & rosco"
   echo "               1Gi for front50, gate, igor, & rosco"
   echo "               2Gi for clouddriver, orca, & redis"
   echo "       Total CPU: 10000m (10 vCPUs)"
@@ -1115,9 +1146,9 @@ EOF
   echo ""
   echo "  'Large'"
   echo "       CPU: 500m for kayenta & lighthouse"
-  echo "            1000m for deck, dinghy, echo, front50, gate, igor, redis, & rosco"
+  echo "            1000m for deck, dinghy, echo, fiat, front50, gate, igor, redis, & rosco"
   echo "            2000m for clouddriver, & orca"
-  echo "       MEMORY: 521Mi for deck, dinghy, kayenta, & lighthouse"
+  echo "       MEMORY: 521Mi for deck, dinghy, fiat, kayenta, & lighthouse"
   echo "               1Gi for echo, & rosco"
   echo "               2Gi for front50, gate & igor"
   echo "               4Gi for orca"
