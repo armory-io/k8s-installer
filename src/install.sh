@@ -5,8 +5,6 @@ if [ ! -z "${ARMORY_DEBUG}" ]; then
   set +e
 fi
 
-source version.manifest
-
 export BUILD_DIR=build/
 export CONTINUE_FILE=/tmp/armory.env
 export ARMORY_CONF_STORE_PREFIX=front50
