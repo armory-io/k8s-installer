@@ -14,9 +14,10 @@ rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
 function describe_installer() {
-  if [ ! -z "${NOPROMPT}" ]; then
+  if [[ ! -z "${NOPROMPT}" || ${USE_CONTINUE_FILE} == "y" ]]; then
     return
   fi
+
   echo "
 
   This installer will launch the Armory Platform into your Kubernetes cluster.
@@ -168,14 +169,12 @@ function get_var() {
         get_var "$1" $2 $3
       else
         echo "Using default ${default_val}"
-        export ${var_name}=${default_val}
-        save_response ${var_name}
+        save_response ${var_name} ${default_val}
       fi
     elif [ ! -z "$val_func" ] && ! $val_func ${value}; then
       get_var "$1" $2 $3
     else
-      export ${var_name}=${value}
-      save_response ${var_name}
+      save_response ${var_name} ${value}
     fi
   fi
 }
@@ -290,13 +289,12 @@ EOF
     case $opt in
         "S3"|"GCS"|"MINIO")
             echo "Using $opt"
-            export CONFIG_STORE="$opt"
+            save_response CONFIG_STORE "$opt"
             break
             ;;
         *) echo "Invalid option";;
     esac
   done
-  save_response CONFIG_STORE
 }
 
 
@@ -318,8 +316,7 @@ function select_kubectl_context() {
     select opt in "${options[@]}"
     do
       kubectl config use-context "$opt"
-      export KUBE_CONTEXT=$opt
-      save_response KUBE_CONTEXT
+      save_response KUBE_CONTEXT $opt
       break
     done
   fi
@@ -367,7 +364,7 @@ EOF
                 else
                   gcloud iam service-accounts keys create \
                     --iam-account "$acct" ${GCP_CREDS}
-                  export B64CREDENTIALS=$(base64 -w 0 -i "$GCP_CREDS" 2>/dev/null || base64 -i "$GCP_CREDS")
+                  save_response B64CREDENTIALS $(base64 -w 0 -i "$GCP_CREDS" 2>/dev/null || base64 -i "$GCP_CREDS")
                   break
                 fi
               done
@@ -383,13 +380,12 @@ EOF
             gcloud iam service-accounts keys create \
               --iam-account "${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
               ${GCP_CREDS} > /dev/null 2>&1
-            export B64CREDENTIALS=$(base64 -w 0 -i "$GCP_CREDS" 2>/dev/null || base64 -i "$GCP_CREDS")
+            save_response B64CREDENTIALS $(base64 -w 0 -i "$GCP_CREDS" 2>/dev/null || base64 -i "$GCP_CREDS")
             break
             ;;
         *) echo "Invalid option";;
     esac
   done
-  save_response B64CREDENTIALS
 }
 
 function make_minio_bucket() {
@@ -1014,93 +1010,6 @@ EOF
   set -e
 }
 
-function set_profile_small() {
-  export CLOUDDRIVER_CPU="100m"
-  export DECK_CPU="100m"
-  export DINGHY_CPU="100m"
-  export ECHO_CPU="100m"
-  export FRONT50_CPU="100m"
-  export GATE_CPU="100m"
-  export IGOR_CPU="100m"
-  export KAYENTA_CPU="100m"
-  export LIGHTHOUSE_CPU="100m"
-  export NGINX_CPU="100m"
-  export ORCA_CPU="100m"
-  export REDIS_CPU="100m"
-  export ROSCO_CPU="100m"
-  export CLOUDDRIVER_MEMORY="128Mi"
-  export DECK_MEMORY="128Mi"
-  export DINGHY_MEMORY="128Mi"
-  export ECHO_MEMORY="128Mi"
-  export FRONT50_MEMORY="128Mi"
-  export GATE_MEMORY="128Mi"
-  export IGOR_MEMORY="128Mi"
-  export KAYENTA_MEMORY="128Mi"
-  export LIGHTHOUSE_MEMORY="128Mi"
-  export NGINX_MEMORY="64Mi"
-  export ORCA_MEMORY="128Mi"
-  export REDIS_MEMORY="128Mi"
-  export ROSCO_MEMORY="128Mi"
-}
-
-function set_profile_medium() {
-  export CLOUDDRIVER_CPU="1000m"
-  export DECK_CPU="500m"
-  export DINGHY_CPU="500m"
-  export ECHO_CPU="500m"
-  export FRONT50_CPU="500m"
-  export GATE_CPU="500m"
-  export IGOR_CPU="500m"
-  export KAYENTA_CPU="500m"
-  export LIGHTHOUSE_CPU="500m"
-  export NGINX_CPU="200m"
-  export ORCA_CPU="1000m"
-  export REDIS_CPU="500m"
-  export ROSCO_CPU="500m"
-  export CLOUDDRIVER_MEMORY="2Gi"
-  export DECK_MEMORY="512Mi"
-  export DINGHY_MEMORY="512Mi"
-  export ECHO_MEMORY="512Mi"
-  export FRONT50_MEMORY="1Gi"
-  export GATE_MEMORY="1Gi"
-  export IGOR_MEMORY="1Gi"
-  export KAYENTA_MEMORY="512Mi"
-  export LIGHTHOUSE_MEMORY="512Mi"
-  export NGINX_MEMORY="128Mi"
-  export ORCA_MEMORY="2Gi"
-  export REDIS_MEMORY="2Gi"
-  export ROSCO_MEMORY="1Gi"
-}
-
-function set_profile_large() {
-  export CLOUDDRIVER_CPU="2000m"
-  export DECK_CPU="1000m"
-  export DINGHY_CPU="500m"
-  export ECHO_CPU="1000m"
-  export FRONT50_CPU="1000m"
-  export GATE_CPU="1000m"
-  export IGOR_CPU="1000m"
-  export KAYENTA_CPU="500m"
-  export LIGHTHOUSE_CPU="500m"
-  export NGINX_CPU="500m"
-  export ORCA_CPU="2000m"
-  export REDIS_CPU="1000m"
-  export ROSCO_CPU="1000m"
-  export CLOUDDRIVER_MEMORY="8Gi"
-  export DECK_MEMORY="512Mi"
-  export DINGHY_MEMORY="512Mi"
-  export ECHO_MEMORY="1Gi"
-  export FRONT50_MEMORY="2Gi"
-  export GATE_MEMORY="2Gi"
-  export IGOR_MEMORY="2Gi"
-  export KAYENTA_MEMORY="512Mi"
-  export LIGHTHOUSE_MEMORY="512Mi"
-  export NGINX_MEMORY="256Mi"
-  export ORCA_MEMORY="4Gi"
-  export REDIS_MEMORY="16Gi"
-  export ROSCO_MEMORY="1Gi"
-}
-
 function set_custom_profile() {
   cpu_vars=("CLOUDDRIVER_CPU" "DECK_CPU" "DINGHY_CPU" "ECHO_CPU" "FRONT50_CPU" "GATE_CPU" "IGOR_CPU" "KAYENTA_CPU" "LIGHTHOUSE_CPU" "ORCA_CPU" "REDIS_CPU" "ROSCO_CPU")
   for v in "${cpu_vars[@]}"; do
@@ -1140,9 +1049,14 @@ function set_custom_profile() {
 
 
 function set_resources() {
-  if [ ! -z ${NOPROMPT} ]; then
-    set_profile_small
+  if [ ! -z $NOPROMPT ]; then
+    source sizing_profiles/small.env
     return
+  fi
+
+  if [ ! -z $SIZE_PROFILE ]; then
+    source sizing_profiles/${SIZE_PROFILE}.env
+    return 
   fi
 
   cat <<EOF
@@ -1194,19 +1108,10 @@ EOF
   select opt in "${options[@]}"
   do
     case $opt in
-        "Small")
-            echo "Using profile: 'Small'"
-            set_profile_small
-            break
-            ;;
-        "Medium")
-            echo "Using profile: 'Medium'"
-            set_profile_medium
-            break
-            ;;
-        "Large")
-            echo "Using profile: 'Large'"
-            set_profile_large
+        "Small"|"Medium"|"Large")
+            save_response SIZE_PROFILE $opt
+            echo "Using profile: '${SIZE_PROFILE}'"
+            source sizing_profiles/${SIZE_PROFILE}.env
             break
             ;;
         "Custom")
@@ -1242,7 +1147,7 @@ EOF
   do
     case $opt in
         "Internal"|"External"|"ClusterIP")
-            export LB_TYPE="$opt"
+            save_response LB_TYPE "$opt"
             echo "Using LB type: $opt"
             break
             ;;
@@ -1251,17 +1156,15 @@ EOF
   done
 
   if [[ "${LB_TYPE}" == "ClusterIP" ]]; then
-    export SERVICE_TYPE=$LB_TYPE
+    save_response SERVICE_TYPE $LB_TYPE
   else
-    export SERVICE_TYPE="LoadBalancer"
+    save_response SERVICE_TYPE "LoadBalancer"
   fi
-
-  save_response SERVICE_TYPE
-  save_response LB_TYPE
 }
 
 function save_response() {
-  echo "export ${1}=${!1}" >> $CONTINUE_FILE
+  export ${1}=${2}
+  echo "export ${1}=${2}" >> $CONTINUE_FILE
 }
 
 function continue_env() {
@@ -1341,8 +1244,8 @@ fetch_latest_version_manifest
 source version.manifest
 
 function main() {
-  describe_installer
   continue_env
+  describe_installer
   prompt_user
   check_prereqs
   select_kubectl_context
