@@ -1241,16 +1241,28 @@ cat <<EOF
 
 Armory Platform installer for Kubernetes.
 
-usage: [--fetch-latest-edge-version][--fetch-latest-stable-version]
+usage: [--stable][--edge][--help]
 
-  --fetch-latest-stable-version   fetch the latest stable build of Armory.
-  --fetch-latest-edge-version     fetch the latest edge build of Armory.
+  -s, --stable   fetch the latest stable build of Armory.
+  -s, --edge     fetch the latest edge build of Armory.
+  -h, --help     show this message
 
 EOF
 }
 
-OPTSPEC=":hv-:"
-while getopts "$OPTSPEC" optchar; do
+# Transform short options to long ones
+for arg in "$@"; do
+  shift
+  case "$arg" in
+    "-h") set -- "$@" "--help" ;;
+    "-e") set -- "$@" "--edge" ;;
+    "-s") set -- "$@" "--stable" ;;
+    *) set -- "$@" "$arg"
+  esac
+done
+
+
+while getopts ":-:" optchar; do
   case "${optchar}" in
     -)
       case "${OPTARG}" in
@@ -1258,10 +1270,10 @@ while getopts "$OPTSPEC" optchar; do
           print_options_message
           exit 0
           ;;
-        fetch-latest-stable-version)
+        stable)
           FETCH_LATEST_STABLE_VERSION=${FETCH_LATEST_STABLE_VERSION:-true}
           ;;
-        fetch-latest-edge-version)
+        edge)
           FETCH_LATEST_EDGE_VERSION=${FETCH_LATEST_EDGE_VERSION:-true}
           ;;
         *)
@@ -1270,14 +1282,10 @@ while getopts "$OPTSPEC" optchar; do
           exit 2
           ;;
       esac;;
-    h)
-      print_options_message
-      exit 0
-      ;;
     *)
-      if [ "$OPTERR" != 1 ] || [ "${OPTSPEC:0:1}" = ":" ]; then
-        echo "Non-option argument: '-${OPTARG}'" >&2
-      fi
+      echo "Unknown option -${OPTARG}" >&2
+      print_options_message
+      exit 2
       ;;
   esac
 done
