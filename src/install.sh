@@ -19,8 +19,7 @@ function describe_installer() {
   fi
 
   echo "
-
-  This installer will launch the Armory Platform into your Kubernetes cluster.
+  This installer will launch v${armoryspinnaker_version} Armory Platform into your Kubernetes cluster.
   The following are required:
     - An existing Kubernetes cluster.
     - S3, GCS, or Minio
@@ -53,12 +52,12 @@ function error() {
 function fetch_latest_version_manifest() {
   mkdir -p build
 
+  echo
   if [[ ${FETCH_LATEST_EDGE_VERSION} == true ]]; then
     echo "Fetching edge version of src/version.manifest..."
     ../bin/fetch-latest-armory-version.sh
-  fi
-
-  if [[ ! -f "version.manifest" || ${FETCH_LATEST_STABLE_VERSION} == true ]]; then
+    echo "Pinned the latest edge version in src/version.manifest!"
+  elif [[ ! -f "version.manifest" || ${FETCH_LATEST_STABLE_VERSION} == true ]]; then
     echo "Fetching latest stable src/version.manifest..."
     curl -sS "https://s3-us-west-2.amazonaws.com/armory-web/install/release/armoryspinnaker-latest-version.manifest" > build/armoryspinnaker-latest-version.manifest
     source build/armoryspinnaker-latest-version.manifest
@@ -74,7 +73,7 @@ EOF
 
       curl -sS "${armoryspinnaker_version_manifest_url}" >> version.manifest
 
-      echo "Pinned latest manifest in src/version.manifest"
+      echo "Pinned the latest stable version in src/version.manifest!"
   else
     echo "Using pinned versions found in src/version.manifests!"
   fi
@@ -478,8 +477,13 @@ EOF
     envsubst < "$filename" > "$BUILD_DIR/$(basename $filename)"
   done
   for filename in build/*.json; do
-    echo "Applying $filename..."
-    kubectl ${KUBECTL_OPTIONS} apply -f "$filename"
+    if [[ "$filename" =~ "fiat-deployment.json" ]]; then
+      echo "Skipping $filename... needs configuration before deployment"
+    else
+      echo "Applying $filename..."
+      kubectl ${KUBECTL_OPTIONS} apply -f "$filename"
+    fi
+
   done
 }
 
@@ -925,7 +929,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy dinghy",
       "refId": "9",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -972,9 +976,29 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
           "cluster": "kayenta"
       },
       "name": "Deploy kayenta",
-      "refId": "14",
-      "requisiteStageRefIds": ["1", "12"],
+      "refId": "15",
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
+      "type": "deployManifest"
+    },
+    {
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-fiat-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "fiat"
+      },
+      "name": "Deploy fiat",
+      "refId": "16",
+      "requisiteStageRefIds": ["2", "1", "12"],
+      "source": "text",
+      "stageEnabled": {
+        "expression": "false",
+        "type": "expression"
+      },
       "type": "deployManifest"
     }
   ]
@@ -1011,7 +1035,7 @@ EOF
 }
 
 function set_custom_profile() {
-  cpu_vars=("CLOUDDRIVER_CPU" "DECK_CPU" "DINGHY_CPU" "ECHO_CPU" "FRONT50_CPU" "GATE_CPU" "IGOR_CPU" "KAYENTA_CPU" "LIGHTHOUSE_CPU" "ORCA_CPU" "REDIS_CPU" "ROSCO_CPU")
+  cpu_vars=("CLOUDDRIVER_CPU" "DECK_CPU" "DINGHY_CPU" "ECHO_CPU" "FIAT_CPU" "FRONT50_CPU" "GATE_CPU" "IGOR_CPU" "KAYENTA_CPU" "LIGHTHOUSE_CPU" "ORCA_CPU" "REDIS_CPU" "ROSCO_CPU")
   for v in "${cpu_vars[@]}"; do
     echo "What allocation would you like for $v?"
     options=("500m" "1000m" "1500m" "2000m" "2500m")
@@ -1028,7 +1052,7 @@ function set_custom_profile() {
       esac
     done
   done
-  mem_vars=("CLOUDDRIVER_MEMORY" "DECK_MEMORY" "DINGHY_MEMORY" "ECHO_MEMORY" "FRONT50_MEMORY" "GATE_MEMORY" "IGOR_MEMORY" "KAYENTA_MEMORY" "LIGHTHOUSE_MEMORY" "ORCA_MEMORY" "REDIS_MEMORY" "ROSCO_MEMORY")
+  mem_vars=("CLOUDDRIVER_MEMORY" "DECK_MEMORY" "DINGHY_MEMORY" "ECHO_MEMORY" "FIAT_MEMORY" "FRONT50_MEMORY" "GATE_MEMORY" "IGOR_MEMORY" "KAYENTA_MEMORY" "LIGHTHOUSE_MEMORY" "ORCA_MEMORY" "REDIS_MEMORY" "ROSCO_MEMORY")
   for v in "${mem_vars[@]}"; do
     echo "What allocation would you like for $v?"
     options=("512Mi" "1Gi" "2Gi" "4Gi" "8Gi" "16Gi")
@@ -1056,7 +1080,7 @@ function set_resources() {
 
   if [ ! -z $SIZE_PROFILE ]; then
     source sizing_profiles/${SIZE_PROFILE}.env
-    return 
+    return
   fi
 
   cat <<EOF
@@ -1079,9 +1103,9 @@ EOF
   echo "       Total MEMORY: 2048Mi (~2 GB)"
   echo ""
   echo "  'Medium'"
-  echo "       CPU: 500m for deck, dinghy, echo, front50, gate, igor, kayenta, lighthouse, redis, & rosco"
+  echo "       CPU: 500m for deck, dinghy, echo, fiat, front50, gate, igor, kayenta, lighthouse, redis, & rosco"
   echo "            1000m for clouddriver, & orca"
-  echo "       MEMORY: 512Mi for deck, dinghy, echo, kayenta, lighthouse, & rosco"
+  echo "       MEMORY: 512Mi for deck, dinghy, fiat, echo, kayenta, lighthouse, & rosco"
   echo "               1Gi for front50, gate, igor, & rosco"
   echo "               2Gi for clouddriver, orca, & redis"
   echo "       Total CPU: 10000m (10 vCPUs)"
@@ -1089,9 +1113,9 @@ EOF
   echo ""
   echo "  'Large'"
   echo "       CPU: 500m for kayenta & lighthouse"
-  echo "            1000m for deck, dinghy, echo, front50, gate, igor, redis, & rosco"
+  echo "            1000m for deck, dinghy, echo, fiat, front50, gate, igor, redis, & rosco"
   echo "            2000m for clouddriver, & orca"
-  echo "       MEMORY: 521Mi for deck, dinghy, kayenta, & lighthouse"
+  echo "       MEMORY: 521Mi for deck, dinghy, fiat, kayenta, & lighthouse"
   echo "               1Gi for echo, & rosco"
   echo "               2Gi for front50, gate & igor"
   echo "               4Gi for orca"
@@ -1198,16 +1222,28 @@ cat <<EOF
 
 Armory Platform installer for Kubernetes.
 
-usage: [--fetch-latest-edge-version][--fetch-latest-stable-version]
+usage: [--stable, -s][--edge, -e][--help, -h]
 
-  --fetch-latest-stable-version   fetch the latest stable build of Armory.
-  --fetch-latest-edge-version     fetch the latest edge build of Armory.
+  -s, --stable   fetch the latest stable build of Armory.
+  -e, --edge     fetch the latest edge build of Armory.
+  -h, --help     show this message
 
 EOF
 }
 
-OPTSPEC=":hv-:"
-while getopts "$OPTSPEC" optchar; do
+# Transform short options to long ones
+for arg in "$@"; do
+  shift
+  case "$arg" in
+    "-h") set -- "$@" "--help" ;;
+    "-e") set -- "$@" "--edge" ;;
+    "-s") set -- "$@" "--stable" ;;
+    *) set -- "$@" "$arg"
+  esac
+done
+
+
+while getopts ":-:" optchar; do
   case "${optchar}" in
     -)
       case "${OPTARG}" in
@@ -1215,10 +1251,10 @@ while getopts "$OPTSPEC" optchar; do
           print_options_message
           exit 0
           ;;
-        fetch-latest-stable-version)
+        stable)
           FETCH_LATEST_STABLE_VERSION=${FETCH_LATEST_STABLE_VERSION:-true}
           ;;
-        fetch-latest-edge-version)
+        edge)
           FETCH_LATEST_EDGE_VERSION=${FETCH_LATEST_EDGE_VERSION:-true}
           ;;
         *)
@@ -1227,14 +1263,10 @@ while getopts "$OPTSPEC" optchar; do
           exit 2
           ;;
       esac;;
-    h)
-      print_options_message
-      exit 0
-      ;;
     *)
-      if [ "$OPTERR" != 1 ] || [ "${OPTSPEC:0:1}" = ":" ]; then
-        echo "Non-option argument: '-${OPTARG}'" >&2
-      fi
+      echo "Unknown option -${OPTARG}" >&2
+      print_options_message
+      exit 2
       ;;
   esac
 done
