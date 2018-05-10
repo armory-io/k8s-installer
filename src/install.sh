@@ -923,7 +923,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
           "cluster": "kayenta"
       },
       "name": "Deploy kayenta",
-      "refId": "14",
+      "refId": "15",
       "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
@@ -939,7 +939,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
           "cluster": "fiat"
       },
       "name": "Deploy fiat",
-      "refId": "14",
+      "refId": "16",
       "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "stageEnabled": {
