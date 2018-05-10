@@ -53,17 +53,22 @@ function error() {
 function fetch_latest_version_manifest() {
   mkdir -p build
 
-  if [[ ! -f "version.manifest" || ${FETCH_LATEST_VERSION_MANIFEST} == true ]]; then
-    echo "Fetching latest src/version.manifest..."
+  if [[ ${FETCH_LATEST_EDGE_VERSION} == true ]]; then
+    echo "Fetching edge version of src/version.manifest..."
+    ../bin/fetch-latest-armory-version.sh
+  fi
+
+  if [[ ! -f "version.manifest" || ${FETCH_LATEST_STABLE_VERSION} == true ]]; then
+    echo "Fetching latest stable src/version.manifest..."
     curl -sS "https://s3-us-west-2.amazonaws.com/armory-web/install/release/armoryspinnaker-latest-version.manifest" > build/armoryspinnaker-latest-version.manifest
     source build/armoryspinnaker-latest-version.manifest
 
 cat <<EOF > version.manifest
 ## INFO: this file has been created as an untracked file so that the installer can run idempotently with pinned versions below.
-## Committing this file means you'll be pinning the installer the versions below
-## To fetch the latest released version you can either:
-##   - delete this file and rerun the installer
-##   - run  ./src/install.sh --use-edge
+## Committing this file means you'll be pinning the installer with the versions listed below.
+##
+## To fetch the latest stable/edge versions of Armory, see:
+##   ./src/install.sh --help
 
 EOF
 
@@ -1236,9 +1241,10 @@ cat <<EOF
 
 Armory Platform installer for Kubernetes.
 
-usage: [--fetch-latest-versions]
+usage: [--fetch-latest-edge-version][--fetch-latest-stable-version]
 
-  --fetch-latest-versions   fetch the latest stable release of Armory's version.manifest
+  --fetch-latest-stable-version   fetch the latest stable build of Armory.
+  --fetch-latest-edge-version     fetch the latest edge build of Armory.
 
 EOF
 }
@@ -1252,8 +1258,11 @@ while getopts "$OPTSPEC" optchar; do
           print_options_message
           exit 0
           ;;
-        fetch-latest-versions)
-          FETCH_LATEST_VERSION_MANIFEST=true
+        fetch-latest-stable-version)
+          FETCH_LATEST_STABLE_VERSION=${FETCH_LATEST_STABLE_VERSION:-true}
+          ;;
+        fetch-latest-edge-version)
+          FETCH_LATEST_EDGE_VERSION=${FETCH_LATEST_EDGE_VERSION:-true}
           ;;
         *)
           echo "Unknown option --${OPTARG}" >&2
