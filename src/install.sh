@@ -177,7 +177,6 @@ function get_var() {
       export ${var_name}=${value}
       save_response ${var_name}
     fi
-    #as vars are set they are saved
   fi
 }
 
