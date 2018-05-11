@@ -5,7 +5,7 @@ PUBLIC_ARMORY_JENKINS_JOB_VERSION=${PUBLIC_ARMORY_JENKINS_JOB_VERSION:-"lastSucc
 
 echo "Querying ArmorySpinnaker's Jenkins Job for '${PUBLIC_ARMORY_JENKINS_JOB_VERSION}'"
 
-cat <<EOF > source ../src/build/version.manifest
+cat <<EOF > ../src/build/version.manifest
 ## INFO: this file has been created as an untracked file so that the installer can run idempotently with pinned versions below.
 ## Committing this file means you'll be pinning the installer with the versions listed below.
 ##
