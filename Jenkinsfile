@@ -20,5 +20,9 @@ properties(
 node {
   checkout scm
 
-  sh ('git commit -m "hello" --allow-empty  && git push')
+  sh ('''
+git commit -m "hello" --allow-empty
+git tag v0.0.0-woo-test-tag
+git push origin v0.0.0-woo-test-tag
+''')
 }
