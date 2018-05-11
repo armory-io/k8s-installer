@@ -4,7 +4,7 @@ if [ ! -z "${ARMORY_DEBUG}" ]; then
   set -x
   set +e
 fi
-
+#traps ctrl+c so we exit from docker
 trap 'exit 0' INT
 
 export BUILD_DIR=build/
@@ -15,12 +15,12 @@ rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
 function describe_installer() {
-  if [ ! -z "${NOPROMPT}" ]; then
+  if [[ ! -z "${NOPROMPT}" || ${USE_CONTINUE_FILE} == "y" ]]; then
     return
   fi
-  echo "
 
-  This installer will launch the Armory Platform into your Kubernetes cluster.
+  echo "
+  This installer will launch v${armoryspinnaker_version} Armory Platform into your Kubernetes cluster.
   The following are required:
     - An existing Kubernetes cluster.
     - S3, GCS, or Minio
@@ -53,12 +53,12 @@ function error() {
 function fetch_latest_version_manifest() {
   mkdir -p build
 
+  echo
   if [[ ${FETCH_LATEST_EDGE_VERSION} == true ]]; then
     echo "Fetching edge version of src/version.manifest..."
     ../bin/fetch-latest-armory-version.sh
-  fi
-
-  if [[ ! -f "version.manifest" || ${FETCH_LATEST_STABLE_VERSION} == true ]]; then
+    echo "Pinned the latest edge version in src/version.manifest!"
+  elif [[ ! -f "version.manifest" || ${FETCH_LATEST_STABLE_VERSION} == true ]]; then
     echo "Fetching latest stable src/version.manifest..."
     curl -sS "https://s3-us-west-2.amazonaws.com/armory-web/install/release/armoryspinnaker-latest-version.manifest" > build/armoryspinnaker-latest-version.manifest
     source build/armoryspinnaker-latest-version.manifest
@@ -74,7 +74,7 @@ EOF
 
       curl -sS "${armoryspinnaker_version_manifest_url}" >> version.manifest
 
-      echo "Pinned latest manifest in src/version.manifest"
+      echo "Pinned the latest stable version in src/version.manifest!"
   else
     echo "Using pinned versions found in src/version.manifests!"
   fi
@@ -158,21 +158,48 @@ function get_var() {
         get_var "$1" $2 $3
       else
         echo "Using default ${default_val}"
-        export ${var_name}=${default_val}
-        save_response ${var_name}
+        save_response ${var_name} ${default_val}
       fi
     elif [ ! -z "$val_func" ] && ! $val_func ${value}; then
       get_var "$1" $2 $3
     else
-      export ${var_name}=${value}
-      save_response ${var_name}
+      save_response ${var_name} ${value}
     fi
   fi
 }
 
 function prompt_user() {
+  cat <<EOF
+  *****************************************************************************
+  * A kubeconfig file is needed to install The Armory Platform inside a       *
+  * kubernetes cluster within a namespace. The same kubeconfig file can also  *
+  * be added to the cluster as a secret. Alternatively, we can create a       *
+  * service account in the cluster to allow The Armory Platform to redeploy   *
+  * itself.                                                                   *
+  *                                                                           *
+  * Note: If you choose to add a kubeconfig to the cluster it must only have  *
+  * one context. Specifically, context for the cluster where we are installing*
+  *****************************************************************************
+
+EOF
+  get_var "What Kubernetes namespace would you like to use? [default: armory]: " NAMESPACE "" "" "armory"
+  export KUBECTL_OPTIONS="--namespace=${NAMESPACE}"
+
+  get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
+  get_var "Would you like us to use a service account? If not the kubeconfig file will be added to the cluster as a secret. [y/n]: " CREATE_SERVICE_ACCOUNT validate_create_service_account "" "y"
+  if [[ "$CREATE_SERVICE_ACCOUNT" == "y" ]]; then
+    export USE_SERVICE_ACCOUNT=true
+  else
+    export USE_SERVICE_ACCOUNT=false
+    export KUBECONFIG_CONFIG_ENTRY="kubeconfigFile: /opt/spinnaker/credentials/custom/default-kubeconfig"
+    encode_kubeconfig
+  fi
+
   prompt_user_for_config_store
-  get_var "${CONFIG_STORE} bucket to use [if blank, a bucket will be generated for you]: " ARMORY_CONF_STORE_BUCKET "" "" ""
+
+  local bucket_name=$(awk '{ print tolower($0) }' <<< ${NAMESPACE}-platform-$(uuidgen) | cut -c 1-51)
+  get_var "${CONFIG_STORE} bucket to use [if blank, a bucket will be generated for you]: " ARMORY_CONF_STORE_BUCKET "" "" $bucket_name
+
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     export S3_ENABLED=true
     export GCS_ENABLED=false
@@ -225,32 +252,6 @@ EOF
     export GCS_ENABLED=true
     export S3_ENABLED=false
     export GCP_CREDS_MNT_PATH="/home/spinnaker/.gcp/gcp.json"
-    # get_var "Enter path to GCP service account creds: " GCP_CREDS validate_gcp_creds
-  fi
-  cat <<EOF
-  *****************************************************************************
-  * A kubeconfig file is needed to install The Armory Platform inside a       *
-  * kubernetes cluster within a namespace. The same kubeconfig file can also  *
-  * be added to the cluster as a secret. Alternatively, we can create a       *
-  * service account in the cluster to allow The Armory Platform to redeploy   *
-  * itself.                                                                   *
-  *                                                                           *
-  * Note: If you choose to add a kubeconfig to the cluster it must only have  *
-  * one context. Specifically, context for the cluster where we are installing*
-  *****************************************************************************
-
-EOF
-  get_var "What kubernetes namespace would you like to use? [default: armory]: " NAMESPACE "" "" "armory"
-  export KUBECTL_OPTIONS="--namespace=${NAMESPACE}"
-
-  get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
-  get_var "Would you like us to use a service account? If not the kubeconfig file will be added to the cluster as a secret. [y/n]: " CREATE_SERVICE_ACCOUNT validate_create_service_account "" "y"
-  if [[ "$CREATE_SERVICE_ACCOUNT" == "y" ]]; then
-    export USE_SERVICE_ACCOUNT=true
-  else
-    export USE_SERVICE_ACCOUNT=false
-    export KUBECONFIG_CONFIG_ENTRY="kubeconfigFile: /opt/spinnaker/credentials/custom/default-kubeconfig"
-    encode_kubeconfig
   fi
 }
 
@@ -277,7 +278,7 @@ EOF
     case $opt in
         "S3"|"GCS"|"MINIO")
             echo "Using $opt"
-            export CONFIG_STORE="$opt"
+            save_response CONFIG_STORE "$opt"
             break
             ;;
         *) echo "Invalid option";;
@@ -305,14 +306,17 @@ function select_kubectl_context() {
     select opt in "${options[@]}"
     do
       kubectl config use-context "$opt"
-      export KUBE_CONTEXT=$opt
-      save_response KUBE_CONTEXT
+      save_response KUBE_CONTEXT $opt
       break
     done
   fi
 }
 
 function select_gcp_service_account_and_encode_creds() {
+  if [[ ! -z $B64CREDENTIALS ]]; then
+    return
+  fi
+
   export PROJECT_ID=$(gcloud config get-value core/project)
   export SERVICE_ACCOUNT_NAME="$(mktemp -u $NAMESPACE-svc-acct-XXXXXXXXXXXX | tr '[:upper:]' '[:lower:]' | cut -c 1-30)"
   mkdir -p ${BUILD_DIR}/credentials
@@ -350,7 +354,7 @@ EOF
                 else
                   gcloud iam service-accounts keys create \
                     --iam-account "$acct" ${GCP_CREDS}
-                  export B64CREDENTIALS=$(base64 -w 0 -i "$GCP_CREDS" 2>/dev/null || base64 -i "$GCP_CREDS")
+                  save_response B64CREDENTIALS $(base64 -w 0 -i "$GCP_CREDS" 2>/dev/null || base64 -i "$GCP_CREDS")
                   break
                 fi
               done
@@ -366,7 +370,7 @@ EOF
             gcloud iam service-accounts keys create \
               --iam-account "${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com" \
               ${GCP_CREDS} > /dev/null 2>&1
-            export B64CREDENTIALS=$(base64 -w 0 -i "$GCP_CREDS" 2>/dev/null || base64 -i "$GCP_CREDS")
+            save_response B64CREDENTIALS $(base64 -w 0 -i "$GCP_CREDS" 2>/dev/null || base64 -i "$GCP_CREDS")
             break
             ;;
         *) echo "Invalid option";;
@@ -374,17 +378,29 @@ EOF
   done
 }
 
-
 function make_minio_bucket() {
-  echo "Creating Minio bucket to store configuration and persist data."
-  AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} aws s3 mb --endpoint-url ${MINIO_ENDPOINT} "s3://${ARMORY_CONF_STORE_BUCKET}"
-}
-function make_s3_bucket() {
-  echo "Creating S3 bucket '${ARMORY_CONF_STORE_BUCKET}' to store configuration and persist data."
-  aws --profile "${AWS_PROFILE}" --region us-east-1 s3 mb "s3://${ARMORY_CONF_STORE_BUCKET}"
+  AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} aws s3 ls --endpoint-url ${MINIO_ENDPOINT} "s3://${ARMORY_CONF_STORE_BUCKET}" > /dev/null 2>&1
+  result=$?
+  if [[ $result -eq 0 ]]; then
+    echo "Bucket already exists"
+    return
+  else
+    echo "Creating Minio bucket to store configuration and persist data."
+    AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} aws s3 mb --endpoint-url ${MINIO_ENDPOINT} "s3://${ARMORY_CONF_STORE_BUCKET}"
+  fi
 }
 
-function make_gcs_bucket() {
+function make_s3_bucket() {
+  aws --profile "${AWS_PROFILE}" --region us-east-1 s3 ls "s3://${ARMORY_CONF_STORE_BUCKET}" > /dev/null 2>&1 || {
+    echo "Creating S3 bucket '${ARMORY_CONF_STORE_BUCKET}' to store configuration and persist data."
+    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 mb "s3://${ARMORY_CONF_STORE_BUCKET}"
+  }
+}
+
+function get_gcloud_project() {
+  if [[ ! -z  $GCLOUD_PROJECT ]]; then
+    return
+  fi
   echo "Found the following gcloud projects: "
   options=($(gcloud projects list | grep -v PROJECT_ID | awk '{print $1}'))
   PS3='Please select the project where you want to create the bucket: '
@@ -396,9 +412,16 @@ function make_gcs_bucket() {
       echo "Invalid Choice"
     fi
   done
+  export GCLOUD_PROJECT=$opt
+  save_response GCLOUD_PROJECT
+}
 
-  echo "Creating GCS bucket to store configuration and persist data."
-  gsutil mb -p "$opt" "gs://${ARMORY_CONF_STORE_BUCKET}/"
+function make_gcs_bucket() {
+  get_gcloud_project
+  gsutil ls -p "$GCLOUD_PROJECT" "gs://${ARMORY_CONF_STORE_BUCKET}/" || {
+        echo "Creating GCS bucket to store configuration and persist data."
+        gsutil mb -p "$GCLOUD_PROJECT" "gs://${ARMORY_CONF_STORE_BUCKET}/"
+  }
 }
 
 function create_k8s_namespace() {
@@ -445,8 +468,13 @@ EOF
     envsubst < "$filename" > "$BUILD_DIR/$(basename $filename)"
   done
   for filename in build/*.json; do
-    echo "Applying $filename..."
-    kubectl ${KUBECTL_OPTIONS} apply -f "$filename"
+    if [[ "$filename" =~ "fiat-deployment.json" ]]; then
+      echo "Skipping $filename... needs configuration before deployment"
+    else
+      echo "Applying $filename..."
+      kubectl ${KUBECTL_OPTIONS} apply -f "$filename"
+    fi
+
   done
 }
 
@@ -892,7 +920,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       },
       "name": "Deploy dinghy",
       "refId": "9",
-      "requisiteStageRefIds": ["1", "12"],
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
     },
@@ -939,9 +967,29 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
           "cluster": "kayenta"
       },
       "name": "Deploy kayenta",
-      "refId": "14",
-      "requisiteStageRefIds": ["1", "12"],
+      "refId": "15",
+      "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
+      "type": "deployManifest"
+    },
+    {
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-fiat-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "fiat"
+      },
+      "name": "Deploy fiat",
+      "refId": "16",
+      "requisiteStageRefIds": ["2", "1", "12"],
+      "source": "text",
+      "stageEnabled": {
+        "expression": "false",
+        "type": "expression"
+      },
       "type": "deployManifest"
     }
   ]
@@ -977,95 +1025,8 @@ EOF
   set -e
 }
 
-function set_profile_small() {
-  export CLOUDDRIVER_CPU="100m"
-  export DECK_CPU="100m"
-  export DINGHY_CPU="100m"
-  export ECHO_CPU="100m"
-  export FRONT50_CPU="100m"
-  export GATE_CPU="100m"
-  export IGOR_CPU="100m"
-  export KAYENTA_CPU="100m"
-  export LIGHTHOUSE_CPU="100m"
-  export NGINX_CPU="100m"
-  export ORCA_CPU="100m"
-  export REDIS_CPU="100m"
-  export ROSCO_CPU="100m"
-  export CLOUDDRIVER_MEMORY="128Mi"
-  export DECK_MEMORY="128Mi"
-  export DINGHY_MEMORY="128Mi"
-  export ECHO_MEMORY="128Mi"
-  export FRONT50_MEMORY="128Mi"
-  export GATE_MEMORY="128Mi"
-  export IGOR_MEMORY="128Mi"
-  export KAYENTA_MEMORY="128Mi"
-  export LIGHTHOUSE_MEMORY="128Mi"
-  export NGINX_MEMORY="64Mi"
-  export ORCA_MEMORY="128Mi"
-  export REDIS_MEMORY="128Mi"
-  export ROSCO_MEMORY="128Mi"
-}
-
-function set_profile_medium() {
-  export CLOUDDRIVER_CPU="1000m"
-  export DECK_CPU="500m"
-  export DINGHY_CPU="500m"
-  export ECHO_CPU="500m"
-  export FRONT50_CPU="500m"
-  export GATE_CPU="500m"
-  export IGOR_CPU="500m"
-  export KAYENTA_CPU="500m"
-  export LIGHTHOUSE_CPU="500m"
-  export NGINX_CPU="200m"
-  export ORCA_CPU="1000m"
-  export REDIS_CPU="500m"
-  export ROSCO_CPU="500m"
-  export CLOUDDRIVER_MEMORY="2Gi"
-  export DECK_MEMORY="512Mi"
-  export DINGHY_MEMORY="512Mi"
-  export ECHO_MEMORY="512Mi"
-  export FRONT50_MEMORY="1Gi"
-  export GATE_MEMORY="1Gi"
-  export IGOR_MEMORY="1Gi"
-  export KAYENTA_MEMORY="512Mi"
-  export LIGHTHOUSE_MEMORY="512Mi"
-  export NGINX_MEMORY="128Mi"
-  export ORCA_MEMORY="2Gi"
-  export REDIS_MEMORY="2Gi"
-  export ROSCO_MEMORY="1Gi"
-}
-
-function set_profile_large() {
-  export CLOUDDRIVER_CPU="2000m"
-  export DECK_CPU="1000m"
-  export DINGHY_CPU="500m"
-  export ECHO_CPU="1000m"
-  export FRONT50_CPU="1000m"
-  export GATE_CPU="1000m"
-  export IGOR_CPU="1000m"
-  export KAYENTA_CPU="500m"
-  export LIGHTHOUSE_CPU="500m"
-  export NGINX_CPU="500m"
-  export ORCA_CPU="2000m"
-  export REDIS_CPU="1000m"
-  export ROSCO_CPU="1000m"
-  export CLOUDDRIVER_MEMORY="8Gi"
-  export DECK_MEMORY="512Mi"
-  export DINGHY_MEMORY="512Mi"
-  export ECHO_MEMORY="1Gi"
-  export FRONT50_MEMORY="2Gi"
-  export GATE_MEMORY="2Gi"
-  export IGOR_MEMORY="2Gi"
-  export KAYENTA_MEMORY="512Mi"
-  export LIGHTHOUSE_MEMORY="512Mi"
-  export NGINX_MEMORY="256Mi"
-  export ORCA_MEMORY="4Gi"
-  export REDIS_MEMORY="16Gi"
-  export ROSCO_MEMORY="1Gi"
-}
-
 function set_custom_profile() {
-  cpu_vars=("CLOUDDRIVER_CPU" "DECK_CPU" "DINGHY_CPU" "ECHO_CPU" "FRONT50_CPU" "GATE_CPU" "IGOR_CPU" "KAYENTA_CPU" "LIGHTHOUSE_CPU" "ORCA_CPU" "REDIS_CPU" "ROSCO_CPU")
+  cpu_vars=("CLOUDDRIVER_CPU" "DECK_CPU" "DINGHY_CPU" "ECHO_CPU" "FIAT_CPU" "FRONT50_CPU" "GATE_CPU" "IGOR_CPU" "KAYENTA_CPU" "LIGHTHOUSE_CPU" "ORCA_CPU" "REDIS_CPU" "ROSCO_CPU")
   for v in "${cpu_vars[@]}"; do
     echo "What allocation would you like for $v?"
     options=("500m" "1000m" "1500m" "2000m" "2500m")
@@ -1082,7 +1043,7 @@ function set_custom_profile() {
       esac
     done
   done
-  mem_vars=("CLOUDDRIVER_MEMORY" "DECK_MEMORY" "DINGHY_MEMORY" "ECHO_MEMORY" "FRONT50_MEMORY" "GATE_MEMORY" "IGOR_MEMORY" "KAYENTA_MEMORY" "LIGHTHOUSE_MEMORY" "ORCA_MEMORY" "REDIS_MEMORY" "ROSCO_MEMORY")
+  mem_vars=("CLOUDDRIVER_MEMORY" "DECK_MEMORY" "DINGHY_MEMORY" "ECHO_MEMORY" "FIAT_MEMORY" "FRONT50_MEMORY" "GATE_MEMORY" "IGOR_MEMORY" "KAYENTA_MEMORY" "LIGHTHOUSE_MEMORY" "ORCA_MEMORY" "REDIS_MEMORY" "ROSCO_MEMORY")
   for v in "${mem_vars[@]}"; do
     echo "What allocation would you like for $v?"
     options=("512Mi" "1Gi" "2Gi" "4Gi" "8Gi" "16Gi")
@@ -1103,8 +1064,13 @@ function set_custom_profile() {
 
 
 function set_resources() {
-  if [ ! -z ${NOPROMPT} ]; then
-    set_profile_small
+  if [ ! -z $NOPROMPT ]; then
+    source sizing_profiles/small.env
+    return
+  fi
+
+  if [ ! -z $SIZE_PROFILE ]; then
+    source sizing_profiles/${SIZE_PROFILE}.env
     return
   fi
 
@@ -1128,9 +1094,9 @@ EOF
   echo "       Total MEMORY: 2048Mi (~2 GB)"
   echo ""
   echo "  'Medium'"
-  echo "       CPU: 500m for deck, dinghy, echo, front50, gate, igor, kayenta, lighthouse, redis, & rosco"
+  echo "       CPU: 500m for deck, dinghy, echo, fiat, front50, gate, igor, kayenta, lighthouse, redis, & rosco"
   echo "            1000m for clouddriver, & orca"
-  echo "       MEMORY: 512Mi for deck, dinghy, echo, kayenta, lighthouse, & rosco"
+  echo "       MEMORY: 512Mi for deck, dinghy, fiat, echo, kayenta, lighthouse, & rosco"
   echo "               1Gi for front50, gate, igor, & rosco"
   echo "               2Gi for clouddriver, orca, & redis"
   echo "       Total CPU: 10000m (10 vCPUs)"
@@ -1138,9 +1104,9 @@ EOF
   echo ""
   echo "  'Large'"
   echo "       CPU: 500m for kayenta & lighthouse"
-  echo "            1000m for deck, dinghy, echo, front50, gate, igor, redis, & rosco"
+  echo "            1000m for deck, dinghy, echo, fiat, front50, gate, igor, redis, & rosco"
   echo "            2000m for clouddriver, & orca"
-  echo "       MEMORY: 521Mi for deck, dinghy, kayenta, & lighthouse"
+  echo "       MEMORY: 521Mi for deck, dinghy, fiat, kayenta, & lighthouse"
   echo "               1Gi for echo, & rosco"
   echo "               2Gi for front50, gate & igor"
   echo "               4Gi for orca"
@@ -1157,19 +1123,10 @@ EOF
   select opt in "${options[@]}"
   do
     case $opt in
-        "Small")
-            echo "Using profile: 'Small'"
-            set_profile_small
-            break
-            ;;
-        "Medium")
-            echo "Using profile: 'Medium'"
-            set_profile_medium
-            break
-            ;;
-        "Large")
-            echo "Using profile: 'Large'"
-            set_profile_large
+        "Small"|"Medium"|"Large")
+            save_response SIZE_PROFILE $opt
+            echo "Using profile: '${SIZE_PROFILE}'"
+            source sizing_profiles/${SIZE_PROFILE}.env
             break
             ;;
         "Custom")
@@ -1205,7 +1162,7 @@ EOF
   do
     case $opt in
         "Internal"|"External"|"ClusterIP")
-            export LB_TYPE="$opt"
+            save_response LB_TYPE "$opt"
             echo "Using LB type: $opt"
             break
             ;;
@@ -1214,17 +1171,15 @@ EOF
   done
 
   if [[ "${LB_TYPE}" == "ClusterIP" ]]; then
-    export SERVICE_TYPE=$LB_TYPE
+    save_response SERVICE_TYPE $LB_TYPE
   else
-    export SERVICE_TYPE="LoadBalancer"
+    save_response SERVICE_TYPE "LoadBalancer"
   fi
-
-  save_response SERVICE_TYPE
-  save_response LB_TYPE
 }
 
 function save_response() {
-  echo "${1}=${!1}" >> $CONTINUE_FILE
+  export ${1}=${2}
+  echo "export ${1}=${2}" >> $CONTINUE_FILE
 }
 
 function continue_env() {
@@ -1244,17 +1199,12 @@ function continue_env() {
 }
 
 function make_bucket() {
-  if [[ "$ARMORY_CONF_STORE_BUCKET" == "" ]]; then
-    export ARMORY_CONF_STORE_BUCKET=$(awk '{ print tolower($0) }' <<< ${NAMESPACE}-platform-$(uuidgen) | cut -c 1-51)
-    if [ "$CONFIG_STORE" == "S3" ]; then
-      make_s3_bucket
-    elif [ "$CONFIG_STORE" == "GCS" ]; then
-      make_gcs_bucket
-    elif [ "$CONFIG_STORE" == "MINIO" ]; then
-      make_minio_bucket
-    fi
-  else
-    echo "Using existing bucket: $ARMORY_CONF_STORE_BUCKET"
+  if [ "$CONFIG_STORE" == "S3" ]; then
+    make_s3_bucket
+  elif [ "$CONFIG_STORE" == "GCS" ]; then
+    make_gcs_bucket
+  elif [ "$CONFIG_STORE" == "MINIO" ]; then
+    make_minio_bucket
   fi
   save_response ARMORY_CONF_STORE_BUCKET
 }
@@ -1264,16 +1214,28 @@ cat <<EOF
 
 Armory Platform installer for Kubernetes.
 
-usage: [--fetch-latest-edge-version][--fetch-latest-stable-version]
+usage: [--stable, -s][--edge, -e][--help, -h]
 
-  --fetch-latest-stable-version   fetch the latest stable build of Armory.
-  --fetch-latest-edge-version     fetch the latest edge build of Armory.
+  -s, --stable   fetch the latest stable build of Armory.
+  -e, --edge     fetch the latest edge build of Armory.
+  -h, --help     show this message
 
 EOF
 }
 
-OPTSPEC=":hv-:"
-while getopts "$OPTSPEC" optchar; do
+# Transform short options to long ones
+for arg in "$@"; do
+  shift
+  case "$arg" in
+    "-h") set -- "$@" "--help" ;;
+    "-e") set -- "$@" "--edge" ;;
+    "-s") set -- "$@" "--stable" ;;
+    *) set -- "$@" "$arg"
+  esac
+done
+
+
+while getopts ":-:" optchar; do
   case "${optchar}" in
     -)
       case "${OPTARG}" in
@@ -1281,10 +1243,10 @@ while getopts "$OPTSPEC" optchar; do
           print_options_message
           exit 0
           ;;
-        fetch-latest-stable-version)
+        stable)
           FETCH_LATEST_STABLE_VERSION=${FETCH_LATEST_STABLE_VERSION:-true}
           ;;
-        fetch-latest-edge-version)
+        edge)
           FETCH_LATEST_EDGE_VERSION=${FETCH_LATEST_EDGE_VERSION:-true}
           ;;
         *)
@@ -1293,14 +1255,10 @@ while getopts "$OPTSPEC" optchar; do
           exit 2
           ;;
       esac;;
-    h)
-      print_options_message
-      exit 0
-      ;;
     *)
-      if [ "$OPTERR" != 1 ] || [ "${OPTSPEC:0:1}" = ":" ]; then
-        echo "Non-option argument: '-${OPTARG}'" >&2
-      fi
+      echo "Unknown option -${OPTARG}" >&2
+      print_options_message
+      exit 2
       ;;
   esac
 done
@@ -1310,6 +1268,7 @@ fetch_latest_version_manifest
 source version.manifest
 
 function main() {
+  continue_env
   describe_installer
   continue_env
   prompt_user

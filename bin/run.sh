@@ -13,7 +13,8 @@ mkdir -p ${HOME}/.armory/
 
 docker run \
     --rm -i -t  \
-    -e ARMORY_DEBUG=1 \
     -e USER_HOME=${HOME} \
+    -e ARMORY_DEBUG=1 \
+    -v ${HOME}/.aws/credentials:/root/.aws/credentials \
     -v ${HOME}/.armory/:/root/.armory/ \
     $DOCKER_IMAGE /src/install.sh
