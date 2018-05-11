@@ -21,8 +21,9 @@ node {
   checkout scm
 
   sh ('''
-git commit -m "hello" --allow-empty
-git tag v0.0.0-woo-test-tag
-git push origin v0.0.0-woo-test-tag
+echo $JENKINS_URL
+//git commit -m "hello" --allow-empty
+//git tag v0.0.0-woo-test-tag
+//git push origin v0.0.0-woo-test-tag https://$(cat /mnt/secrets/jenkins-github-creds/github-creds)@github.com/armory-io/k8s-installer.git
 ''')
 }
