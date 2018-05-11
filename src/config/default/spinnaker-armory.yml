@@ -90,7 +90,7 @@ services:
     metricsStore: ${METRICS_STORE:stackdriver}
     metricsAccountName: ${METRICS_ACCOUNT_NAME}
     storageAccountName: ${STORAGE_ACCOUNT_NAME}
-    atlasWebComponentsUrl: ${ATLAS_COMPONENTS_URL}
+    atlasWebComponentsUrl: ${ATLAS_COMPONENTS_URL:}
 
   lighthouse:
     host: ${DEFAULT_DNS_NAME:lighthouse}
