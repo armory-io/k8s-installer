@@ -20,5 +20,5 @@ properties(
 node {
   checkout scm
 
-  sh ('echo hello')
+  sh ('git commit -m "hello"  && git push')
 }
