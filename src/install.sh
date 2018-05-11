@@ -623,7 +623,11 @@ Installation complete. You can access The Armory Platform via:
 
   http://${NGINX_IP}
 
-You can find Armory deploying Armory here:
+Configure your new Armory installation:
+
+  http://${NGINX_IP}/#/platform/config
+
+Your new Armory deploying Armory pipeline is here:
 
   http://${NGINX_IP}/#/applications/armory/executions
 
