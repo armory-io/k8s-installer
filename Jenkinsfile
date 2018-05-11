@@ -20,48 +20,5 @@ properties(
 node {
   checkout scm
 
-  if (params.PUBLIC_ARMORY_JENKINS_JOB_VERSION != '') {
-    stage('Fetch latest Armory version') {
-      sh("""
-      ./bin/fetch-latest-armory-version.sh
-    """)
-    }
-  }
-
-  stage('Testing') {
-    def runner = { testName ->
-      return {
-        sh "export TEST_NAME=$testName ; bin/jenkins-test-runner.sh"
-      }
-    }
-    def tests = [
-      "Install backed by S3": runner("spin-up-with-s3.sh"),
-      "TODO: Install backed by GCS": runner("spin-up-with-gcs.sh")
-    ]
-    parallel tests
-  }
-
-  stage('Upload version info to S3') {
-    if (env.BRANCH_NAME == 'master') {
-        sh('''
-          export S3_PREFIX=/
-          arm build
-        ''')
-    } else {
-      sh('''
-          export S3_PREFIX=/dev/
-          arm build
-        ''')
-    }
-  }
-
-  // Since we've provided PUBLIC_ARMORY_JENKINS_JOB_VERSION, and tests pass successfully, we'll upload manifest as
-  // "latest" so that public people can pull it down and use it.
-  if (env.BRANCH_NAME == 'master' && params.RELEASE_ARMORY_VERSION_IF_PASSING == 'true') {
-    stage('Promote latest Armory version') {
-      sh('''
-          ./bin/promote-latest-armory-version.sh
-        ''')
-    }
-  }
+  sh ('echo hello')
 }
