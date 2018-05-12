@@ -61,15 +61,6 @@ function fetch_latest_version_manifest() {
     curl -sS "https://s3-us-west-2.amazonaws.com/armory-web/install/release/armoryspinnaker-latest-version.manifest" > build/armoryspinnaker-latest-version.manifest
     source build/armoryspinnaker-latest-version.manifest
 
-cat <<EOF > build/version.manifest
-## INFO: this file has been created as an untracked file so that the installer can run idempotently with pinned versions below.
-## Committing this file means you'll be pinning the installer with the versions listed below.
-##
-## To fetch the latest stable/edge versions of Armory, see:
-##   ./src/install.sh --help
-
-EOF
-
     curl -sS "${armoryspinnaker_version_manifest_url}" >> build/version.manifest
   fi
 }
