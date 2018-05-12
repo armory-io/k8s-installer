@@ -53,10 +53,7 @@ function fetch_latest_version_manifest() {
   mkdir -p build
 
   echo
-  if [[ -f "version.manifest" ]]; then
-    echo "Using pinned versions found in src/version.manifests!"
-    cp version.manifest build/version.manifest
-  elif [[ ${FETCH_LATEST_EDGE_VERSION} == true ]]; then
+  if [[ ${FETCH_LATEST_EDGE_VERSION} == true ]]; then
     echo "Fetching edge version to src/build/version.manifest..."
     ../bin/fetch-latest-armory-version.sh
   else # we're going to fetch stable by default  ${FETCH_LATEST_STABLE_VERSION} == true
@@ -1276,6 +1273,8 @@ done
 
 fetch_latest_version_manifest
 source build/version.manifest
+source version.manifest   # allow one/many overrides
+
 
 function main() {
   continue_env
