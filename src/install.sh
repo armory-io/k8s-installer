@@ -63,6 +63,14 @@ function fetch_latest_version_manifest() {
 
     curl -sS "${armoryspinnaker_version_manifest_url}" >> build/version.manifest
   fi
+
+    cat <<EOF >> build/version.manifest
+
+## Overrides from src/version.manifest below ##
+###############################################
+
+EOF
+  cat version.manifest >> build/version.manifest
 }
 
 
@@ -1264,7 +1272,6 @@ done
 
 fetch_latest_version_manifest
 source build/version.manifest
-source version.manifest   # allow one/many overrides
 
 
 function main() {
