@@ -1,0 +1,25 @@
+{
+    "kind": "Service",
+    "apiVersion": "v1",
+    "metadata": {
+      "name": "platform",
+      "namespace": "${NAMESPACE}"
+    },
+    "spec": {
+      "selector": {
+        "app": "platform"
+      },
+      "ports": [
+        {
+          "protocol": "TCP",
+          "port": 5001,
+          "targetPort": 5001
+        },
+        {
+          "protocol": "TCP",
+          "port": 10000,
+          "targetPort": 10000
+        }
+      ]
+    }
+}
