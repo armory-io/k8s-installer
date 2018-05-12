@@ -422,7 +422,7 @@ function get_gcloud_project() {
     fi
   done
   export GCLOUD_PROJECT=$opt
-  save_response GCLOUD_PROJECT
+  save_response GCLOUD_PROJECT $opt
 }
 
 function make_gcs_bucket() {
