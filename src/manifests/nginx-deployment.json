@@ -1,95 +1,112 @@
 {
-    "apiVersion": "extensions/v1beta1",
-    "kind": "Deployment",
-    "metadata": {
-        "annotations": {
-            "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
-            "artifact.spinnaker.io/name": "\"armory-nginx\"",
-            "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
-            "moniker.spinnaker.io/application": "\"armory\"",
-            "moniker.spinnaker.io/cluster": "\"nginx\""
-        },
-        "name": "nginx",
-        "namespace": "${NAMESPACE}",
-        "labels": {
-            "app": "nginx"
-        }
+  "apiVersion": "extensions/v1beta1",
+  "kind": "Deployment",
+  "metadata": {
+    "annotations": {
+      "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
+      "artifact.spinnaker.io/name": "\"armory-nginx\"",
+      "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
+      "moniker.spinnaker.io/application": "\"armory\"",
+      "moniker.spinnaker.io/cluster": "\"nginx\""
     },
-    "spec": {
-        "strategy": {
-            "type": "RollingUpdate",
-            "rollingUpdate": {
-                "maxUnavailable": 0,
-                "maxSurge": "100%"
-            }
-        },
-        "replicas": 2,
-        "selector": {
-            "matchLabels": {
-                "app": "nginx"
-            }
-        },
-        "template": {
-            "metadata": {
-                "annotations": {
-                    "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
-                    "artifact.spinnaker.io/name": "\"armory-nginx\"",
-                    "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
-                    "moniker.spinnaker.io/application": "\"armory\"",
-                    "moniker.spinnaker.io/cluster": "\"nginx\""
-                },
-                "labels": {
-                    "app": "nginx"
-                }
-            },
-            "spec": {
-                "containers": [
-                    {
-                        "resources": {
-                            "requests": {
-                                "cpu": "${NGINX_CPU}",
-                                "memory": "${NGINX_MEMORY}"
-                            }
-                        },
-                        "name": "nginx",
-                        "image": "nginx",
-                        "ports": [
-                            {
-                                "name": "http",
-                                "containerPort": 80
-                            },
-                            {
-                                "name": "https",
-                                "containerPort": 443
-                            }
-                        ],
-                        "volumeMounts": [
-                            {
-                                "name": "custom-config",
-                                "mountPath": "/etc/nginx/conf.d"
-                            },
-                            {
-                                "name": "nginx-certs",
-                                "mountPath": "/opt/nginx/certs"
-                            }
-                        ]
-                    }
-                ],
-                "volumes": [
-                    {
-                        "name": "custom-config",
-                        "configMap": {
-                            "name": "custom-config"
-                        }
-                    },
-                    {
-                        "name": "nginx-certs",
-                        "secret": {
-                            "secretName": "${nginx_certs_secret_name}"
-                        }
-                    }
-                ]
-            }
-        }
+    "name": "nginx",
+    "namespace": "${NAMESPACE}",
+    "labels": {
+      "app": "nginx"
     }
+  },
+  "spec": {
+    "strategy": {
+      "type": "RollingUpdate",
+      "rollingUpdate": {
+        "maxUnavailable": 0,
+        "maxSurge": "100%"
+      }
+    },
+    "replicas": 2,
+    "selector": {
+      "matchLabels": {
+        "app": "nginx"
+      }
+    },
+    "template": {
+      "metadata": {
+        "annotations": {
+          "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
+          "artifact.spinnaker.io/name": "\"armory-nginx\"",
+          "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
+          "moniker.spinnaker.io/application": "\"armory\"",
+          "moniker.spinnaker.io/cluster": "\"nginx\""
+        },
+        "labels": {
+          "app": "nginx"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "resources": {
+              "requests": {
+                "cpu": "${NGINX_CPU}",
+                "memory": "${NGINX_MEMORY}"
+              }
+            },
+            "name": "nginx",
+            "image": "nginx",
+            "ports": [
+              {
+                "name": "http",
+                "containerPort": 80
+              },
+              {
+                "name": "https",
+                "containerPort": 443
+              }
+            ],
+            "readinessProbe": {
+              "httpGet": {
+                "path": "/",
+                "port": 80
+              },
+              "initialDelaySeconds": 60,
+              "periodSeconds": 3,
+              "successThreshold": 5
+            },
+            "livenessProbe": {
+              "httpGet": {
+                "path": "/",
+                "port": 80
+              },
+              "initialDelaySeconds": 60,
+              "periodSeconds": 3
+            },
+            "volumeMounts": [
+              {
+                "name": "custom-config",
+                "mountPath": "/etc/nginx/conf.d"
+              },
+              {
+                "name": "nginx-certs",
+                "mountPath": "/opt/nginx/certs"
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "custom-config",
+            "configMap": {
+              "name": "custom-config"
+            }
+          },
+          {
+            "name": "nginx-certs",
+            "secret": {
+              "secretName": "${nginx_certs_secret_name}"
+            }
+          }
+        ]
+      }
+    }
+  }
 }
