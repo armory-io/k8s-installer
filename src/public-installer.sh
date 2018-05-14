@@ -1,10 +1,6 @@
 #!/bin/bash -e
 cd "$(dirname "$0")"
 
-## This is the public installer script that will fetch the kubernetes installer run it
-## The intention is that the AWS install script pieces will one day be cherry-picked into here.
-
-
 ARMORY_INSTALLER_ARTIFACT_URL="${KUBERNETES_INSTALLER_LATEST_ARTIFACT_URL}"
 TMP_PATH="${HOME}/tmp/armory/kubernetes-installer"
 mkdir -p ${TMP_PATH}
