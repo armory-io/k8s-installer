@@ -13,8 +13,8 @@ properties(
         description: """Optional. Set this if we're releasing this version of ArmorySpinnaker to the world."""
       ),
 
-      string(name: 'RELEASE_INSTALLER', defaultValue: 'false',
-        description: """Optional. Set this if we're releasing the installer."""
+      string(name: 'RELEASE_INSTALLER_ONLY', defaultValue: 'false',
+        description: """Optional. Set this if we're releasing only the installer."""
       ),
     ]),
     disableConcurrentBuilds(),
@@ -69,7 +69,7 @@ node {
     }
   }
 
-  if (env.BRANCH_NAME == 'master' && params.RELEASE_INSTALLER == 'true') {
+  if (env.BRANCH_NAME == 'master' && (params.RELEASE_INSTALLER_ONLY == 'true' || params.RELEASE_ARMORY_VERSION_IF_PASSING == 'true')) {
     stage('Promote latest Armory version') {
       sh('''
           UPLOAD_NEW_PUBLIC_INSTALLER=true ./bin/release-kubernetes-installer.sh
