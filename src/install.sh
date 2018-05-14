@@ -54,29 +54,23 @@ function fetch_latest_version_manifest() {
 
   echo
   if [[ ${FETCH_LATEST_EDGE_VERSION} == true ]]; then
-    echo "Fetching edge version of src/version.manifest..."
+    echo "Fetching edge version to src/build/version.manifest..."
     ../bin/fetch-latest-armory-version.sh
-    echo "Pinned the latest edge version in src/version.manifest!"
-  elif [[ ! -f "version.manifest" || ${FETCH_LATEST_STABLE_VERSION} == true ]]; then
-    echo "Fetching latest stable src/version.manifest..."
+  else # we're going to fetch stable by default  ${FETCH_LATEST_STABLE_VERSION} == true
+    echo "Fetching latest stable to src/build/version.manifest..."
     curl -sS "https://s3-us-west-2.amazonaws.com/armory-web/install/release/armoryspinnaker-latest-version.manifest" > build/armoryspinnaker-latest-version.manifest
     source build/armoryspinnaker-latest-version.manifest
 
-cat <<EOF > version.manifest
-## INFO: this file has been created as an untracked file so that the installer can run idempotently with pinned versions below.
-## Committing this file means you'll be pinning the installer with the versions listed below.
-##
-## To fetch the latest stable/edge versions of Armory, see:
-##   ./src/install.sh --help
+    curl -sS "${armoryspinnaker_version_manifest_url}" >> build/version.manifest
+  fi
+
+    cat <<EOF >> build/version.manifest
+
+## Overrides from src/version.manifest below ##
+###############################################
 
 EOF
-
-      curl -sS "${armoryspinnaker_version_manifest_url}" >> version.manifest
-
-      echo "Pinned the latest stable version in src/version.manifest!"
-  else
-    echo "Using pinned versions found in src/version.manifests!"
-  fi
+  cat version.manifest >> build/version.manifest
 }
 
 
@@ -422,7 +416,7 @@ function get_gcloud_project() {
     fi
   done
   export GCLOUD_PROJECT=$opt
-  save_response GCLOUD_PROJECT
+  save_response GCLOUD_PROJECT $opt
 }
 
 function make_gcs_bucket() {
@@ -1298,7 +1292,8 @@ done
 
 
 fetch_latest_version_manifest
-source version.manifest
+source build/version.manifest
+
 
 function main() {
   continue_env
