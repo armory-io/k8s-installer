@@ -3,7 +3,7 @@ cd "$(dirname "$0")"
 UPLOAD_NEW_PUBLIC_INSTALLER=${UPLOAD_NEW_PUBLIC_INSTALLER:-true}
 SET_AS_LATEST=${SET_AS_LATEST:-true}
 
-COMMIT_HASH=$(git rev-parse --short HEAD)
+COMMIT_HASH=${COMMIT_HASH:-"$(git rev-parse --short HEAD || true)"}
 
 # This will pin the latest stable version.manifest so that the script will always run with
 # the same version of version.manifest.
