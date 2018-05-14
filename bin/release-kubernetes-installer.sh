@@ -1,6 +1,6 @@
 #!/bin/bash -xe
 cd "$(dirname "$0")"
-UPLOAD=${UPLOAD:-true}
+UPLOAD_NEW_PUBLIC_INSTALLER=${UPLOAD_NEW_PUBLIC_INSTALLER:-true}
 SET_AS_LATEST=${SET_AS_LATEST:-true}
 
 COMMIT_HASH=$(git rev-parse --short HEAD)
@@ -32,8 +32,7 @@ envsubst "${VARS_TO_REPLACE}" < ../src/public-installer.sh > ../src/build/public
 #sed -e "s/KUBERNETES_INSTALLER_LATEST_ARTIFACT_URL/${KUBERNETES_INSTALLER_LATEST_ARTIFACT_URL}/" ../src/public-installer.sh > ../src/build/public-installer.sh
 
 
-if [[ ${UPLOAD} == 'true' ]]; then
+if [[ ${UPLOAD_NEW_PUBLIC_INSTALLER} == 'true' ]]; then
   echo "Uploading public installer"
   aws s3 cp --acl public-read-write ../src/build/public-installer.sh "s3://armory-web/install/release/kubernetes-installer/public-installer.sh"
-  # TODO invalidate cloudfront cache for this file
 fi
