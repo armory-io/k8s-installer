@@ -9,8 +9,12 @@ properties(
         lastSuccessfulBuild or 1864"""
       ),
 
-      string(name: 'RELEASE_ARMORY_VERSION_IF_PASSING', defaultValue: '',
+      string(name: 'RELEASE_ARMORY_VERSION_IF_PASSING', defaultValue: 'false',
         description: """Optional. Set this if we're releasing this version of ArmorySpinnaker to the world."""
+      ),
+
+      string(name: 'RELEASE_INSTALLER_ONLY', defaultValue: 'false',
+        description: """Optional. Set this if we're releasing only the installer."""
       ),
     ]),
     disableConcurrentBuilds(),
@@ -61,6 +65,14 @@ node {
     stage('Promote latest Armory version') {
       sh('''
           ./bin/promote-latest-armory-version.sh
+        ''')
+    }
+  }
+
+  if (env.BRANCH_NAME == 'master' && (params.RELEASE_INSTALLER_ONLY == 'true' || params.RELEASE_ARMORY_VERSION_IF_PASSING == 'true')) {
+    stage('Promote latest Armory version') {
+      sh('''
+          UPLOAD_NEW_PUBLIC_INSTALLER=true ./bin/jenkins-public-installer-releaser.sh
         ''')
     }
   }
