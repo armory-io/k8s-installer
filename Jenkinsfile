@@ -16,8 +16,7 @@ properties(
       string(name: 'RELEASE_INSTALLER_ONLY', defaultValue: 'false',
         description: """Optional. Set this if we're releasing only the installer."""
       ),
-    ]),
-    disableConcurrentBuilds(),
+    ])
   ]
 )
 
