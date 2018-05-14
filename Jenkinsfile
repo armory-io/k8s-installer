@@ -9,7 +9,7 @@ properties(
         lastSuccessfulBuild or 1864"""
       ),
 
-      string(name: 'RELEASE_ARMORY_VERSION_IF_PASSING', defaultValue: '',
+      string(name: 'RELEASE_ARMORY_VERSION_IF_PASSING', defaultValue: 'false',
         description: """Optional. Set this if we're releasing this version of ArmorySpinnaker to the world."""
       ),
 
