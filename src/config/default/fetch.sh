@@ -39,7 +39,7 @@ add_ca_certs() {
       -noprompt
 }
 
-if type keytool > /dev/null; then
+if [ `which keytool` ]; then
   echo "INFO: Keytool found adding certs where appropriate"
   add_ca_certs
   #we'll want to add saml, oauth, authn/authz stuff here too

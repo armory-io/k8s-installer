@@ -199,6 +199,8 @@ EOF
     encode_kubeconfig
   fi
 
+  get_var "Please enter an email address to use as owner of the armory pipeline [changeme@armory.io]: " APP_EMAIL "" "" "changeme@armory.io"
+
   prompt_user_for_config_store
 
   local bucket_name=$(awk '{ print tolower($0) }' <<< ${NAMESPACE}-platform-$(uuidgen) | cut -c 1-51)
@@ -673,6 +675,21 @@ EOF
     error "Either S3 or GCS must be enabled."
   fi
 
+cat <<EOF > ${BUILD_DIR}/app.json
+{
+  "job": [
+    { "type": "createApplication",
+      "application": {
+        "name": "armory",
+        "email": "${APP_EMAIL}"
+      },
+      "user": "[anonymous]" }
+  ],
+  "application":"armory",
+  "description":"Create Application: armory"
+}
+EOF
+
 cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
 {
   "application": "armory",
@@ -1027,6 +1044,9 @@ EOF
     curl --max-time 10 -s -o /dev/null http://${NGINX_IP}/api/applications
     exit_code=$?
     if [[ "$exit_code" == "0" ]]; then
+      # Ensure the application exists.
+      curl --max-time 10 -s -o /dev/null -X POST -d@${BUILD_DIR}/app.json -H "Content-type: application/json" "http://${NGINX_IP}/api/applications/armory/tasks"
+
       #we want to delete any existing pipeline if we're re-running the installer
       curl --max-time 10 -s -o /dev/null -X DELETE "http://${NGINX_IP}/api/pipelines/armory/Deploy"
       #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
