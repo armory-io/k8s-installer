@@ -199,7 +199,7 @@ EOF
     encode_kubeconfig
   fi
 
-  get_var "Please enter an email address to use as owner of the armory pipeline: " APP_EMAIL
+  get_var "Please enter an email address to use as owner of the armory pipeline [changeme@armory.io]: " APP_EMAIL "" "" "changeme@armory.io"
 
   prompt_user_for_config_store
 
