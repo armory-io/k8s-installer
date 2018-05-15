@@ -54,29 +54,23 @@ function fetch_latest_version_manifest() {
 
   echo
   if [[ ${FETCH_LATEST_EDGE_VERSION} == true ]]; then
-    echo "Fetching edge version of src/version.manifest..."
+    echo "Fetching edge version to src/build/version.manifest..."
     ../bin/fetch-latest-armory-version.sh
-    echo "Pinned the latest edge version in src/version.manifest!"
-  elif [[ ! -f "version.manifest" || ${FETCH_LATEST_STABLE_VERSION} == true ]]; then
-    echo "Fetching latest stable src/version.manifest..."
+  else # we're going to fetch stable by default  ${FETCH_LATEST_STABLE_VERSION} == true
+    echo "Fetching latest stable to src/build/version.manifest..."
     curl -sS "https://s3-us-west-2.amazonaws.com/armory-web/install/release/armoryspinnaker-latest-version.manifest" > build/armoryspinnaker-latest-version.manifest
     source build/armoryspinnaker-latest-version.manifest
 
-cat <<EOF > version.manifest
-## INFO: this file has been created as an untracked file so that the installer can run idempotently with pinned versions below.
-## Committing this file means you'll be pinning the installer with the versions listed below.
-##
-## To fetch the latest stable/edge versions of Armory, see:
-##   ./src/install.sh --help
+    curl -sS "${armoryspinnaker_version_manifest_url}" >> build/version.manifest
+  fi
+
+    cat <<EOF >> build/version.manifest
+
+## Overrides from src/version.manifest below ##
+###############################################
 
 EOF
-
-      curl -sS "${armoryspinnaker_version_manifest_url}" >> version.manifest
-
-      echo "Pinned the latest stable version in src/version.manifest!"
-  else
-    echo "Using pinned versions found in src/version.manifests!"
-  fi
+  cat version.manifest >> build/version.manifest
 }
 
 
@@ -204,6 +198,8 @@ EOF
     export KUBECONFIG_CONFIG_ENTRY="kubeconfigFile: /opt/spinnaker/credentials/custom/default-kubeconfig"
     encode_kubeconfig
   fi
+
+  get_var "Please enter an email address to use as owner of the armory pipeline [changeme@armory.io]: " APP_EMAIL "" "" "changeme@armory.io"
 
   prompt_user_for_config_store
 
@@ -422,7 +418,7 @@ function get_gcloud_project() {
     fi
   done
   export GCLOUD_PROJECT=$opt
-  save_response GCLOUD_PROJECT
+  save_response GCLOUD_PROJECT $opt
 }
 
 function make_gcs_bucket() {
@@ -625,7 +621,11 @@ Installation complete. You can access The Armory Platform via:
 
   http://${NGINX_IP}
 
-You can find Armory deploying Armory here:
+Configure your new Armory installation:
+
+  http://${NGINX_IP}/#/platform/config
+
+Your new Armory deploying Armory pipeline is here:
 
   http://${NGINX_IP}/#/applications/armory/executions
 
@@ -674,6 +674,21 @@ EOF
   else
     error "Either S3 or GCS must be enabled."
   fi
+
+cat <<EOF > ${BUILD_DIR}/app.json
+{
+  "job": [
+    { "type": "createApplication",
+      "application": {
+        "name": "armory",
+        "email": "${APP_EMAIL}"
+      },
+      "user": "[anonymous]" }
+  ],
+  "application":"armory",
+  "description":"Create Application: armory"
+}
+EOF
 
 cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
 {
@@ -1000,6 +1015,22 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         "type": "expression"
       },
       "type": "deployManifest"
+    },
+    {
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-platform-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "platform"
+      },
+      "name": "Deploy platform",
+      "refId": "17",
+      "requisiteStageRefIds": ["2", "1", "12"],
+      "source": "text",
+      "type": "deployManifest"
     }
   ]
 }
@@ -1013,6 +1044,9 @@ EOF
     curl --max-time 10 -s -o /dev/null http://${NGINX_IP}/api/applications
     exit_code=$?
     if [[ "$exit_code" == "0" ]]; then
+      # Ensure the application exists.
+      curl --max-time 10 -s -o /dev/null -X POST -d@${BUILD_DIR}/app.json -H "Content-type: application/json" "http://${NGINX_IP}/api/applications/armory/tasks"
+
       #we want to delete any existing pipeline if we're re-running the installer
       curl --max-time 10 -s -o /dev/null -X DELETE "http://${NGINX_IP}/api/pipelines/armory/Deploy"
       #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
@@ -1035,7 +1069,7 @@ EOF
 }
 
 function set_custom_profile() {
-  cpu_vars=("CLOUDDRIVER_CPU" "DECK_CPU" "DINGHY_CPU" "ECHO_CPU" "FIAT_CPU" "FRONT50_CPU" "GATE_CPU" "IGOR_CPU" "KAYENTA_CPU" "LIGHTHOUSE_CPU" "ORCA_CPU" "REDIS_CPU" "ROSCO_CPU")
+  cpu_vars=("CLOUDDRIVER_CPU" "DECK_CPU" "DINGHY_CPU" "ECHO_CPU" "FIAT_CPU" "FRONT50_CPU" "GATE_CPU" "IGOR_CPU" "KAYENTA_CPU" "LIGHTHOUSE_CPU" "ORCA_CPU" "PLATFORM_CPU" "REDIS_CPU" "ROSCO_CPU")
   for v in "${cpu_vars[@]}"; do
     echo "What allocation would you like for $v?"
     options=("500m" "1000m" "1500m" "2000m" "2500m")
@@ -1052,7 +1086,7 @@ function set_custom_profile() {
       esac
     done
   done
-  mem_vars=("CLOUDDRIVER_MEMORY" "DECK_MEMORY" "DINGHY_MEMORY" "ECHO_MEMORY" "FIAT_MEMORY" "FRONT50_MEMORY" "GATE_MEMORY" "IGOR_MEMORY" "KAYENTA_MEMORY" "LIGHTHOUSE_MEMORY" "ORCA_MEMORY" "REDIS_MEMORY" "ROSCO_MEMORY")
+  mem_vars=("CLOUDDRIVER_MEMORY" "DECK_MEMORY" "DINGHY_MEMORY" "ECHO_MEMORY" "FIAT_MEMORY" "FRONT50_MEMORY" "GATE_MEMORY" "IGOR_MEMORY" "KAYENTA_MEMORY" "LIGHTHOUSE_MEMORY" "ORCA_MEMORY" "PLATFORM_MEMORY" "REDIS_MEMORY" "ROSCO_MEMORY")
   for v in "${mem_vars[@]}"; do
     echo "What allocation would you like for $v?"
     options=("512Mi" "1Gi" "2Gi" "4Gi" "8Gi" "16Gi")
@@ -1103,19 +1137,20 @@ EOF
   echo "       Total MEMORY: 2048Mi (~2 GB)"
   echo ""
   echo "  'Medium'"
-  echo "       CPU: 500m for deck, dinghy, echo, fiat, front50, gate, igor, kayenta, lighthouse, redis, & rosco"
+  echo "       CPU: 500m for deck, dinghy, echo, fiat, front50, gate, igor, kayenta,"
+  echo "                      lighthouse, platform, redis, & rosco"
   echo "            1000m for clouddriver, & orca"
-  echo "       MEMORY: 512Mi for deck, dinghy, fiat, echo, kayenta, lighthouse, & rosco"
+  echo "       MEMORY: 512Mi for deck, dinghy, fiat, echo, kayenta, lighthouse, platform, & rosco"
   echo "               1Gi for front50, gate, igor, & rosco"
   echo "               2Gi for clouddriver, orca, & redis"
   echo "       Total CPU: 10000m (10 vCPUs)"
   echo "       Total MEMORY: 18.5Gi (~19.86 GB)"
   echo ""
   echo "  'Large'"
-  echo "       CPU: 500m for kayenta & lighthouse"
-  echo "            1000m for deck, dinghy, echo, fiat, front50, gate, igor, redis, & rosco"
+  echo "       CPU: 500m for dinghy, kayenta, lighthouse, & platform"
+  echo "            1000m for deck, echo, fiat, front50, gate, igor, redis, & rosco"
   echo "            2000m for clouddriver, & orca"
-  echo "       MEMORY: 521Mi for deck, dinghy, fiat, kayenta, & lighthouse"
+  echo "       MEMORY: 521Mi for deck, dinghy, fiat, kayenta, lighthouse, & platform"
   echo "               1Gi for echo, & rosco"
   echo "               2Gi for front50, gate & igor"
   echo "               4Gi for orca"
@@ -1273,7 +1308,8 @@ done
 
 
 fetch_latest_version_manifest
-source version.manifest
+source build/version.manifest
+
 
 function main() {
   continue_env

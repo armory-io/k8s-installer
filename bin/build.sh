@@ -5,8 +5,8 @@ PROFILE=${PROFILE:-default}
 S3_PREFIX="${S3_PREFIX:-/dev/}"
 
 generate_json_with_trailing_comma() {
-  source ../src/version.manifest
-  fields=$(cat ../src/version.manifest | cut -d' ' -f2 | cut -d'=' -f1)
+  source ../src/build/version.manifest
+  fields=$(cat ../src/build/version.manifest | cut -d' ' -f2 | cut -d'=' -f1)
 
   printf "{"
   for field in $fields; do
