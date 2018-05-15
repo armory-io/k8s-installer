@@ -56,8 +56,12 @@
               ],
               "env": [
                 {
-                    "name": "SPINNAKER_HOME",
-                    "value": "/home/spinnaker"
+                  "name": "PLATFORM_LOCAL",
+                  "value": "/home/spinnaker/config/platform-local.yml"
+                },
+                {
+                  "name": "REDIS_PORT",
+                  "value": "6379"
                 },
                 {
                   "name": "PLATFORM_PORT_MAPPING",
@@ -65,8 +69,8 @@
                 },
                 {
                     "name": "SLACK_CALLBACK_PORT",
-                    "value": "-10000:10000"
-                  },
+                    "value": "10000"
+                },
                 {
                   "name": "LOG_LEVEL",
                   "value": "DEBUG"
@@ -85,12 +89,12 @@
                 "-c"
               ],
               "args": [
-                "bash /opt/spinnaker/config/default/fetch.sh && cd /home/spinnaker/config && /usr/local/bin/platform"
+                "bash /opt/spinnaker/config/default/fetch.sh && /usr/local/bin/platform"
               ],
               "resources": {
                 "requests": {
-                  "cpu": "${platform_CPU}",
-                  "memory": "${platform_MEMORY}"
+                  "cpu": "${PLATFORM_CPU}",
+                  "memory": "${PLATFORM_MEMORY}"
                 }
               },
               "ports": [

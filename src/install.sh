@@ -1013,10 +1013,6 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "refId": "17",
       "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
-      "stageEnabled": {
-        "expression": "false",
-        "type": "expression"
-      },
       "type": "deployManifest"
     }
   ]
