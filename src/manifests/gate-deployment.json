@@ -90,7 +90,7 @@
                 "path": "/health?checkDownstreamServices=true&downstreamServices=true",
                 "port": 8084
               },
-              "initialDelaySeconds": 60,
+              "initialDelaySeconds": 90,
               "periodSeconds": 5,
               "successThreshold": 10
             },
@@ -99,7 +99,7 @@
                 "path": "/health",
                 "port": 8084
               },
-              "initialDelaySeconds": 60,
+              "initialDelaySeconds": 90,
               "periodSeconds": 3
             },
             "volumeMounts": [
