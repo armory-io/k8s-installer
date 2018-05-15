@@ -1015,6 +1015,22 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         "type": "expression"
       },
       "type": "deployManifest"
+    },
+    {
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-platform-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "platform"
+      },
+      "name": "Deploy platform",
+      "refId": "17",
+      "requisiteStageRefIds": ["2", "1", "12"],
+      "source": "text",
+      "type": "deployManifest"
     }
   ]
 }
@@ -1053,7 +1069,7 @@ EOF
 }
 
 function set_custom_profile() {
-  cpu_vars=("CLOUDDRIVER_CPU" "DECK_CPU" "DINGHY_CPU" "ECHO_CPU" "FIAT_CPU" "FRONT50_CPU" "GATE_CPU" "IGOR_CPU" "KAYENTA_CPU" "LIGHTHOUSE_CPU" "ORCA_CPU" "REDIS_CPU" "ROSCO_CPU")
+  cpu_vars=("CLOUDDRIVER_CPU" "DECK_CPU" "DINGHY_CPU" "ECHO_CPU" "FIAT_CPU" "FRONT50_CPU" "GATE_CPU" "IGOR_CPU" "KAYENTA_CPU" "LIGHTHOUSE_CPU" "ORCA_CPU" "PLATFORM_CPU" "REDIS_CPU" "ROSCO_CPU")
   for v in "${cpu_vars[@]}"; do
     echo "What allocation would you like for $v?"
     options=("500m" "1000m" "1500m" "2000m" "2500m")
@@ -1070,7 +1086,7 @@ function set_custom_profile() {
       esac
     done
   done
-  mem_vars=("CLOUDDRIVER_MEMORY" "DECK_MEMORY" "DINGHY_MEMORY" "ECHO_MEMORY" "FIAT_MEMORY" "FRONT50_MEMORY" "GATE_MEMORY" "IGOR_MEMORY" "KAYENTA_MEMORY" "LIGHTHOUSE_MEMORY" "ORCA_MEMORY" "REDIS_MEMORY" "ROSCO_MEMORY")
+  mem_vars=("CLOUDDRIVER_MEMORY" "DECK_MEMORY" "DINGHY_MEMORY" "ECHO_MEMORY" "FIAT_MEMORY" "FRONT50_MEMORY" "GATE_MEMORY" "IGOR_MEMORY" "KAYENTA_MEMORY" "LIGHTHOUSE_MEMORY" "ORCA_MEMORY" "PLATFORM_MEMORY" "REDIS_MEMORY" "ROSCO_MEMORY")
   for v in "${mem_vars[@]}"; do
     echo "What allocation would you like for $v?"
     options=("512Mi" "1Gi" "2Gi" "4Gi" "8Gi" "16Gi")
@@ -1121,19 +1137,20 @@ EOF
   echo "       Total MEMORY: 2048Mi (~2 GB)"
   echo ""
   echo "  'Medium'"
-  echo "       CPU: 500m for deck, dinghy, echo, fiat, front50, gate, igor, kayenta, lighthouse, redis, & rosco"
+  echo "       CPU: 500m for deck, dinghy, echo, fiat, front50, gate, igor, kayenta,"
+  echo "                      lighthouse, platform, redis, & rosco"
   echo "            1000m for clouddriver, & orca"
-  echo "       MEMORY: 512Mi for deck, dinghy, fiat, echo, kayenta, lighthouse, & rosco"
+  echo "       MEMORY: 512Mi for deck, dinghy, fiat, echo, kayenta, lighthouse, platform, & rosco"
   echo "               1Gi for front50, gate, igor, & rosco"
   echo "               2Gi for clouddriver, orca, & redis"
   echo "       Total CPU: 10000m (10 vCPUs)"
   echo "       Total MEMORY: 18.5Gi (~19.86 GB)"
   echo ""
   echo "  'Large'"
-  echo "       CPU: 500m for kayenta & lighthouse"
-  echo "            1000m for deck, dinghy, echo, fiat, front50, gate, igor, redis, & rosco"
+  echo "       CPU: 500m for dinghy, kayenta, lighthouse, & platform"
+  echo "            1000m for deck, echo, fiat, front50, gate, igor, redis, & rosco"
   echo "            2000m for clouddriver, & orca"
-  echo "       MEMORY: 521Mi for deck, dinghy, fiat, kayenta, & lighthouse"
+  echo "       MEMORY: 521Mi for deck, dinghy, fiat, kayenta, lighthouse, & platform"
   echo "               1Gi for echo, & rosco"
   echo "               2Gi for front50, gate & igor"
   echo "               4Gi for orca"
