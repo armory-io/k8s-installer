@@ -34,5 +34,5 @@ envsubst "${VARS_TO_REPLACE}" < ../src/public-installer.sh > ../src/build/public
 
 if [[ ${UPLOAD_NEW_PUBLIC_INSTALLER} == 'true' ]]; then
   echo "Uploading public installer"
-  aws s3 cp --acl public-read-write ../src/build/public-installer.sh "s3://armory-web/install/release/kubernetes-installer/public-installer.sh"
+  aws s3 cp --acl public-read-write --content-type text/html ../src/build/public-installer.sh "s3://armory-web/install/release/kubernetes-installer/public-installer.sh"
 fi
