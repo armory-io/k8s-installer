@@ -617,9 +617,9 @@ function encode_kubeconfig() {
 function output_results() {
 cat <<EOF
 
-Installation complete. You can access The Armory Platform via:
+Installation complete. You can finish configuring the Armory Platform via:
 
-  http://${NGINX_IP}
+  http://${NGINX_IP}/#/platform/config/stepbystep
 
 Configure your new Armory installation:
 
