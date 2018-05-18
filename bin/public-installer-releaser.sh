@@ -5,15 +5,9 @@ SET_AS_LATEST=${SET_AS_LATEST:-true}
 
 COMMIT_HASH=${COMMIT_HASH:-"$(git rev-parse --short HEAD || true)"}
 
-# This will pin the latest stable version.manifest so that the script will always run with
-# the same version of version.manifest.
-echo "Fetching latest stable to src/build/version.manifest..."
-curl -sS "https://s3-us-west-2.amazonaws.com/armory-web/install/release/armoryspinnaker-latest-version.manifest" >> ../src/build/armoryspinnaker-latest-version.manifest
-source ../src/build/armoryspinnaker-latest-version.manifest
-
-curl -sS "${armoryspinnaker_version_manifest_url}" >> ../src/version.manifest
-source ../src/version.manifest
-
+# We're going to use the existing version.manifest in ../src/build to use as a pin
+cp ../src/build/version.manifest ../src/version.manifest
+source ../src/build/version.manifest
 
 INSTALLER_TAR_NAME="kubernetes-installer-${COMMIT_HASH}-armory-v${armoryspinnaker_version}.tgz"
 echo "Creating ${INSTALLER_TAR_NAME} with Armory v${armoryspinnaker_version}"

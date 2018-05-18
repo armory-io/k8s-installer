@@ -23,14 +23,6 @@ properties(
 node {
   checkout scm
 
-  if (params.ARMORYSPINNAKER_JENKINS_JOB_ID != '') {
-    stage('Fetch latest Armory version') {
-      sh("""
-      ./bin/fetch-latest-armory-version.sh
-    """)
-    }
-  }
-
   stage('Testing') {
     def runner = { testName ->
       return {

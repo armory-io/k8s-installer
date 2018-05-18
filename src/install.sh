@@ -51,26 +51,30 @@ function error() {
 
 function fetch_latest_version_manifest() {
   mkdir -p build
+  rm -rf build/version.manifest || true
 
   echo
-  if [[ ${FETCH_LATEST_EDGE_VERSION} == true ]]; then
+  if [[ ${FETCH_LATEST_EDGE_VERSION} == true || ${ARMORYSPINNAKER_JENKINS_JOB_ID} != "" ]]; then
     echo "Fetching edge version to src/build/version.manifest..."
     ../bin/fetch-latest-armory-version.sh
+    cp build/armoryspinnaker-jenkins-version.manifest build/version.manifest
   else # we're going to fetch stable by default  ${FETCH_LATEST_STABLE_VERSION} == true
     echo "Fetching latest stable to src/build/version.manifest..."
     curl -sS "https://s3-us-west-2.amazonaws.com/armory-web/install/release/armoryspinnaker-latest-version.manifest" > build/armoryspinnaker-latest-version.manifest
     source build/armoryspinnaker-latest-version.manifest
 
-    curl -sS "${armoryspinnaker_version_manifest_url}" >> build/version.manifest
+    curl -sS "${armoryspinnaker_version_manifest_url}" > build/version.manifest
   fi
 
+  # if there's actual exports commited, then we should combine everything together
+  if grep -q "^\s*export" version.manifest ; then
     cat <<EOF >> build/version.manifest
 
-## Overrides from src/version.manifest below ##
+## Overrides for version.manifest below ##
 ###############################################
-
 EOF
-  cat version.manifest >> build/version.manifest
+    grep -v '^$\|^## ' version.manifest >> build/version.manifest # remove the empty lines and ## comments
+  fi
 }
 
 
