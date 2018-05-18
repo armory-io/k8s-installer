@@ -1,9 +1,12 @@
 #!/bin/bash -e
 cd "$(dirname "$0")"
 
-PUBLIC_ARMORY_JENKINS_JOB_VERSION=${PUBLIC_ARMORY_JENKINS_JOB_VERSION:-"lastSuccessfulBuild"}
+rm -rf ../src/build || true
+mkdir -p ../src/build/
 
-echo "Querying ArmorySpinnaker's Jenkins Job for '${PUBLIC_ARMORY_JENKINS_JOB_VERSION}'"
-arm jenkins "/job/armory/job/armoryspinnaker/job/master/${PUBLIC_ARMORY_JENKINS_JOB_VERSION}/artifact/src/spinnaker/version.manifest" >> ../src/build/version.manifest
-source ../src/build/version.manifest
+ARMORYSPINNAKER_JENKINS_JOB_ID=${ARMORYSPINNAKER_JENKINS_JOB_ID:-"lastSuccessfulBuild"}
+
+echo "Querying ArmorySpinnaker's Jenkins Job for '${ARMORYSPINNAKER_JENKINS_JOB_ID}'"
+arm jenkins "/job/armory/job/armoryspinnaker/job/master/${ARMORYSPINNAKER_JENKINS_JOB_ID}/artifact/src/spinnaker/version.manifest" >> ../src/build/armoryspinnaker-jenkins-version.manifest
+source ../src/build/armoryspinnaker-jenkins-version.manifest
 echo "Found ArmorySpinnaker v${armoryspinnaker_version} at ${packager_version}, build number ${jenkins_build_number}."

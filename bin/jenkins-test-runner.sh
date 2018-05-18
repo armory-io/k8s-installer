@@ -13,6 +13,7 @@ docker build -t $IMAGE -f bin/tester.Dockerfile .
 
 docker run --rm \
     -e GOOGLE_APPLICATION_CREDENTIALS="${HOME}/.kube/gcp_key.json" \
+    -e ARMORYSPINNAKER_JENKINS_JOB_ID="${ARMORYSPINNAKER_JENKINS_JOB_ID}" \
     -v "${JENKINS_USER_HOME}/.aws/credentials:/root/.aws/credentials" \
     -v "${JENKINS_USER_HOME}/.kube/config:/root/.kube/config" \
     -v "${JENKINS_USER_HOME}/.kube/gcp_key.json:/root/.kube/gcp_key.json" \
