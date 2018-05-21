@@ -487,11 +487,25 @@ EOF
   done
 }
 
+function check_for_custom_configmap() {
+  echo "Checking for existing configuration..."
+  foundmap=`kubectl $KUBECTL_OPTIONS get cm custom-config -o=custom-columns=NAME:.metadata.name | tail -n +2`
+  if [[ "$foundmap" == "custom-config" ]]; then
+    get_var "Found custom-config from previous run, would you like to use it? (y/n): " REUSE_CUSTOM_CONFIG
+  fi
+}
+
 function remove_k8s_configmaps() {
   echo "Deleting config maps and secrets if they exists"
-  kubectl $KUBECTL_OPTIONS get cm default-config custom-config init-env -o=custom-columns=NAME:.metadata.name  \
-    | tail -n +2 \
-    | xargs kubectl $KUBECTL_OPTIONS delete cm
+  if [[ "$REUSE_CUSTOM_CONFIG" != "y" ]]; then
+    kubectl $KUBECTL_OPTIONS get cm default-config custom-config init-env -o=custom-columns=NAME:.metadata.name  \
+      | tail -n +2 \
+      | xargs kubectl $KUBECTL_OPTIONS delete cm
+  else
+    kubectl $KUBECTL_OPTIONS get cm default-config init-env -o=custom-columns=NAME:.metadata.name  \
+      | tail -n +2 \
+      | xargs kubectl $KUBECTL_OPTIONS delete cm
+  fi
 }
 
 function create_k8s_default_config() {
@@ -499,30 +513,32 @@ function create_k8s_default_config() {
 }
 
 function create_k8s_custom_config() {
-  mkdir -p ${BUILD_DIR}/config/custom/
-  cp "config/custom/nginx.conf" "${BUILD_DIR}/config/custom/nginx.conf"
-  for filename in config/custom/*.yml; do
-    envsubst < $filename > ${BUILD_DIR}/config/custom/$(basename $filename)
-  done
-  # dump to a file to upload to S3. Used when we deploy, we use dry-run to accomplish this
-  kubectl ${KUBECTL_OPTIONS} create configmap custom-config \
-    -o json \
-    --dry-run \
-    --from-file=${BUILD_DIR}/config/custom | jq '. + {kind:"ConfigMap",apiVersion:"v1" }' \
-    > ${BUILD_DIR}/config/custom/custom-config.json
+  if [[ "$REUSE_CUSTOM_CONFIG" != "y" ]]; then
+    mkdir -p ${BUILD_DIR}/config/custom/
+    cp "config/custom/nginx.conf" "${BUILD_DIR}/config/custom/nginx.conf"
+    for filename in config/custom/*.yml; do
+      envsubst < $filename > ${BUILD_DIR}/config/custom/$(basename $filename)
+    done
+    # dump to a file to upload to S3. Used when we deploy, we use dry-run to accomplish this
+    kubectl ${KUBECTL_OPTIONS} create configmap custom-config \
+      -o json \
+      --dry-run \
+      --from-file=${BUILD_DIR}/config/custom | jq '. + {kind:"ConfigMap",apiVersion:"v1" }' \
+      > ${BUILD_DIR}/config/custom/custom-config.json
+  
+    kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/config/custom/custom-config.json
 
-  kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/config/custom/custom-config.json
-
-  local config_file="${BUILD_DIR}/config/custom/custom-config.json"
-  if [[ "${CONFIG_STORE}" == "S3" ]]; then
-    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
-      "${config_file}" \
-      "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
-  elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
-    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
-      --endpoint-url=${MINIO_ENDPOINT} "${config_file}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
-  elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
-    gsutil cp "${config_file}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
+    local config_file="${BUILD_DIR}/config/custom/custom-config.json"
+    if [[ "${CONFIG_STORE}" == "S3" ]]; then
+      aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+        "${config_file}" \
+        "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
+    elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
+      AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
+        --endpoint-url=${MINIO_ENDPOINT} "${config_file}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
+    elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
+      gsutil cp "${config_file}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
+    fi
   fi
 }
 
@@ -571,6 +587,7 @@ EOL
 
 function create_k8s_resources() {
   create_k8s_namespace
+  check_for_custom_configmap
   create_k8s_nginx_load_balancer
   #remove the configmaps so this script is more idempotent
   remove_k8s_configmaps
