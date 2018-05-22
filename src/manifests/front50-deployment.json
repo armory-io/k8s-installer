@@ -84,16 +84,16 @@
                 "path": "/health",
                 "port": 8080
               },
-              "initialDelaySeconds": 60,
+              "initialDelaySeconds": 90,
               "periodSeconds": 5,
-              "successThreshold": 10
+              "successThreshold": 8
             },
             "livenessProbe": {
               "httpGet": {
                 "path": "/health",
                 "port": 8080
               },
-              "initialDelaySeconds": 60,
+              "initialDelaySeconds": 90,
               "periodSeconds": 3
             },
             "volumeMounts": [

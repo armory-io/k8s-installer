@@ -87,8 +87,9 @@
                 "path": "/health",
                 "port": 8083
               },
-              "initialDelaySeconds": 60,
-              "periodSeconds": 3
+              "initialDelaySeconds": 90,
+              "periodSeconds": 5,
+              "failureThreshold": 5
             },
             "lifecycle": {
               "preStop": {
