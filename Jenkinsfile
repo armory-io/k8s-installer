@@ -23,6 +23,15 @@ properties(
 node {
   checkout scm
 
+  if (params.ARMORYSPINNAKER_JENKINS_JOB_ID != '') {
+    stage('Fetch latest Armory version') {
+      sh("""
+      ./bin/fetch-latest-armory-version.sh
+      cp src/build/armoryspinnaker-jenkins-version.manifest src/version.manifest   # pin to an edge version
+    """)
+    }
+  }
+
   stage('Testing') {
     def runner = { testName ->
       return {
