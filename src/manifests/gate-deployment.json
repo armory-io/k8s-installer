@@ -100,7 +100,8 @@
                 "port": 8084
               },
               "initialDelaySeconds": 90,
-              "periodSeconds": 3
+              "periodSeconds": 5,
+              "failureThreshold": 5
             },
             "volumeMounts": [
               {

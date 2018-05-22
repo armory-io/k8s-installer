@@ -80,14 +80,16 @@
               },
               "initialDelaySeconds": 90,
               "periodSeconds": 3,
-              "successThreshold": 5
+              "successThreshold": 5,
+              "failureThreshold": 5
             },
             "livenessProbe": {
               "httpGet": {
                 "path": "/health",
                 "port": 7002
               },
-              "initialDelaySeconds": 60,
+              "initialDelaySeconds": 90,
+              "failureThreshold": 5,
               "periodSeconds": 3
             },
             "volumeMounts": [
