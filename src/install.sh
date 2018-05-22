@@ -489,8 +489,8 @@ EOF
 
 function check_for_custom_configmap() {
   echo "Checking for existing configuration..."
-  foundmap=`kubectl $KUBECTL_OPTIONS get cm custom-config -o=custom-columns=NAME:.metadata.name | tail -n +2`
-  if [[ "$foundmap" == "custom-config" ]]; then
+  foundmap=`kubectl $KUBECTL_OPTIONS get cm -o=custom-columns=NAME:.metadata.name | grep custom-config | tail -n 1`
+  if [[ $foundmap ]]; then
     get_var "Found custom-config from previous run, would you like to use it? (y/n): " REUSE_CUSTOM_CONFIG
   fi
 }
@@ -539,6 +539,8 @@ function create_k8s_custom_config() {
     elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
       gsutil cp "${config_file}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
     fi
+  else
+    echo "Re-using existing custom-config configmap"
   fi
 }
 
@@ -587,7 +589,6 @@ EOL
 
 function create_k8s_resources() {
   create_k8s_namespace
-  check_for_custom_configmap
   create_k8s_nginx_load_balancer
   #remove the configmaps so this script is more idempotent
   remove_k8s_configmaps
@@ -1264,12 +1265,14 @@ function continue_env() {
 }
 
 function make_bucket() {
-  if [ "$CONFIG_STORE" == "S3" ]; then
-    make_s3_bucket
-  elif [ "$CONFIG_STORE" == "GCS" ]; then
-    make_gcs_bucket
-  elif [ "$CONFIG_STORE" == "MINIO" ]; then
-    make_minio_bucket
+  if [ "$REUSE_CUSTOM_CONFIG" != "y" ]; then
+    if [ "$CONFIG_STORE" == "S3" ]; then
+      make_s3_bucket
+    elif [ "$CONFIG_STORE" == "GCS" ]; then
+      make_gcs_bucket
+    elif [ "$CONFIG_STORE" == "MINIO" ]; then
+      make_minio_bucket
+    fi
   fi
 }
 
@@ -1340,6 +1343,7 @@ function main() {
   select_kubectl_context
   set_lb_type
   set_resources
+  check_for_custom_configmap
   make_bucket
   encode_credentials
   create_k8s_resources
