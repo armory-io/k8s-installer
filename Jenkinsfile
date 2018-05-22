@@ -3,27 +3,33 @@
 properties(
   [
     parameters([
-      string(name: 'PUBLIC_ARMORY_JENKINS_JOB_VERSION', defaultValue: '',
+      string(name: 'ARMORYSPINNAKER_JENKINS_JOB_ID', defaultValue: '',
         description: """Optional. Set this to test the ArmorySpinnaker version against the installer
         This is a Jenkins job id that looks like:
         lastSuccessfulBuild or 1864"""
       ),
 
-      string(name: 'RELEASE_ARMORY_VERSION_IF_PASSING', defaultValue: '',
+      string(name: 'RELEASE_ARMORY_VERSION_IF_PASSING', defaultValue: 'false',
         description: """Optional. Set this if we're releasing this version of ArmorySpinnaker to the world."""
       ),
-    ]),
-    disableConcurrentBuilds(),
+
+      string(name: 'RELEASE_INSTALLER_ONLY', defaultValue: 'false',
+        description: """Optional. Set this if we're releasing only the installer."""
+      ),
+    ])
   ]
 )
 
 node {
   checkout scm
 
-  if (params.PUBLIC_ARMORY_JENKINS_JOB_VERSION != '') {
+  if (params.ARMORYSPINNAKER_JENKINS_JOB_ID != '') {
     stage('Fetch latest Armory version') {
       sh("""
       ./bin/fetch-latest-armory-version.sh
+      mv src/version.manifest src/build/pinned-version.manifest
+      cp src/build/armoryspinnaker-jenkins-version.manifest src/version.manifest   # use edge as base pin
+      cat src/build/pinned-version.manifest >> src/version.manifest   # apply any pins on top
     """)
     }
   }
@@ -55,12 +61,20 @@ node {
     }
   }
 
-  // Since we've provided PUBLIC_ARMORY_JENKINS_JOB_VERSION, and tests pass successfully, we'll upload manifest as
+  // Since we've provided ARMORYSPINNAKER_JENKINS_JOB_ID, and tests pass successfully, we'll upload manifest as
   // "latest" so that public people can pull it down and use it.
   if (env.BRANCH_NAME == 'master' && params.RELEASE_ARMORY_VERSION_IF_PASSING == 'true') {
     stage('Promote latest Armory version') {
       sh('''
           ./bin/promote-latest-armory-version.sh
+        ''')
+    }
+  }
+
+  if (env.BRANCH_NAME == 'master' && (params.RELEASE_INSTALLER_ONLY == 'true' || params.RELEASE_ARMORY_VERSION_IF_PASSING == 'true')) {
+    stage('Promote latest Armory version') {
+      sh('''
+          UPLOAD_NEW_PUBLIC_INSTALLER=true ./bin/jenkins-public-installer-releaser.sh
         ''')
     }
   }

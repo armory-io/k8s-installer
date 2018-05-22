@@ -16,6 +16,7 @@
     "REDIS_HOST": "redis",
     "API_HOST": "http://${NGINX_IP}/api",
     "DECK_HOST": "http://${NGINX_IP}",
+    "BASE_IP": "${NGINX_IP}",
     "AUTH_ENABLED": "false",
     "SERVER_ADDRESS": "0.0.0.0",
     "CLOUDDRIVER_OPTS": "-Dspring.profiles.active=armory,local",
