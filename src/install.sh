@@ -503,7 +503,7 @@ function remove_k8s_configmaps() {
       | xargs kubectl $KUBECTL_OPTIONS delete cm
   else
     echo "Deleting default config maps and secrets if they exist"
-    kubectl $KUBECTL_OPTIONS get cm default-config init-env -o=custom-columns=NAME:.metadata.name  \
+    kubectl $KUBECTL_OPTIONS get cm default-config -o=custom-columns=NAME:.metadata.name  \
       | tail -n +2 \
       | xargs kubectl $KUBECTL_OPTIONS delete cm
   fi
