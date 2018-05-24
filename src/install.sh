@@ -670,6 +670,7 @@ Deploy configuration complete. To update the running instance, run the Deploy
 pipeline here:
 
   <your spinnaker>/#/applications/armory/executions
+
 EOF
 }
 
