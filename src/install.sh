@@ -487,11 +487,26 @@ EOF
   done
 }
 
+function check_for_custom_configmap() {
+  echo "Checking for existing configuration..."
+  foundmap=`kubectl $KUBECTL_OPTIONS get cm -o=custom-columns=NAME:.metadata.name | grep custom-config | tail -n 1`
+  if [[ $foundmap ]]; then
+    get_var "Found custom-config from previous run, would you like to use it? (y/n): " UPGRADE_ONLY
+  fi
+}
+
 function remove_k8s_configmaps() {
-  echo "Deleting config maps and secrets if they exists"
-  kubectl $KUBECTL_OPTIONS get cm default-config custom-config init-env -o=custom-columns=NAME:.metadata.name  \
-    | tail -n +2 \
-    | xargs kubectl $KUBECTL_OPTIONS delete cm
+  if [[ "$UPGRADE_ONLY" != "y" ]]; then
+    echo "Deleting config maps and secrets if they exist"
+    kubectl $KUBECTL_OPTIONS get cm default-config custom-config init-env -o=custom-columns=NAME:.metadata.name  \
+      | tail -n +2 \
+      | xargs kubectl $KUBECTL_OPTIONS delete cm
+  else
+    echo "Deleting default config maps and secrets if they exist"
+    kubectl $KUBECTL_OPTIONS get cm default-config -o=custom-columns=NAME:.metadata.name  \
+      | tail -n +2 \
+      | xargs kubectl $KUBECTL_OPTIONS delete cm
+  fi
 }
 
 function create_k8s_default_config() {
@@ -499,51 +514,57 @@ function create_k8s_default_config() {
 }
 
 function create_k8s_custom_config() {
-  mkdir -p ${BUILD_DIR}/config/custom/
-  cp "config/custom/nginx.conf" "${BUILD_DIR}/config/custom/nginx.conf"
-  for filename in config/custom/*.yml; do
-    envsubst < $filename > ${BUILD_DIR}/config/custom/$(basename $filename)
-  done
-  # dump to a file to upload to S3. Used when we deploy, we use dry-run to accomplish this
-  kubectl ${KUBECTL_OPTIONS} create configmap custom-config \
-    -o json \
-    --dry-run \
-    --from-file=${BUILD_DIR}/config/custom | jq '. + {kind:"ConfigMap",apiVersion:"v1" }' \
-    > ${BUILD_DIR}/config/custom/custom-config.json
+  if [[ "$UPGRADE_ONLY" != "y" ]]; then
+    mkdir -p ${BUILD_DIR}/config/custom/
+    cp "config/custom/nginx.conf" "${BUILD_DIR}/config/custom/nginx.conf"
+    for filename in config/custom/*.yml; do
+      envsubst < $filename > ${BUILD_DIR}/config/custom/$(basename $filename)
+    done
+    # dump to a file to upload to S3. Used when we deploy, we use dry-run to accomplish this
+    kubectl ${KUBECTL_OPTIONS} create configmap custom-config \
+      -o json \
+      --dry-run \
+      --from-file=${BUILD_DIR}/config/custom | jq '. + {kind:"ConfigMap",apiVersion:"v1" }' \
+      > ${BUILD_DIR}/config/custom/custom-config.json
+  
+    kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/config/custom/custom-config.json
 
-  kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/config/custom/custom-config.json
-
-  local config_file="${BUILD_DIR}/config/custom/custom-config.json"
-  if [[ "${CONFIG_STORE}" == "S3" ]]; then
-    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
-      "${config_file}" \
-      "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
-  elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
-    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
-      --endpoint-url=${MINIO_ENDPOINT} "${config_file}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
-  elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
-    gsutil cp "${config_file}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
+    local config_file="${BUILD_DIR}/config/custom/custom-config.json"
+    if [[ "${CONFIG_STORE}" == "S3" ]]; then
+      aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+        "${config_file}" \
+        "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
+    elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
+      AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
+        --endpoint-url=${MINIO_ENDPOINT} "${config_file}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
+    elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
+      gsutil cp "${config_file}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
+    fi
+  else
+    echo "Re-using existing custom-config configmap"
   fi
 }
 
 function upload_custom_credentials() {
-  local credentials_manifest="${BUILD_DIR}/custom-credentials.json"
-  local certificates_manifest="${BUILD_DIR}/nginx-certs.json"
-  if [[ "${CONFIG_STORE}" == "S3" ]]; then
-    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
-      "${credentials_manifest}" \
-      "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
-    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
-      "${certificates_manifest}" \
-      "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
-  elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
-    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
-      --endpoint-url=${MINIO_ENDPOINT} "${credentials_manifest}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
-    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
-      --endpoint-url=${MINIO_ENDPOINT} "${certificates_manifest}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
-  elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
-    gsutil cp "${credentials_manifest}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
-    gsutil cp "${certificates_manifest}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
+  if [[ "$UPGRADE_ONLY" != "y" ]]; then
+    local credentials_manifest="${BUILD_DIR}/custom-credentials.json"
+    local certificates_manifest="${BUILD_DIR}/nginx-certs.json"
+    if [[ "${CONFIG_STORE}" == "S3" ]]; then
+      aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+        "${credentials_manifest}" \
+        "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
+      aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+        "${certificates_manifest}" \
+        "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
+    elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
+      AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
+        --endpoint-url=${MINIO_ENDPOINT} "${credentials_manifest}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
+      AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
+        --endpoint-url=${MINIO_ENDPOINT} "${certificates_manifest}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
+    elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
+      gsutil cp "${credentials_manifest}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
+      gsutil cp "${certificates_manifest}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
+    fi
   fi
 }
 
@@ -576,8 +597,10 @@ function create_k8s_resources() {
   remove_k8s_configmaps
   create_k8s_default_config
   create_k8s_custom_config
-  create_k8s_svcs_and_rs
-  create_k8s_port_forward
+  if [[ "$UPGRADE_ONLY" != "y" ]]; then
+    create_k8s_svcs_and_rs
+    create_k8s_port_forward
+  fi
 }
 
 function set_aws_vars() {
@@ -618,7 +641,7 @@ function encode_kubeconfig() {
   export KUBECONFIG_ENTRY_IN_SECRETS_FILE="\"default-kubeconfig\": \"${B64KUBECONFIG}\""
 }
 
-function output_results() {
+function output_install_results() {
 cat <<EOF
 
 Installation complete. You can finish configuring the Armory Platform via:
@@ -638,6 +661,56 @@ Your configuration has been stored in the ${CONFIG_STORE} bucket:
   ${ARMORY_CONF_STORE_BUCKET}
 
 EOF
+}
+
+function output_upgrade_results() {
+cat <<EOF
+
+Deploy configuration complete. To update the running instance, run the Deploy
+pipeline here:
+
+  http://${NGINX_IP}/#/applications/armory/executions
+EOF
+}
+
+function touch_last_modified() {
+  # Need to "touch" front50/pipelines/last-modified so that front50 reloads
+  # the pipeline.
+  
+  local bucket_path="front50/pipelines/last-modified"
+  cat <<EOF > ${BUILD_DIR}/last-modified.json
+{
+  "lastModified": `date +%s`000
+}
+EOF
+  if [[ "${CONFIG_STORE}" == "S3" ]]; then
+    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+      "${BUILD_DIR}/last-modified.json" \
+      "s3://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}.json"
+  elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
+    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
+      "${BUILD_DIR}/last-modified.json" \
+      "s3://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}.json"
+  elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
+    gsutil setmeta "gs://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}"
+  fi
+}
+
+function upload_upgrade_pipeline() {
+  local pipeline_json="${BUILD_DIR}/pipeline/pipeline.json"
+  local bucket_path="front50/pipelines/update-spinnaker"
+  if [[ "${CONFIG_STORE}" == "S3" ]]; then
+    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+      "${pipeline_json}" \
+      "s3://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}/pipeline-metadata.json"
+  elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
+    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
+      --endpoint-url=${MINIO_ENDPOINT} "${pipeline_json}" "s3://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}/pipeline-metadata.json"
+  elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
+    gsutil cp "${pipeline_json}" "gs://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}/specification.json"
+  fi
+
+  touch_last_modified
 }
 
 function create_upgrade_pipeline() {
@@ -698,6 +771,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
 {
   "application": "armory",
   "name": "Deploy",
+  "id": "update-spinnaker",
   "keepWaitingPipelines": false,
   "limitConcurrent": true,
   "expectedArtifacts": [
@@ -1040,6 +1114,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
 }
 EOF
 
+
   echo "Waiting for the API gateway to become ready, we'll then create an Armory deploy Armory pipeline!"
   echo "This may take several minutes."
   counter=0
@@ -1050,26 +1125,18 @@ EOF
     if [[ "$exit_code" == "0" ]]; then
       # Ensure the application exists.
       curl --max-time 10 -s -o /dev/null -X POST -d@${BUILD_DIR}/app.json -H "Content-type: application/json" "http://${NGINX_IP}/api/applications/armory/tasks"
-
-      #we want to delete any existing pipeline if we're re-running the installer
-      curl --max-time 10 -s -o /dev/null -X DELETE "http://${NGINX_IP}/api/pipelines/armory/Deploy"
-      #we issue a --fail because if it's a 400 curl still returns an exit of 0 without it.
-      http_code=$(curl --max-time 10 -s -o /dev/null -w %{http_code} -X POST -d@${BUILD_DIR}/pipeline/pipeline.json -H "Content-Type: application/json" "http://${NGINX_IP}/api/pipelines")
-      exit_code=$?
-      if [[ "$exit_code" == "0" && "$http_code" -gt "199" && "$http_code" -lt "400" ]]; then
-        echo "The re-deploy pipeline has been added and will be able to be seen in the web interface."
-        break
-      fi
-      if [ "$counter" -gt 200 ]; then
-          echo "ERROR: Timeout occurred waiting for http://${NGINX_IP}/api to become available"
-          exit 2
-      fi
+      break
+    fi
+    if [ "$counter" -gt 200 ]; then
+      echo "ERROR: Timeout occurred waiting for http://${NGINX_IP}/api to become available"
+      exit 2
     fi
     counter=$((counter+1))
     echo -n "."
     sleep 2
   done
   set -e
+  upload_upgrade_pipeline
 }
 
 function set_custom_profile() {
@@ -1323,12 +1390,17 @@ function main() {
   select_kubectl_context
   set_lb_type
   set_resources
+  check_for_custom_configmap
   make_bucket
   encode_credentials
   create_k8s_resources
   upload_custom_credentials
   create_upgrade_pipeline
-  output_results
+  if [[ "$UPGRADE_ONLY" != "y" ]]; then
+    output_install_results
+  else
+    output_upgrade_results
+  fi
 }
 
 main
