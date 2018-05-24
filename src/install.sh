@@ -669,7 +669,7 @@ cat <<EOF
 Deploy configuration complete. To update the running instance, run the Deploy
 pipeline here:
 
-  http://${NGINX_IP}/#/applications/armory/executions
+  <your spinnaker>/#/applications/armory/executions
 EOF
 }
 
@@ -770,7 +770,7 @@ EOF
 cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
 {
   "application": "armory",
-  "name": "Deploy",
+  "name": "Deploy Armory",
   "id": "update-spinnaker",
   "keepWaitingPipelines": false,
   "limitConcurrent": true,
