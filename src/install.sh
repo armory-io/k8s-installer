@@ -1038,7 +1038,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
           "cluster": "configurator"
       },
       "name": "Deploy configurator",
-      "refId": "9",
+      "refId": "10",
       "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "type": "deployManifest"
