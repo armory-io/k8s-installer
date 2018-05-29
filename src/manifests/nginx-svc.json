@@ -8,7 +8,8 @@
             "app": "nginx"
         },
         "annotations": {
-            "cloud.google.com/load-balancer-type": "${LB_TYPE}"
+            "cloud.google.com/load-balancer-type": "${LB_TYPE}",
+            "service.beta.kubernetes.io/aws-load-balancer-internal": "${LB_INTERNAL}"
         }
     },
     "spec": {

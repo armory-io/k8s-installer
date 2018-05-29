@@ -1291,6 +1291,14 @@ EOF
   else
     save_response SERVICE_TYPE "LoadBalancer"
   fi
+
+  # using internal load balancers requires extra info for AWS
+  # https://github.com/kubernetes/kubernetes/blob/master/pkg/cloudprovider/providers/aws/aws.go#L102
+  if [[ "${LB_TYPE}" == "Internal" ]]; then
+    save_response LB_INTERNAL "true"
+  else
+    save_response LB_INTERNAL "false"
+  fi
 }
 
 function save_response() {
