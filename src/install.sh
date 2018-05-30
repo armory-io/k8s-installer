@@ -17,11 +17,8 @@ mkdir -p "$BUILD_DIR"
 # We don't want that.  However, its argument doesn't work on Mac, which does
 # what we want without arguments.
 echo "Testing xargs behavior..."
-uses_xargs_opt=$(echo yes | xargs --no-run-if-empty 2> /dev/null) || echo
-export XARGS_CMD=xargs
-if [[ "${uses_xargs_opt}" == "yes" ]]; then
-  export XARGS_CMD="xargs --no-run-if-empty"
-fi
+export XARGS_CMD="xargs --no-run-if-empty"
+test_xargs=$(echo yes | xargs --no-run-if-empty 2> /dev/null) || export XARGS_CMD=xargs
 echo "Using ${XARGS_CMD}"
 
 function describe_installer() {
