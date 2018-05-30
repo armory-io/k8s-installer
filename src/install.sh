@@ -1242,7 +1242,8 @@ EOF
         "Small"|"Medium"|"Large")
             save_response SIZE_PROFILE $opt
             echo "Using profile: '${SIZE_PROFILE}'"
-            source sizing_profiles/${SIZE_PROFILE}.env
+            file=`echo ${SIZE_PROFILE} | tr [:upper:] [:lower:]`
+            source sizing_profiles/${file}.env
             break
             ;;
         "Custom")
