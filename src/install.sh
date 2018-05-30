@@ -1,6 +1,7 @@
-#!/bin/bash
+#!/bin/bash -e
 cd "$(dirname "$0")"
 if [ ! -z "${ARMORY_DEBUG}" ]; then
+  set +e
   set -x
 fi
 
@@ -16,9 +17,9 @@ mkdir -p "$BUILD_DIR"
 # We don't want that.  However, its argument doesn't work on Mac, which does
 # what we want without arguments.
 echo "Testing xargs behavior..."
+uses_xargs_opt=$(echo | xargs --no-run-if-empty) || "no"
 export XARGS_CMD="xargs --no-run-if-empty"
-echo test | ${XARGS_CMD} echo >/dev/null 2> /dev/null
-if [[ "$?" -ne "0" ]]; then
+if [[ uses_xargs_opt == "no" ]]; then
   export XARGS_CMD=xargs
 fi
 echo "Using ${XARGS_CMD}"
