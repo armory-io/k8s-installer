@@ -17,7 +17,7 @@ mkdir -p "$BUILD_DIR"
 # what we want without arguments.
 echo "Testing xargs behavior..."
 export XARGS_CMD="xargs --no-run-if-empty"
-echo | ${XARGS_CMD} echo 2>&1
+echo | ${XARGS_CMD} echo 2> /dev/null
 if [[ "$?" -ne "0" ]]; then
   export XARGS_CMD=xargs
 fi
