@@ -12,11 +12,16 @@ export DOCKER_REGISTRY=${DOCKER_REGISTRY:-docker.io/armory}
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
-export XARGS_CMD=xargs --no-run-if-empty
-echo "Testing xargs behavior..." | ${XARGS_CMD} echo
+# Ubuntu Linux, for one, will attempt to run xargs command even if no args.
+# We don't want that.  However, its argument doesn't work on Mac, which does
+# what we want without arguments.
+echo "Testing xargs behavior..."
+export XARGS_CMD="xargs --no-run-if-empty"
+echo | ${XARGS_CMD} echo 2>&1
 if [[ "$?" -ne "0" ]]; then
   export XARGS_CMD=xargs
 fi
+echo "Using ${XARGS_CMD}"
 
 # This can't be set until after we've checked for compatibility...
 set -e
