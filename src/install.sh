@@ -1,8 +1,7 @@
-#!/bin/bash -e
+#!/bin/bash
 cd "$(dirname "$0")"
 if [ ! -z "${ARMORY_DEBUG}" ]; then
   set -x
-  set +e
 fi
 
 export BUILD_DIR=build/
@@ -12,6 +11,19 @@ export DOCKER_REGISTRY=${DOCKER_REGISTRY:-docker.io/armory}
 # Start from a fresh build dir
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
+
+export XARGS_CMD=xargs --no-run-if-empty
+echo "Testing xargs behavior..." | ${XARGS_CMD} echo
+if [[ "$?" -ne "0" ]]; then
+  export XARGS_CMD=xargs
+fi
+
+# This can't be set until after we've checked for compatibility...
+set -e
+if [ ! -z "${ARMORY_DEBUG}" ]; then
+  set +e
+fi
+
 
 function describe_installer() {
   if [[ ! -z "${NOPROMPT}" || ${USE_CONTINUE_FILE} == "y" ]]; then
@@ -498,14 +510,12 @@ function check_for_custom_configmap() {
 function remove_k8s_configmaps() {
   if [[ "$UPGRADE_ONLY" != "y" ]]; then
     echo "Deleting config maps and secrets if they exist"
-    kubectl $KUBECTL_OPTIONS get cm default-config custom-config init-env -o=custom-columns=NAME:.metadata.name  \
-      | tail -n +2 \
-      | xargs kubectl $KUBECTL_OPTIONS delete cm
+    kubectl $KUBECTL_OPTIONS get cm default-config custom-config init-env -o=custom-columns=NAME:.metadata.name --no-headers \
+      | ${XARGS_CMD} kubectl $KUBECTL_OPTIONS delete cm
   else
     echo "Deleting default config maps and secrets if they exist"
-    kubectl $KUBECTL_OPTIONS get cm default-config -o=custom-columns=NAME:.metadata.name  \
-      | tail -n +2 \
-      | xargs kubectl $KUBECTL_OPTIONS delete cm
+    kubectl $KUBECTL_OPTIONS get cm default-config -o=custom-columns=NAME:.metadata.name --no-headers \
+      | ${XARGS_CMD} kubectl $KUBECTL_OPTIONS delete cm
   fi
 }
 
