@@ -1,4 +1,4 @@
-## INFO: By default, we'll pull in a stable Armory version, however this file allows you to override any subservice's version.
+## INFO: This file allows you to override any subservice's version with a specific version.
 ## Here's an example of how to pin clouddriver and orca version:
 ##   export clouddriver_version=release-1.7.x-e34beba
 ##   export orca_version=release-1.7.x-3a01aeb

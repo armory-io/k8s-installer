@@ -450,11 +450,11 @@ function create_k8s_nginx_load_balancer() {
     #we use loopback because we create a tunnel later
     export NGINX_IP="127.0.0.1"
   else
-    local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep nginx | awk '{ print $4 }')
+    local IP=$(kubectl ${KUBECTL_OPTIONS} get services nginx --no-headers -o wide | awk '{ print $4 }')
     echo -n "Waiting for load balancer to receive an IP..."
     while [ "$IP" == "<pending>" ] || [ -z "$IP" ]; do
       sleep 5
-      local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep nginx | awk '{ print $4 }')
+      local IP=$(kubectl ${KUBECTL_OPTIONS} get services nginx --no-headers -o wide | awk '{ print $4 }')
       echo -n "."
     done
     echo "Found IP $IP"
@@ -1201,7 +1201,8 @@ function set_resources() {
   fi
 
   if [ ! -z $SIZE_PROFILE ]; then
-    source sizing_profiles/${SIZE_PROFILE}.env
+    file=`echo ${SIZE_PROFILE} | tr [:upper:] [:lower:]`
+    source sizing_profiles/${file}.env
     return
   fi
 
@@ -1258,7 +1259,8 @@ EOF
         "Small"|"Medium"|"Large")
             save_response SIZE_PROFILE $opt
             echo "Using profile: '${SIZE_PROFILE}'"
-            source sizing_profiles/${SIZE_PROFILE}.env
+            file=`echo ${SIZE_PROFILE} | tr [:upper:] [:lower:]`
+            source sizing_profiles/${file}.env
             break
             ;;
         "Custom")
