@@ -17,19 +17,12 @@ mkdir -p "$BUILD_DIR"
 # We don't want that.  However, its argument doesn't work on Mac, which does
 # what we want without arguments.
 echo "Testing xargs behavior..."
-uses_xargs_opt=$(echo | xargs --no-run-if-empty) || "no"
-export XARGS_CMD="xargs --no-run-if-empty"
-if [[ uses_xargs_opt == "no" ]]; then
-  export XARGS_CMD=xargs
+uses_xargs_opt=$(echo yes | xargs --no-run-if-empty 2> /dev/null) || echo
+export XARGS_CMD=xargs
+if [[ "${uses_xargs_opt}" == "yes" ]]; then
+  export XARGS_CMD="xargs --no-run-if-empty"
 fi
 echo "Using ${XARGS_CMD}"
-
-# This can't be set until after we've checked for compatibility...
-set -e
-if [ ! -z "${ARMORY_DEBUG}" ]; then
-  set +e
-fi
-
 
 function describe_installer() {
   if [[ ! -z "${NOPROMPT}" || ${USE_CONTINUE_FILE} == "y" ]]; then
