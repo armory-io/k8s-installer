@@ -17,7 +17,7 @@ mkdir -p "$BUILD_DIR"
 # what we want without arguments.
 echo "Testing xargs behavior..."
 export XARGS_CMD="xargs --no-run-if-empty"
-echo | ${XARGS_CMD} echo 2> /dev/null
+echo test | ${XARGS_CMD} echo >/dev/null 2> /dev/null
 if [[ "$?" -ne "0" ]]; then
   export XARGS_CMD=xargs
 fi
@@ -652,7 +652,6 @@ aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
 }
 
 function encode_kubeconfig() {
-  echo "Encoding kubeconfig"
   B64KUBECONFIG=$(base64 -w 0 "${KUBECONFIG}" 2>/dev/null || base64 "${KUBECONFIG}")
   export KUBECONFIG_ENTRY_IN_SECRETS_FILE="\"default-kubeconfig\": \"${B64KUBECONFIG}\""
 }
