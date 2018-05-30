@@ -652,6 +652,7 @@ aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
 }
 
 function encode_kubeconfig() {
+  echo "Encoding kubeconfig"
   B64KUBECONFIG=$(base64 -w 0 "${KUBECONFIG}" 2>/dev/null || base64 "${KUBECONFIG}")
   export KUBECONFIG_ENTRY_IN_SECRETS_FILE="\"default-kubeconfig\": \"${B64KUBECONFIG}\""
 }
