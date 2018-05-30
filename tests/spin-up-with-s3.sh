@@ -44,7 +44,7 @@ EXIT_CODE=$?
 set -e
 
 # cleanup
-kubectl delete ns $NAMESPACE
+kubectl delete ns $NAMESPACE || echo "Could not delete namespace ${NAMESPACE}"
 aws --profile "${AWS_PROFILE}" --region us-east-1 s3 rb --force "s3://${ARMORY_CONF_STORE_BUCKET}"
 
 exit $EXIT_CODE
