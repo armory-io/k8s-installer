@@ -1185,7 +1185,8 @@ function set_resources() {
   fi
 
   if [ ! -z $SIZE_PROFILE ]; then
-    source sizing_profiles/${SIZE_PROFILE}.env
+    file=`echo ${SIZE_PROFILE} | tr [:upper:] [:lower:]`
+    source sizing_profiles/${file}.env
     return
   fi
 
