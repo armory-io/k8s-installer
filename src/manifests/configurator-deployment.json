@@ -64,7 +64,7 @@
             "env": [
               {
                 "name": "CONFIGURATOR_PORT_MAPPING",
-                "value": "-8081:8081"
+                "value": "-8069:8069"
               },
               {
                 "name": "CONFIGURATOR_CONFIG",
@@ -83,7 +83,7 @@
             },
             "ports": [
               {
-                "containerPort": 5000
+                "containerPort": 8069
               }
             ],
             "volumeMounts": [
