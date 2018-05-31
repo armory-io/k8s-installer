@@ -88,11 +88,6 @@
             ],
             "volumeMounts": [
               {
-                "name": "podinfo",
-                "mountPath": "/etc/podinfo",
-                "readOnly": false
-              },
-              {
                 "name": "default-config",
                 "mountPath": "/opt/spinnaker/config/default"
               },
