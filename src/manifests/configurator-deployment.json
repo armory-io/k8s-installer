@@ -115,25 +115,6 @@
             "configMap": {
               "name": "default-config"
             }
-          },
-          {
-            "name": "podinfo",
-            "downwardAPI": {
-              "items": [
-                {
-                  "path": "labels",
-                  "fieldRef": {
-                    "fieldPath": "metadata.labels"
-                  }
-                },
-                {
-                  "path": "annotations",
-                  "fieldRef": {
-                    "fieldPath": "metadata.annotations"
-                  }
-                }
-              ]
-            }
           }
         ]
       }
