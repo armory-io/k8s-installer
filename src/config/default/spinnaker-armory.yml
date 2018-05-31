@@ -8,14 +8,6 @@ features:
     enabled: ${INFRA_ENABLED:false}
   certifiedPipelines:
     enabled: ${CERTIFIED_PIPELINES_ENABLED:false}
-  deck:
-    configurator:
-      enabled: true
-      wizard:
-        enabled: true
-      certs:
-        enabled: true
-  # deprecated
   configuratorEnabled:
     enabled: true
   configuratorWizard:
