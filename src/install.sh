@@ -1,8 +1,8 @@
 #!/bin/bash -e
 cd "$(dirname "$0")"
 if [ ! -z "${ARMORY_DEBUG}" ]; then
-  set -x
   set +e
+  set -x
 fi
 
 export BUILD_DIR=build/
@@ -12,6 +12,14 @@ export DOCKER_REGISTRY=${DOCKER_REGISTRY:-docker.io/armory}
 # Start from a fresh build dir
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
+
+# Ubuntu Linux, for one, will attempt to run xargs command even if no args.
+# We don't want that.  However, its argument doesn't work on Mac, which does
+# what we want without arguments.
+echo "Testing xargs behavior..."
+export XARGS_CMD="xargs --no-run-if-empty"
+test_xargs=$(echo yes | xargs --no-run-if-empty 2> /dev/null) || export XARGS_CMD=xargs
+echo "Using ${XARGS_CMD}"
 
 function describe_installer() {
   if [[ ! -z "${NOPROMPT}" || ${USE_CONTINUE_FILE} == "y" ]]; then
@@ -498,14 +506,12 @@ function check_for_custom_configmap() {
 function remove_k8s_configmaps() {
   if [[ "$UPGRADE_ONLY" != "y" ]]; then
     echo "Deleting config maps and secrets if they exist"
-    kubectl $KUBECTL_OPTIONS get cm default-config custom-config init-env -o=custom-columns=NAME:.metadata.name  \
-      | tail -n +2 \
-      | xargs kubectl $KUBECTL_OPTIONS delete cm
+    kubectl $KUBECTL_OPTIONS get cm default-config custom-config init-env -o=custom-columns=NAME:.metadata.name --no-headers \
+      | ${XARGS_CMD} kubectl $KUBECTL_OPTIONS delete cm
   else
     echo "Deleting default config maps and secrets if they exist"
-    kubectl $KUBECTL_OPTIONS get cm default-config -o=custom-columns=NAME:.metadata.name  \
-      | tail -n +2 \
-      | xargs kubectl $KUBECTL_OPTIONS delete cm
+    kubectl $KUBECTL_OPTIONS get cm default-config -o=custom-columns=NAME:.metadata.name --no-headers \
+      | ${XARGS_CMD} kubectl $KUBECTL_OPTIONS delete cm
   fi
 }
 
