@@ -779,6 +779,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
   "application": "armory",
   "name": "Deploy Armory",
   "id": "update-spinnaker",
+  "armoryVersion": "${armoryspinnaker_version}",
   "keepWaitingPipelines": false,
   "limitConcurrent": true,
   "expectedArtifacts": [
