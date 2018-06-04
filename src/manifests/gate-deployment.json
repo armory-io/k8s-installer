@@ -82,22 +82,33 @@
             },
             "ports": [
               {
+                "name": "gate-port",
                 "containerPort": 8084
+              },
+              {
+                "name": "gate-api-port",
+                "containerPort": 8085
               }
             ],
             "readinessProbe": {
-              "httpGet": {
-                "path": "/health?checkDownstreamServices=true&downstreamServices=true",
-                "port": 8084
+              "exec": {
+                "command": [
+                  "/bin/bash",
+                  "-c",
+                  "wget -O - http://localhost:8084/health?checkDownstreamServices=true&downstreamServices=true || wget -O - https://localhost:8084/health?checkDownstreamServices=true&downstreamServices=true"
+                ]
               },
               "initialDelaySeconds": 90,
               "periodSeconds": 5,
               "successThreshold": 10
             },
             "livenessProbe": {
-              "httpGet": {
-                "path": "/health",
-                "port": 8084
+              "exec": {
+                "command": [
+                  "/bin/bash",
+                  "-c",
+                  "wget -O - http://localhost:8084/health || wget -O - https://localhost:8084/health"
+                ]
               },
               "initialDelaySeconds": 90,
               "periodSeconds": 5,
@@ -116,6 +127,10 @@
               {
                 "name": "custom-config",
                 "mountPath": "/opt/spinnaker/config/custom"
+              },
+              {
+                "name": "nginx-certs",
+                "mountPath": "/opt/nginx/certs"
               }
             ]
           }
@@ -131,6 +146,12 @@
             "name": "default-config",
             "configMap": {
               "name": "default-config"
+            }
+          },
+          {
+            "name": "nginx-certs",
+            "secret": {
+              "secretName": "${nginx_certs_secret_name}"
             }
           },
           {

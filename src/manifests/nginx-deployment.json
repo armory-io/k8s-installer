@@ -53,6 +53,13 @@
             },
             "name": "nginx",
             "image": "nginx",
+            "command": [
+              "bash",
+              "-c"
+            ],
+            "args": [
+              "bash /opt/spinnaker/config/default/fetch.sh nginx && nginx -g 'daemon off;'"
+            ],
             "ports": [
               {
                 "name": "http",
@@ -61,6 +68,10 @@
               {
                 "name": "https",
                 "containerPort": 443
+              },
+              {
+                "name": "api",
+                "containerPort": 8085
               }
             ],
             "readinessProbe": {
@@ -81,6 +92,10 @@
               "periodSeconds": 3
             },
             "volumeMounts": [
+              {
+                "name": "default-config",
+                "mountPath": "/opt/spinnaker/config/default"
+              },
               {
                 "name": "custom-config",
                 "mountPath": "/etc/nginx/conf.d"
@@ -103,6 +118,12 @@
             "name": "nginx-certs",
             "secret": {
               "secretName": "${nginx_certs_secret_name}"
+            }
+          },
+          {
+            "name": "default-config",
+            "configMap": {
+              "name": "default-config"
             }
           }
         ]

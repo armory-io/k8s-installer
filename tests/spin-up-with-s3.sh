@@ -46,6 +46,6 @@ set -e
 # cleanup
 kubectl delete ns $NAMESPACE || echo "Could not delete namespace ${NAMESPACE}"
 sleep 5
-aws --profile "${AWS_PROFILE}" --region us-east-1 s3 rb --force "s3://${ARMORY_CONF_STORE_BUCKET}"
+aws --profile "${AWS_PROFILE}" --region us-east-1 s3 rb "s3://${ARMORY_CONF_STORE_BUCKET}" --force
 
 exit $EXIT_CODE
