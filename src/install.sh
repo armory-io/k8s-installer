@@ -1,8 +1,8 @@
 #!/bin/bash -e
 cd "$(dirname "$0")"
 if [ ! -z "${ARMORY_DEBUG}" ]; then
-  set -x
   set +e
+  set -x
 fi
 
 export BUILD_DIR=build/
@@ -12,6 +12,14 @@ export DOCKER_REGISTRY=${DOCKER_REGISTRY:-docker.io/armory}
 # Start from a fresh build dir
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
+
+# Ubuntu Linux, for one, will attempt to run xargs command even if no args.
+# We don't want that.  However, its argument doesn't work on Mac, which does
+# what we want without arguments.
+echo "Testing xargs behavior..."
+export XARGS_CMD="xargs --no-run-if-empty"
+test_xargs=$(echo yes | xargs --no-run-if-empty 2> /dev/null) || export XARGS_CMD=xargs
+echo "Using ${XARGS_CMD}"
 
 function describe_installer() {
   if [[ ! -z "${NOPROMPT}" || ${USE_CONTINUE_FILE} == "y" ]]; then
@@ -450,11 +458,11 @@ function create_k8s_nginx_load_balancer() {
     #we use loopback because we create a tunnel later
     export NGINX_IP="127.0.0.1"
   else
-    local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep nginx | awk '{ print $4 }')
+    local IP=$(kubectl ${KUBECTL_OPTIONS} get services nginx --no-headers -o wide | awk '{ print $4 }')
     echo -n "Waiting for load balancer to receive an IP..."
     while [ "$IP" == "<pending>" ] || [ -z "$IP" ]; do
       sleep 5
-      local IP=$(kubectl ${KUBECTL_OPTIONS} get services | grep nginx | awk '{ print $4 }')
+      local IP=$(kubectl ${KUBECTL_OPTIONS} get services nginx --no-headers -o wide | awk '{ print $4 }')
       echo -n "."
     done
     echo "Found IP $IP"
@@ -498,14 +506,12 @@ function check_for_custom_configmap() {
 function remove_k8s_configmaps() {
   if [[ "$UPGRADE_ONLY" != "y" ]]; then
     echo "Deleting config maps and secrets if they exist"
-    kubectl $KUBECTL_OPTIONS get cm default-config custom-config init-env -o=custom-columns=NAME:.metadata.name  \
-      | tail -n +2 \
-      | xargs kubectl $KUBECTL_OPTIONS delete cm
+    kubectl $KUBECTL_OPTIONS get cm default-config custom-config init-env -o=custom-columns=NAME:.metadata.name --no-headers \
+      | ${XARGS_CMD} kubectl $KUBECTL_OPTIONS delete cm
   else
     echo "Deleting default config maps and secrets if they exist"
-    kubectl $KUBECTL_OPTIONS get cm default-config -o=custom-columns=NAME:.metadata.name  \
-      | tail -n +2 \
-      | xargs kubectl $KUBECTL_OPTIONS delete cm
+    kubectl $KUBECTL_OPTIONS get cm default-config -o=custom-columns=NAME:.metadata.name --no-headers \
+      | ${XARGS_CMD} kubectl $KUBECTL_OPTIONS delete cm
   fi
 }
 
@@ -773,6 +779,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
   "application": "armory",
   "name": "Deploy Armory",
   "id": "update-spinnaker",
+  "armoryVersion": "${armoryspinnaker_version}",
   "keepWaitingPipelines": false,
   "limitConcurrent": true,
   "expectedArtifacts": [
@@ -1031,6 +1038,22 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "account": "kubernetes",
       "cloudProvider": "kubernetes",
       "manifests": [
+          $(cat ${BUILD_DIR}/pipeline/pipeline-configurator-deployment.json)
+      ],
+      "moniker": {
+          "app": "armory",
+          "cluster": "configurator"
+      },
+      "name": "Deploy configurator",
+      "refId": "18",
+      "requisiteStageRefIds": ["2", "1", "12"],
+      "source": "text",
+      "type": "deployManifest"
+    },
+    {
+      "account": "kubernetes",
+      "cloudProvider": "kubernetes",
+      "manifests": [
           $(cat ${BUILD_DIR}/pipeline/pipeline-orca-deployment.json)
       ],
       "moniker": {
@@ -1141,7 +1164,7 @@ EOF
 }
 
 function set_custom_profile() {
-  cpu_vars=("CLOUDDRIVER_CPU" "DECK_CPU" "DINGHY_CPU" "ECHO_CPU" "FIAT_CPU" "FRONT50_CPU" "GATE_CPU" "IGOR_CPU" "KAYENTA_CPU" "LIGHTHOUSE_CPU" "ORCA_CPU" "PLATFORM_CPU" "REDIS_CPU" "ROSCO_CPU")
+  cpu_vars=("CLOUDDRIVER_CPU" "CONFIGURATOR_CPU" "DECK_CPU" "DINGHY_CPU" "ECHO_CPU" "FIAT_CPU" "FRONT50_CPU" "GATE_CPU" "IGOR_CPU" "KAYENTA_CPU" "LIGHTHOUSE_CPU" "ORCA_CPU" "PLATFORM_CPU" "REDIS_CPU" "ROSCO_CPU")
   for v in "${cpu_vars[@]}"; do
     echo "What allocation would you like for $v?"
     options=("500m" "1000m" "1500m" "2000m" "2500m")
@@ -1158,7 +1181,7 @@ function set_custom_profile() {
       esac
     done
   done
-  mem_vars=("CLOUDDRIVER_MEMORY" "DECK_MEMORY" "DINGHY_MEMORY" "ECHO_MEMORY" "FIAT_MEMORY" "FRONT50_MEMORY" "GATE_MEMORY" "IGOR_MEMORY" "KAYENTA_MEMORY" "LIGHTHOUSE_MEMORY" "ORCA_MEMORY" "PLATFORM_MEMORY" "REDIS_MEMORY" "ROSCO_MEMORY")
+  mem_vars=("CLOUDDRIVER_MEMORY" "CONFIGURATOR_MEMORY" "DECK_MEMORY" "DINGHY_MEMORY" "ECHO_MEMORY" "FIAT_MEMORY" "FRONT50_MEMORY" "GATE_MEMORY" "IGOR_MEMORY" "KAYENTA_MEMORY" "LIGHTHOUSE_MEMORY" "ORCA_MEMORY" "PLATFORM_MEMORY" "REDIS_MEMORY" "ROSCO_MEMORY")
   for v in "${mem_vars[@]}"; do
     echo "What allocation would you like for $v?"
     options=("512Mi" "1Gi" "2Gi" "4Gi" "8Gi" "16Gi")
@@ -1185,7 +1208,8 @@ function set_resources() {
   fi
 
   if [ ! -z $SIZE_PROFILE ]; then
-    source sizing_profiles/${SIZE_PROFILE}.env
+    file=`echo ${SIZE_PROFILE} | tr [:upper:] [:lower:]`
+    source sizing_profiles/${file}.env
     return
   fi
 
@@ -1209,7 +1233,7 @@ EOF
   echo "       Total MEMORY: 2048Mi (~2 GB)"
   echo ""
   echo "  'Medium'"
-  echo "       CPU: 500m for deck, dinghy, echo, fiat, front50, gate, igor, kayenta,"
+  echo "       CPU: 500m for configurator, deck, dinghy, echo, fiat, front50, gate, igor, kayenta,"
   echo "                      lighthouse, platform, redis, & rosco"
   echo "            1000m for clouddriver, & orca"
   echo "       MEMORY: 512Mi for deck, dinghy, fiat, echo, kayenta, lighthouse, platform, & rosco"
@@ -1219,10 +1243,10 @@ EOF
   echo "       Total MEMORY: 18.5Gi (~19.86 GB)"
   echo ""
   echo "  'Large'"
-  echo "       CPU: 500m for dinghy, kayenta, lighthouse, & platform"
+  echo "       CPU: 500m for configurator, dinghy, kayenta, lighthouse, & platform"
   echo "            1000m for deck, echo, fiat, front50, gate, igor, redis, & rosco"
   echo "            2000m for clouddriver, & orca"
-  echo "       MEMORY: 521Mi for deck, dinghy, fiat, kayenta, lighthouse, & platform"
+  echo "       MEMORY: 521Mi for configurator, deck, dinghy, fiat, kayenta, lighthouse, & platform"
   echo "               1Gi for echo, & rosco"
   echo "               2Gi for front50, gate & igor"
   echo "               4Gi for orca"
@@ -1242,7 +1266,8 @@ EOF
         "Small"|"Medium"|"Large")
             save_response SIZE_PROFILE $opt
             echo "Using profile: '${SIZE_PROFILE}'"
-            source sizing_profiles/${SIZE_PROFILE}.env
+            file=`echo ${SIZE_PROFILE} | tr [:upper:] [:lower:]`
+            source sizing_profiles/${file}.env
             break
             ;;
         "Custom")
@@ -1290,6 +1315,14 @@ EOF
     save_response SERVICE_TYPE $LB_TYPE
   else
     save_response SERVICE_TYPE "LoadBalancer"
+  fi
+
+  # using internal load balancers requires extra info for AWS
+  # https://github.com/kubernetes/kubernetes/blob/master/pkg/cloudprovider/providers/aws/aws.go#L102
+  if [[ "${LB_TYPE}" == "Internal" ]]; then
+    save_response LB_INTERNAL "true"
+  else
+    save_response LB_INTERNAL "false"
   fi
 }
 
