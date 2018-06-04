@@ -13,9 +13,11 @@ for filename in /opt/spinnaker/config/default/*.yml; do
 done
 
 # User specific config
-for filename in /opt/spinnaker/config/custom/*; do
-    cp $filename ${CONFIG_LOCATION}
-done
+if [ -d /opt/spinnaker/config/custom ]; then
+    for filename in /opt/spinnaker/config/custom/*; do
+        cp $filename ${CONFIG_LOCATION}
+    done
+fi
 
 add_ca_certs() {
   # if CA exists, mount it into the default JKS store
@@ -91,6 +93,8 @@ if [ "${CONTAINER}" == "gate" ]; then
     else
         echo "No x509 Client cert found at ${x509_client_cert_path}"
     fi
+
+
     if [ -f ${x509_nginx_cert_path} ]; then
         echo "Creating a self-signed CA (EXPIRES IN 360 DAYS) with java keystore: ${x509_jks_path}"
         echo -e "\n\n\n\n\n\ny\n" | keytool -genkey -keyalg RSA -alias server -keystore keystore.jks -storepass changeit -validity 360 -keysize 2048
@@ -104,6 +108,13 @@ if [ "${CONTAINER}" == "gate" ]; then
                 -noprompt
     else
         echo "No x509 nginx cert found at ${x509_nginx_cert_path}"
+    fi
+fi
+
+if [ "${CONTAINER}" == "nginx" ]; then
+    nginx_conf_path="/opt/spinnaker/config/default/nginx.conf"
+    if [ -f ${nginx_conf_path} ]; then
+        cp ${nginx_conf_path} /etc/nginx/nginx.conf
     fi
 fi
 

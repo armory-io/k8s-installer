@@ -24,6 +24,12 @@
                 "port": 443,
                 "targetPort": 443,
                 "protocol": "TCP"
+            },
+            {
+                "name": "api",
+                "port": 8085,
+                "targetPort": 8085,
+                "protocol": "TCP"
             }
         ],
         "selector": {
