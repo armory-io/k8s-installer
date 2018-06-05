@@ -696,6 +696,7 @@ EOF
       "s3://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}.json"
   elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
     AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
+      --endpoint-url=${MINIO_ENDPOINT} \
       "${BUILD_DIR}/last-modified.json" \
       "s3://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}.json"
   elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
