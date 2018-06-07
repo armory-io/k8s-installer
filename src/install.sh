@@ -204,6 +204,7 @@ EOF
   get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
   get_var "Would you like us to use a service account? If not the kubeconfig file will be added to the cluster as a secret. [y/n]: " CREATE_SERVICE_ACCOUNT validate_create_service_account "" "y"
   if [[ "$CREATE_SERVICE_ACCOUNT" == "y" ]]; then
+    echo "Will use a service account."
     export USE_SERVICE_ACCOUNT=true
   else
     export USE_SERVICE_ACCOUNT=false
