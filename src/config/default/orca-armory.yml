@@ -44,19 +44,32 @@ webhook:
         "Content-Type": application/json
         Authorization: ${jira.basicAuth}
       method: POST
-      #payload: |
-      #  {
-      #    "fields" : {
-      #      "description": "Starting test...",
-      #      "issuetype": {
-      #         "name": "Task"
-      #      },
-      #      "project": {
-      #         "key": "CCRB"
-      #      },
-      #      "summary":  "This is a webhook test"
-      #    }
-      #  }
+      parameters:
+        - name: summary
+          label: Issue Summary
+          description: A short summary of your issue.
+        - name: description
+          label: Issue Description
+          description: A longer description of your issue.
+        - name: projectKey
+          label: Project key
+          description: The key of your JIRA project.
+        - name: type
+          label: Issue Type
+          description: The type of your issue, e.g. \"Task\", \"Story\", etc.
+      payload: |
+        {
+          "fields" : {
+            "description": "${parameterValues['description']}",
+            "issuetype": {
+               "name": "${parameterValues['type']}"
+            },
+            "project": {
+               "key": "${parameterValues['projectKey']}"
+            },
+            "summary":  "${parameterValues['summary']}"
+          }
+        }
       waitForCompletion: false
 
     - label: "Jira: Update Issue"
@@ -68,13 +81,20 @@ webhook:
         "Content-Type": application/json
         Authorization: ${jira.basicAuth}
       method: PUT
-      #payload: |
-      #  {
-      #    "fields" : {
-      #      "description" : "Test completed",
-      #      "summary" : "This is a webhook test -- COMPLETED"
-      #    }
-      #  }
+      parameters:
+        - name: summary
+          label: Issue Summary
+          description: A short summary of your issue.
+        - name: description
+          label: Issue Description
+          description: A longer description of your issue.
+      payload: |
+        {
+          "fields" : {
+            "description": "${parameterValues['description']}",
+            "summary": "${parameterValues['summary']}"
+          }
+        }
       waitForCompletion: false
 
     - label: "Jira: Transition Issue"
@@ -86,12 +106,16 @@ webhook:
         "Content-Type": application/json
         Authorization: ${jira.basicAuth}
       method: POST
-      #payload: |
-      #  {
-      #    "transition" : {
-      #      "id" : "11"
-      #    }
-      #  }
+      parameters:
+        - name: newStateID
+          label: New State ID
+          description: The ID of the state you want to transition the issue to.
+      payload: |
+        {
+          "transition" : {
+            "id" : "${parameterValues['newStateID']}"
+          }
+        }
       waitForCompletion: false
 
     - label: "Jira: Add Comment"
@@ -103,9 +127,13 @@ webhook:
         "Content-Type": application/json
         Authorization: ${jira.basicAuth}
       method: POST
-      #payload: |
-      #  {
-      #    "body" : "This is a comment from a pipeline"
-      #  }
+      parameters:
+        - name: body
+          label: Comment body
+          description: The text body of the component.
+      payload: |
+        {
+          "body" : "${parameterValues['body']}"
+        }
       waitForCompletion: false
 
