@@ -14,9 +14,16 @@
     },
     "ports": [
       {
+        "name": "gate-port",
         "protocol": "TCP",
         "port": 8084,
         "targetPort": 8084
+      },
+      {
+        "name": "gate-api-port",
+        "protocol": "TCP",
+        "port": 8085,
+        "targetPort": 8085
       }
     ]
   }
