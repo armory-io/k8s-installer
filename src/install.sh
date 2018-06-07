@@ -700,7 +700,9 @@ EOF
       "${BUILD_DIR}/last-modified.json" \
       "s3://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}.json"
   elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
-    gsutil setmeta "gs://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}"
+    if [[ "$UPGRADE_ONLY" == "y" ]]; then
+      gsutil setmeta "gs://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}"
+    fi
   fi
 }
 
