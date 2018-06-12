@@ -1,0 +1,20 @@
+{
+  "kind": "Service",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "configurator",
+    "namespace": "${NAMESPACE}"
+  },
+  "spec": {
+    "selector": {
+      "app": "configurator"
+    },
+    "ports": [
+      {
+        "protocol": "TCP",
+        "port": 8069,
+        "targetPort": 8069
+      }
+    ]
+  }
+}

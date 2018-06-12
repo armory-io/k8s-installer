@@ -1,0 +1,118 @@
+{
+  "apiVersion": "extensions/v1beta1",
+  "kind": "Deployment",
+  "metadata": {
+    "annotations": {
+      "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
+      "artifact.spinnaker.io/name": "\"armory-configurator\"",
+      "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
+      "moniker.spinnaker.io/application": "\"armory\"",
+      "moniker.spinnaker.io/cluster": "\"configurator\""
+    },
+    "name": "configurator",
+    "namespace": "${NAMESPACE}",
+    "labels": {
+      "app": "configurator"
+    }
+  },
+  "spec": {
+    "strategy": {
+      "type": "RollingUpdate",
+      "rollingUpdate": {
+        "maxUnavailable": 0,
+        "maxSurge": 3
+      }
+    },
+    "replicas": 1,
+    "selector": {
+      "matchLabels": {
+        "app": "configurator"
+      }
+    },
+    "template": {
+      "metadata": {
+        "annotations": {
+          "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
+          "artifact.spinnaker.io/name": "\"armory-configurator\"",
+          "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
+          "moniker.spinnaker.io/application": "\"armory\"",
+          "moniker.spinnaker.io/cluster": "\"configurator\""
+        },
+        "labels": {
+          "app": "configurator"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "configurator",
+            "image": "${DOCKER_REGISTRY}/configurator:${configurator_version}",
+            "envFrom": [
+              {
+                "configMapRef": {
+                  "name": "init-env"
+                }
+              }
+            ],
+            "command": [
+              "sh",
+              "-c"
+            ],
+            "args": [
+              "bash /opt/spinnaker/config/default/fetch.sh && /usr/local/bin/main"
+            ],
+            "env": [
+              {
+                "name": "CONFIGURATOR_PORT_MAPPING",
+                "value": "-8069:8069"
+              },
+              {
+                "name": "CONFIGURATOR_CONFIG",
+                "value": "/home/spinnaker/config/configurator-local.yml"
+              },
+              {
+                "name": "SPINNAKER_HOME",
+                "value": "/home/spinnaker"
+              }
+            ],
+            "resources": {
+              "requests": {
+                "cpu": "${CONFIGURATOR_CPU}",
+                "memory": "${CONFIGURATOR_MEMORY}"
+              }
+            },
+            "ports": [
+              {
+                "containerPort": 8069
+              }
+            ],
+            "volumeMounts": [
+              {
+                "name": "default-config",
+                "mountPath": "/opt/spinnaker/config/default"
+              },
+              {
+                "name": "custom-config",
+                "mountPath": "/opt/spinnaker/config/custom"
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "custom-config",
+            "configMap": {
+              "name": "custom-config"
+            }
+          },
+          {
+            "name": "default-config",
+            "configMap": {
+              "name": "default-config"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
