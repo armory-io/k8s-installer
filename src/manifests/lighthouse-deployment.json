@@ -23,7 +23,7 @@
         "maxSurge": 3
       }
     },
-    "replicas": 1,
+    "replicas": ${LIGHTHOUSE_REPLICAS},
     "selector": {
       "matchLabels": {
         "app": "lighthouse"

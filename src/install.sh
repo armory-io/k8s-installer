@@ -446,7 +446,7 @@ function create_k8s_namespace() {
     return
   fi
 
-  kubectl ${KUBECTL_OPTIONS} get ns ${NAMESPACE} || kubectl ${KUBECTL_OPTIONS} create namespace ${NAMESPACE}
+  kubectl ${KUBECTL_OPTIONS} get ns ${NAMESPACE} 2>&1 >/dev/null || kubectl ${KUBECTL_OPTIONS} create namespace ${NAMESPACE}
 }
 
 function create_k8s_nginx_load_balancer() {
@@ -532,7 +532,7 @@ function create_k8s_custom_config() {
       --dry-run \
       --from-file=${BUILD_DIR}/config/custom | jq '. + {kind:"ConfigMap",apiVersion:"v1" }' \
       > ${BUILD_DIR}/config/custom/custom-config.json
-  
+
     kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/config/custom/custom-config.json
 
     local config_file="${BUILD_DIR}/config/custom/custom-config.json"
@@ -683,7 +683,7 @@ EOF
 function touch_last_modified() {
   # Need to "touch" front50/pipelines/last-modified so that front50 reloads
   # the pipeline.
-  
+
   local bucket_path="front50/pipelines/last-modified"
   cat <<EOF > ${BUILD_DIR}/last-modified.json
 {
@@ -1230,10 +1230,10 @@ function set_resources() {
 EOF
   echo ""
   echo "  'Small'"
-  echo "       CPU: 100m per microservice"
-  echo "       MEMORY: 128Mi per microservice"
-  echo "       Total CPU: 1600m (1.6 vCPUs)"
-  echo "       Total MEMORY: 2048Mi (~2 GB)"
+  echo "       CPU: 250m per microservice"
+  echo "       MEMORY: 256Mi per microservice"
+  echo "       Total CPU: 4000m (4 vCPUs)"
+  echo "       Total MEMORY: 4096Mi (~4 GB)"
   echo ""
   echo "  'Medium'"
   echo "       CPU: 500m for configurator, deck, dinghy, echo, fiat, front50, gate, igor, kayenta,"

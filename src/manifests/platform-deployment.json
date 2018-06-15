@@ -23,7 +23,7 @@
           "maxSurge": "100%"
         }
       },
-      "replicas": 1,
+      "replicas": ${PLATFORM_REPLICAS},
       "selector": {
         "matchLabels": {
           "app": "platform"

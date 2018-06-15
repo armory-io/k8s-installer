@@ -23,7 +23,7 @@
           "maxSurge": "100%"
         }
       },
-      "replicas": 1,
+      "replicas": ${KAYENTA_REPLICAS},
       "selector": {
         "matchLabels": {
           "app": "kayenta"
@@ -180,4 +180,4 @@
       }
     }
   }
-  
+

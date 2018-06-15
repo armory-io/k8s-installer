@@ -23,7 +23,7 @@
         "maxSurge": "100%"
       }
     },
-    "replicas": 2,
+    "replicas": ${DECK_REPLICAS},
     "selector": {
       "matchLabels": {
         "app": "deck"

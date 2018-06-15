@@ -23,7 +23,7 @@
         "maxSurge": 3
       }
     },
-    "replicas": 1,
+    "replicas": ${ECHO_REPLICAS},
     "selector": {
       "matchLabels": {
         "app": "echo"
