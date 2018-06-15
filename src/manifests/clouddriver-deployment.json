@@ -24,7 +24,7 @@
         "maxSurge": "100%"
       }
     },
-    "replicas": 2,
+    "replicas": ${CLOUDDRIVER_REPLICAS},
     "selector": {
       "matchLabels": {
         "app": "clouddriver"

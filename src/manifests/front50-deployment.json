@@ -24,7 +24,7 @@
         "maxSurge": "100%"
       }
     },
-    "replicas": 2,
+    "replicas": ${FRONT50_REPLICAS},
     "selector": {
       "matchLabels": {
         "app": "front50"

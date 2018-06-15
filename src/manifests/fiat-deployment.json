@@ -23,7 +23,7 @@
           "maxSurge": "100%"
         }
       },
-      "replicas": 2,
+      "replicas": ${FIAT_REPLICAS},
       "selector": {
         "matchLabels": {
           "app": "fiat"
@@ -156,4 +156,3 @@
       }
     }
   }
-  

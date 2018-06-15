@@ -23,7 +23,7 @@
         "maxSurge": 3
       }
     },
-    "replicas": 1,
+    "replicas": ${CONFIGURATOR_REPLICAS},
     "selector": {
       "matchLabels": {
         "app": "configurator"

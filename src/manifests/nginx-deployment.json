@@ -23,7 +23,7 @@
         "maxSurge": "100%"
       }
     },
-    "replicas": 2,
+    "replicas": ${NGINX_REPLICAS},
     "selector": {
       "matchLabels": {
         "app": "nginx"
