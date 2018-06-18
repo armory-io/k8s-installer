@@ -1148,7 +1148,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
           "cluster": "spinnaker-monitoring"
       },
       "name": "Deploy spinnaker-monitoring",
-      "refId": "16",
+      "refId": "18",
       "requisiteStageRefIds": ["2", "1", "12"],
       "source": "text",
       "stageEnabled": {
