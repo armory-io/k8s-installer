@@ -1,0 +1,130 @@
+{
+    "apiVersion": "extensions/v1beta1",
+    "kind": "Deployment",
+    "metadata": {
+      "annotations": {
+        "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
+        "artifact.spinnaker.io/name": "\"spinnaker-monitoring\"",
+        "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
+        "moniker.spinnaker.io/application": "\"armory\"",
+        "moniker.spinnaker.io/cluster": "\"spinnaker-monitoring\""
+      },
+      "name": "spinnaker-monitoring",
+      "namespace": "${NAMESPACE}",
+      "labels": {
+        "app": "spinnaker-monitoring"
+      }
+    },
+    "spec": {
+      "strategy": {
+        "type": "RollingUpdate",
+        "rollingUpdate": {
+          "maxUnavailable": 0,
+          "maxSurge": "100%"
+        }
+      },
+      "replicas": ${SPINNAKER_MONITORING_REPLICAS},
+      "selector": {
+        "matchLabels": {
+          "app": "spinnaker-monitoring"
+        }
+      },
+      "template": {
+        "metadata": {
+          "annotations": {
+            "artifact.spinnaker.io/location": "\"${NAMESPACE}\"",
+            "artifact.spinnaker.io/name": "\"spinnaker-monitoring\"",
+            "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
+            "moniker.spinnaker.io/application": "\"armory\"",
+            "moniker.spinnaker.io/cluster": "\"spinnaker-monitoring\""
+          },
+          "labels": {
+            "app": "spinnaker-monitoring"
+          }
+        },
+        "spec": {
+          "containers": [
+            {
+              "name": "spinnaker-monitoring",
+              "image": "docker.io/armory/spinnaker-monitoring:${spinnaker_monitoring_version}",
+              "envFrom": [
+                {
+                  "configMapRef": {
+                    "name": "init-env"
+                  }
+                }
+              ],
+              "env": [
+                {
+                  "name": "SPINNAKER_MONITORING_LOCAL",
+                  "value": "/home/spinnaker/config/spinnaker-monitoring-local.yml"
+                },
+                {
+                  "name": "SPINNAKER_MONITORING_PORT_MAPPING",
+                  "value": "-8008:8008"
+                },
+                {
+                  "name": "NAMESPACE",
+                  "valueFrom": {
+                    "fieldRef": {
+                      "fieldPath": "metadata.namespace"
+                    }
+                  }
+                }
+              ],
+              "command": [
+                "sh",
+                "-c"
+              ],
+              "args": [
+                "sh /opt/spinnaker/config/default/fetch.sh && python /opt/spinnaker-monitoring/bin --config /opt/spinnaker/config/spinnaker-monitoring.yml monitor"
+              ],
+              "resources": {
+                "requests": {
+                  "cpu": "${SPINNAKER_MONITORING_CPU}",
+                  "memory": "${SPINNAKER_MONITORING_MEMORY}"
+                }
+              },
+              "ports": [
+                {
+                  "containerPort": 8008
+                }
+              ],
+              "livenessProbe": {
+                "httpGet": {
+                  "path": "/",
+                  "port": 8008
+                },
+                "initialDelaySeconds": 60,
+                "periodSeconds": 3
+              },
+              "volumeMounts": [
+                {
+                  "name": "default-config",
+                  "mountPath": "/opt/spinnaker/config/default"
+                },
+                {
+                  "name": "custom-config",
+                  "mountPath": "/opt/spinnaker/config/custom"
+                }
+              ]
+            }
+          ],
+          "volumes": [
+            {
+              "name": "custom-config",
+              "configMap": {
+                "name": "custom-config"
+              }
+            },
+            {
+              "name": "default-config",
+              "configMap": {
+                "name": "default-config"
+              }
+            }
+          ]
+        }
+      }
+    }
+  }

@@ -1,0 +1,21 @@
+{
+    "kind": "Service",
+    "apiVersion": "v1",
+    "metadata": {
+      "name": "spinnaker-monitoring",
+      "namespace": "${NAMESPACE}"
+    },
+    "spec": {
+      "selector": {
+        "app": "spinnaker-monitoring"
+      },
+      "ports": [
+        {
+          "name": "spinnaker-monitoring",
+          "protocol": "TCP",
+          "port": 8008,
+          "targetPort": 8008
+        }
+      ]
+    }
+}

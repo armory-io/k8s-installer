@@ -1,0 +1,63 @@
+# This directory contains .yml files specifying metric collection points
+# Each yaml file contains a "metrics_url:" value with either a URL string
+# or a list of URL strings to collect from using the base filename as
+# the identifier for the service the metrics came from.
+# If not specified the default will be the first of:
+#    ../registry, ../registry.dev, /opt/spinnaker-monitoring/registry
+registry_dir:
+
+server:
+  # This host and port to bind the embedded HTTP server on.
+  host: localhost
+  port: 8008
+
+
+monitor:
+  # The frequency to poll each of the metric sources in the <registry>
+  period: 30
+
+  # Enable the one you are interested in using by uncommenting it.
+  # This will be automatically updated by the third_party/*/instal.sh
+  # if this file exists when the install is run with client install enabled.
+  metric_store:
+#    - datadog
+#    - prometheus
+#    - stackdriver
+
+
+datadog:
+  # This is typically populated by the third_party/datadog/install.sh script
+  # if this file exists when the install is run with client install enabled.
+  api_key:
+
+
+prometheus:
+  add_source_metalabels: True
+
+  # If the push_gateway is defined, then metrics will be pushed to the given url.
+  # This could be something like "host:9091" or "http://host:9091".
+  # If the gateway is empty then data will not be pushed and the server will
+  # expect that prometheus will poll the daemon directly from
+  # the URL path "/prometheus_metrics".
+  #
+  # This value will be updated by third_party/prometheus/install.sh
+  # if this file is present when the script is run with --gateway=<url>
+  # and client install enabled.
+  push_gateway:
+
+
+stackdriver:
+  # A path to the credentials file to use with Stackdriver.
+  # If left blank, this will use the application default credentials.
+  credentials_path:
+
+  # The project to report these metrics for.
+  project:
+
+  # If this instance is on GCP, this is the zone to report the instance for.
+  # If left blank, and on GCP, this will be the zone we are running in.
+  zone:
+
+  # The instance id (is a number)
+  # If left blank, and on GCP, this will populate from the metadata server.
+  instance_id:
