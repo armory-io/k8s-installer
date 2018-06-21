@@ -52,7 +52,25 @@ Press 'Enter' key to continue. Ctrl+C to quit.
   read
 }
 
+function debug_success() {
+  curl -s -X POST https://debug.armory.io/ -d"{
+    \"details\": {
+      \"source\": \"installer\",
+      \"type\": \"installation:success\",
+      \"armoryId\": \"${ARMORY_ID}\"
+    }
+  }" 1&2 2>>/dev/null || true
+}
+
 function error() {
+  curl -s -X POST https://debug.armory.io/ -d"{
+    \"details\": {
+      \"source\": \"installer\",
+      \"type\": \"installation:failure\",
+      \"armoryId\": \"${ARMORY_ID}\",
+      \"error\": \"$1\"
+    }
+  }" 1&2 2>>/dev/null || true
   >&2 echo $1
   exit 1
 }
@@ -1414,12 +1432,12 @@ while getopts ":-:" optchar; do
   esac
 done
 
-
 fetch_latest_version_manifest
 source build/version.manifest
 
 
 function main() {
+  export ARMORY_ID=$(uuidgen 2>>/dev/null || date +%s 2>>/dev/null || echo $(( RANDOM % 1000000 )))
   continue_env
   describe_installer
   prompt_user
@@ -1438,6 +1456,7 @@ function main() {
   else
     output_upgrade_results
   fi
+  debug_success()
 }
 
 main
