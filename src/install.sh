@@ -53,7 +53,7 @@ Press 'Enter' key to continue. Ctrl+C to quit.
 }
 
 function debug_success() {
-  curl -s -X POST https://debug.armory.io/ -d"{
+  curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
     \"details\": {
       \"source\": \"installer\",
       \"type\": \"installation:success\",
@@ -63,7 +63,7 @@ function debug_success() {
 }
 
 function error() {
-  curl -s -X POST https://debug.armory.io/ -d"{
+  curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
     \"details\": {
       \"source\": \"installer\",
       \"type\": \"installation:failure\",
