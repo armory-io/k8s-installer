@@ -1325,7 +1325,9 @@ EOF
   if [[ "${LB_TYPE}" == "Internal" ]]; then
     save_response LB_INTERNAL "true"
   else
-    save_response LB_INTERNAL "false"
+    # `false` is evaluated by an empty string not the word false
+    # https://github.com/kubernetes/kubernetes/blob/7bbe309d8d64adf72b13ced258f1e97567dd945d/pkg/cloudprovider/providers/aws/aws.go#L3316
+    save_response LB_INTERNAL ""
   fi
 }
 
