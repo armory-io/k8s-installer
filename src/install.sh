@@ -54,6 +54,10 @@ Press 'Enter' key to continue. Ctrl+C to quit.
 
 function debug_success() {
   curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
+    \"content\": {
+      \"status\": \"success\",
+      \"email\": \"${APP_EMAIL}\"
+    },
     \"details\": {
       \"source\": \"installer\",
       \"type\": \"installation:success\",
@@ -64,11 +68,15 @@ function debug_success() {
 
 function error() {
   curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
+    \"content\": {
+      \"status\": \"failure\",
+      \"error\": \"$1\",
+      \"email\": \"${APP_EMAIL}\"
+    },
     \"details\": {
       \"source\": \"installer\",
       \"type\": \"installation:failure\",
-      \"armoryId\": \"${ARMORY_ID}\",
-      \"error\": \"$1\"
+      \"armoryId\": \"${ARMORY_ID}\"
     }
   }" 1&2 2>>/dev/null || true
   >&2 echo $1
