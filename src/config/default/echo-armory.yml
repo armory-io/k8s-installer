@@ -3,4 +3,4 @@ rest:
   endpoints:
     - url: "https://debug.armory.io"
       headers:
-        X-ARMORY-ID: ${ARMORY_ID:unknown}
+        Authorization: Armory ${ARMORY_ID:unknown}

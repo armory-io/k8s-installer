@@ -1456,7 +1456,7 @@ function main() {
   else
     output_upgrade_results
   fi
-  debug_success()
+  debug_success
 }
 
 main
