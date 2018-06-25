@@ -26,8 +26,15 @@ export -f myLatestCreatedNamespace
 # keep an eye out on the latest containers
 watch -n 1  'kubectl -n $(myLatestCreatedNamespace) get pods'
 
-# keep an eye out on 
+# watch logs for a single pod (watches for the newest pod, incase a redploy)
+while true; do  echo ; date; kubectl -n $(myLatestCreatedNamespace) logs -f $(kubectl -n $(myLatestCreatedNamespace) get pods -l app=platform --sort-by=metadata.creationTimestamp -o name | tail -n 1)  ; sleep 1;  done;
+
+# watch logs across all apps
 watch -n 1 'kubectl -n $(myLatestCreatedNamespace) logs -l app=dinghy'
+
+# create a proxy so you can access internal services
+kubectl proxy
+curl http://localhost:8001/api/v1/namespaces/$(myLatestCreatedNamespace)/services/clouddriver/proxy/health
 ```
 
 
