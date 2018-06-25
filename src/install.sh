@@ -52,7 +52,33 @@ Press 'Enter' key to continue. Ctrl+C to quit.
   read
 }
 
+function debug_success() {
+  curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
+    \"content\": {
+      \"status\": \"success\",
+      \"email\": \"${APP_EMAIL}\"
+    },
+    \"details\": {
+      \"source\": \"installer\",
+      \"type\": \"installation:success\",
+      \"armoryId\": \"${ARMORY_ID}\"
+    }
+  }" 1&2 2>>/dev/null || true
+}
+
 function error() {
+  curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
+    \"content\": {
+      \"status\": \"failure\",
+      \"error\": \"$1\",
+      \"email\": \"${APP_EMAIL}\"
+    },
+    \"details\": {
+      \"source\": \"installer\",
+      \"type\": \"installation:failure\",
+      \"armoryId\": \"${ARMORY_ID}\"
+    }
+  }" 1&2 2>>/dev/null || true
   >&2 echo $1
   exit 1
 }
@@ -1325,7 +1351,9 @@ EOF
   if [[ "${LB_TYPE}" == "Internal" ]]; then
     save_response LB_INTERNAL "true"
   else
-    save_response LB_INTERNAL "false"
+    # `false` is evaluated by an empty string not the word false
+    # https://github.com/kubernetes/kubernetes/blob/7bbe309d8d64adf72b13ced258f1e97567dd945d/pkg/cloudprovider/providers/aws/aws.go#L3316
+    save_response LB_INTERNAL ""
   fi
 }
 
@@ -1414,12 +1442,12 @@ while getopts ":-:" optchar; do
   esac
 done
 
-
 fetch_latest_version_manifest
 source build/version.manifest
 
 
 function main() {
+  export ARMORY_ID=$(uuidgen 2>>/dev/null || date +%s 2>>/dev/null || echo $(( RANDOM % 1000000 )))
   continue_env
   describe_installer
   prompt_user
@@ -1438,6 +1466,7 @@ function main() {
   else
     output_upgrade_results
   fi
+  debug_success
 }
 
 main

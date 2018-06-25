@@ -28,6 +28,7 @@
     "CONFIGURATOR_ENABLED": "true",
     "SPINNAKER_HOME": "/home/spinnaker",
     "SPINNAKER_CONFIG_DIR": "/home/spinnaker/config",
-    "PLATFORM_ARCHITECTURE": "k8s"
+    "PLATFORM_ARCHITECTURE": "k8s",
+    "ARMORY_ID": "${ARMORY_ID}"
   }
 }
