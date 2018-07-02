@@ -71,7 +71,7 @@ node {
     }
   }
 
-  if (env.BRANCH_NAME == 'master' && (params.RELEASE_INSTALLER_ONLY == 'true' || params.RELEASE_ARMORY_VERSION_IF_PASSING == 'true')) {
+  if (env.BRANCH_NAME == 'master') {
     stage('Promote latest Armory version') {
       sh('''
           UPLOAD_NEW_PUBLIC_INSTALLER=true ./bin/jenkins-public-installer-releaser.sh
