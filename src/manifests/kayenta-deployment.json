@@ -98,12 +98,21 @@
                   "containerPort": 8090
                 }
               ],
-              "livenessProbe": {
+              "readinessProbe": {
                 "httpGet": {
-                  "path": "/",
+                  "path": "/health",
                   "port": 8090
                 },
                 "initialDelaySeconds": 60,
+                "periodSeconds": 5,
+                "successThreshold": 5
+              },
+              "livenessProbe": {
+                "httpGet": {
+                  "path": "/health",
+                  "port": 8090
+                },
+                "initialDelaySeconds": 90,
                 "periodSeconds": 3
               },
               "volumeMounts": [
