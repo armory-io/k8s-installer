@@ -678,10 +678,6 @@ cat <<EOF
 
 Installation complete. You can finish configuring the Armory Platform via:
 
-  http://${NGINX_IP}/#/platform/config/stepbystep
-
-Configure your new Armory installation:
-
   http://${NGINX_IP}/#/platform/config
 
 Your new Armory deploying Armory pipeline is here:
