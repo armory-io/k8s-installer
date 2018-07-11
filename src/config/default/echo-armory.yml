@@ -1,6 +1,8 @@
 rest:
   enabled: true
+
   endpoints:
     - url: "https://debug.armory.io"
       headers:
         Authorization: Armory ${ARMORY_ID:unknown}
+
