@@ -1,3 +1,6 @@
+armory:
+  architecture: 'k8s'
+
 features:
   artifacts:
     enabled: true
