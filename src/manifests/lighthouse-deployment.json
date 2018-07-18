@@ -36,7 +36,8 @@
           "artifact.spinnaker.io/name": "\"armory-lighthouse\"",
           "artifact.spinnaker.io/type": "\"kubernetes/deployment\"",
           "moniker.spinnaker.io/application": "\"armory\"",
-          "moniker.spinnaker.io/cluster": "\"lighthouse\""
+          "moniker.spinnaker.io/cluster": "\"lighthouse\"",
+          "artifact.armory.io/version": "${armoryspinnaker_version}"
         },
         "labels": {
           "app": "lighthouse"
