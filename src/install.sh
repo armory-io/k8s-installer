@@ -267,7 +267,7 @@ EOF
   *****************************************************************************
 
 EOF
-    get_var "Enter your AWS Profile [e.g. devprofile]: " AWS_PROFILE validate_profile
+    get_var "Enter your AWS Profile [default]: " AWS_PROFILE validate_profile "" "default"
   elif [[ "$CONFIG_STORE" == "MINIO" ]]; then
     export S3_ENABLED=true
     export GCS_ENABLED=false
