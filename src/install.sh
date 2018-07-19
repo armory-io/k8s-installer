@@ -52,7 +52,7 @@ Press 'Enter' key to continue. Ctrl+C to quit.
   read
 }
 
-function debug_success() {
+function debug() {
   curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
     \"content\": {
       \"status\": \"success\",
@@ -60,22 +60,7 @@ function debug_success() {
     },
     \"details\": {
       \"source\": \"installer\",
-      \"type\": \"installation:success\",
-      \"armoryId\": \"${ARMORY_ID}\"
-    }
-  }" 1&2 2>>/dev/null || true
-}
-
-function debug_started() {
-  curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
-    \"content\": {
-      \"status\": \"success\",
-      \"email\": \"${APP_EMAIL}\"
-    },
-    \"details\": {
-      \"source\": \"installer\",
-      \"type\": \"installation:started\",
-      \"armoryId\": \"${ARMORY_ID}\"
+      \"type\": \"installation:$1\"
     }
   }" 1&2 2>>/dev/null || true
 }
@@ -89,8 +74,7 @@ function error() {
     },
     \"details\": {
       \"source\": \"installer\",
-      \"type\": \"installation:failure\",
-      \"armoryId\": \"${ARMORY_ID}\"
+      \"type\": \"installation:failure\"
     }
   }" 1&2 2>>/dev/null || true
   >&2 echo $1
@@ -204,6 +188,7 @@ function get_var() {
   local val_func=${3}
   local val_list=${4}
   local default_val="${5}"
+  debug "prompt:${var_name}"
   if [ -z ${!var_name} ]; then
     [ ! -z "$val_list" ] && $val_list
     echo -n "${text}"
@@ -252,7 +237,7 @@ EOF
   fi
 
   get_var "Please enter an email address to use as owner of the armory pipeline [changeme@armory.io]: " APP_EMAIL "" "" "changeme@armory.io"
-  debug_started
+  debug "prompt:email"
 
   prompt_user_for_config_store
 
@@ -593,6 +578,7 @@ function create_k8s_custom_config() {
 }
 
 function upload_custom_credentials() {
+  debug "progress:upload_credentials"
   if [[ "$UPGRADE_ONLY" != "y" ]]; then
     local credentials_manifest="${BUILD_DIR}/custom-credentials.json"
     local certificates_manifest="${BUILD_DIR}/nginx-certs.json"
@@ -638,6 +624,7 @@ EOL
 }
 
 function create_k8s_resources() {
+  debug "create_resources"
   create_k8s_namespace
   create_k8s_nginx_load_balancer
   #remove the configmaps so this script is more idempotent
@@ -761,7 +748,7 @@ function upload_upgrade_pipeline() {
 }
 
 function create_upgrade_pipeline() {
-
+  debug "progress:create_pipeline"
   cat <<EOF
 
   *****************************************************************************
@@ -1374,6 +1361,7 @@ function save_response() {
 }
 
 function continue_env() {
+    debug "prompt:continue_env"
     if [[ ! -z  $NOPROMPT ]]; then
       return
     fi
@@ -1459,6 +1447,7 @@ source build/version.manifest
 
 function main() {
   export ARMORY_ID=$(uuidgen 2>>/dev/null || date +%s 2>>/dev/null || echo $(( RANDOM % 1000000 )))
+  debug "started"
   continue_env
   describe_installer
   prompt_user
@@ -1477,7 +1466,7 @@ function main() {
   else
     output_upgrade_results
   fi
-  debug_success
+  debug "success"
 }
 
 main
