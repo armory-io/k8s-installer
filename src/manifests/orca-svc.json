@@ -2,12 +2,12 @@
   "kind": "Service",
   "apiVersion": "v1",
   "metadata": {
-    "name": "orca",
+    "name": "armory-orca",
     "namespace": "${NAMESPACE}"
   },
   "spec": {
     "selector": {
-      "app": "orca"
+      "app": "armory-orca"
     },
     "ports": [
       {

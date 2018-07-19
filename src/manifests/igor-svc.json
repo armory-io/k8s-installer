@@ -2,12 +2,12 @@
   "kind": "Service",
   "apiVersion": "v1",
   "metadata": {
-    "name": "igor",
+    "name": "armory-igor",
     "namespace": "${NAMESPACE}"
   },
   "spec": {
     "selector": {
-      "app": "igor"
+      "app": "armory-igor"
     },
     "ports": [
       {

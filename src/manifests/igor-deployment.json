@@ -9,10 +9,10 @@
       "moniker.spinnaker.io/application": "\"armory\"",
       "moniker.spinnaker.io/cluster": "\"igor\""
     },
-    "name": "igor",
+    "name": "armory-igor",
     "namespace": "${NAMESPACE}",
     "labels": {
-      "app": "igor"
+      "app": "armory-igor"
     }
   },
   "spec": {
@@ -26,7 +26,7 @@
     "replicas": ${IGOR_REPLICAS},
     "selector": {
       "matchLabels": {
-        "app": "igor"
+        "app": "armory-igor"
       }
     },
     "template": {
@@ -39,7 +39,7 @@
           "moniker.spinnaker.io/cluster": "\"igor\""
         },
         "labels": {
-          "app": "igor"
+          "app": "armory-igor"
         }
       },
       "spec": {
@@ -48,7 +48,7 @@
         },
         "containers": [
           {
-            "name": "igor",
+            "name": "armory-igor",
             "image": "${DOCKER_REGISTRY}/spinnaker-igor-slim:${igor_version}",
             "command": [
               "bash",

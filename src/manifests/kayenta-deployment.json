@@ -9,10 +9,10 @@
         "moniker.spinnaker.io/application": "\"armory\"",
         "moniker.spinnaker.io/cluster": "\"kayenta\""
       },
-      "name": "kayenta",
+      "name": "armory-kayenta",
       "namespace": "${NAMESPACE}",
       "labels": {
-        "app": "kayenta"
+        "app": "armory-kayenta"
       }
     },
     "spec": {
@@ -26,7 +26,7 @@
       "replicas": ${KAYENTA_REPLICAS},
       "selector": {
         "matchLabels": {
-          "app": "kayenta"
+          "app": "armory-kayenta"
         }
       },
       "template": {
@@ -39,13 +39,13 @@
             "moniker.spinnaker.io/cluster": "\"kayenta\""
           },
           "labels": {
-            "app": "kayenta"
+            "app": "armory-kayenta"
           }
         },
         "spec": {
           "containers": [
             {
-              "name": "kayenta",
+              "name": "armory-kayenta",
               "image": "${DOCKER_REGISTRY}/spinnaker-kayenta-slim:${kayenta_version}",
               "envFrom": [
                 {

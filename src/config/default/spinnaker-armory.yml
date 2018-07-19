@@ -48,25 +48,25 @@ services:
     host: ${DEFAULT_DNS_NAME:localhost}
 
   clouddriver:
-    host: ${DEFAULT_DNS_NAME:clouddriver}
+    host: ${DEFAULT_DNS_NAME:armory-clouddriver}
     entityTags:
       enabled: false
 
   echo:
-    host: ${DEFAULT_DNS_NAME:echo}
+    host: ${DEFAULT_DNS_NAME:armory-echo}
 
   deck:
     gateUrl: ${API_HOST:service.default.host}
-    baseUrl: ${DECK_HOST:deck}
+    baseUrl: ${DECK_HOST:armory-deck}
 
   dinghy:
     enabled: ${DINGHY_ENABLED:false}
-    host: ${DEFAULT_DNS_NAME:dinghy}
+    host: ${DEFAULT_DNS_NAME:armory-dinghy}
     baseUrl: ${services.default.protocol}://${services.dinghy.host}:${services.dinghy.port}
     port: 8081
 
   front50:
-    host: ${DEFAULT_DNS_NAME:front50}
+    host: ${DEFAULT_DNS_NAME:armory-front50}
     cassandra:
       enabled: false
     redis:
@@ -79,14 +79,14 @@ services:
     rootFolder: ${ARMORYSPINNAKER_CONF_STORE_PREFIX:front50}
 
   gate:
-    host: ${DEFAULT_DNS_NAME:gate}
+    host: ${DEFAULT_DNS_NAME:armory-gate}
 
   igor:
-    host: ${DEFAULT_DNS_NAME:igor}
+    host: ${DEFAULT_DNS_NAME:armory-igor}
 
   kayenta:
     enabled: true
-    host: ${DEFAULT_DNS_NAME:kayenta}
+    host: ${DEFAULT_DNS_NAME:armory-kayenta}
     canaryConfigStore: true
     port: 8090
     baseUrl: ${services.default.protocol}://${services.kayenta.host}:${services.kayenta.port}
@@ -96,21 +96,21 @@ services:
     atlasWebComponentsUrl: ${ATLAS_COMPONENTS_URL:}
 
   lighthouse:
-    host: ${DEFAULT_DNS_NAME:lighthouse}
+    host: ${DEFAULT_DNS_NAME:armory-lighthouse}
     port: 5000
     baseUrl: ${services.default.protocol}://${services.lighthouse.host}:${services.lighthouse.port}
 
   orca:
-    host: ${DEFAULT_DNS_NAME:orca}
+    host: ${DEFAULT_DNS_NAME:armory-orca}
 
   platform:
     enabled: ${PLATFORM_ENABLED:false}
-    host: ${DEFAULT_DNS_NAME:platform}
+    host: ${DEFAULT_DNS_NAME:armory-platform}
     baseUrl: ${services.default.protocol}://${services.platform.host}:${services.platform.port}
     port: 5001
 
   rosco:
-    host: ${DEFAULT_DNS_NAME:rosco}
+    host: ${DEFAULT_DNS_NAME:armory-rosco}
     enabled: true
     configDir: /opt/spinnaker/config/packer
 
@@ -119,7 +119,7 @@ services:
 
   barometer:
     enabled: ${BAROMETER_ENABLED:false}
-    host: ${DEFAULT_DNS_NAME:barometer}
+    host: ${DEFAULT_DNS_NAME:armory-barometer}
     baseUrl: ${services.default.protocol}://${services.barometer.host}:${services.barometer.port}
     port: 9092
     newRelicEnabled: ${NEW_RELIC_ENABLED:false}
@@ -128,13 +128,13 @@ services:
     # If you are using a remote redis server, you can set the host here.
     # If the remote server is on a different port or url, you can add
     # a "port" or "baseUrl" field here instead.
-    host: ${REDIS_HOST:redis}
+    host: ${REDIS_HOST:armory-redis}
     port: 6379
     connection: redis://${services.redis.host}:${services.redis.port}
 
   fiat:
     enabled: ${FIAT_ENABLED:false}
-    host: ${DEFAULT_DNS_NAME:fiat}
+    host: ${DEFAULT_DNS_NAME:armory-fiat}
     port: 7003
     baseUrl: ${services.default.protocol}://${services.fiat.host}:${services.fiat.port}
 

@@ -2,12 +2,12 @@
   "kind": "Service",
   "apiVersion": "v1",
   "metadata": {
-    "name": "dinghy",
+    "name": "armory-dinghy",
     "namespace": "${NAMESPACE}"
   },
   "spec": {
     "selector": {
-      "app": "dinghy"
+      "app": "armory-dinghy"
     },
     "ports": [
       {

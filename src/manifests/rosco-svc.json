@@ -2,12 +2,12 @@
   "kind": "Service",
   "apiVersion": "v1",
   "metadata": {
-    "name": "rosco",
+    "name": "armory-rosco",
     "namespace": "${NAMESPACE}"
   },
   "spec": {
     "selector": {
-      "app": "rosco"
+      "app": "armory-rosco"
     },
     "ports": [
       {

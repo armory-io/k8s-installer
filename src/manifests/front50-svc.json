@@ -2,12 +2,12 @@
   "kind": "Service",
   "apiVersion": "v1",
   "metadata": {
-    "name": "front50",
+    "name": "armory-front50",
     "namespace": "${NAMESPACE}"
   },
   "spec": {
     "selector": {
-      "app": "front50"
+      "app": "armory-front50"
     },
     "ports": [
       {

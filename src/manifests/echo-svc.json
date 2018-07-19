@@ -2,12 +2,12 @@
   "kind": "Service",
   "apiVersion": "v1",
   "metadata": {
-    "name": "echo",
+    "name": "armory-echo",
     "namespace": "${NAMESPACE}"
   },
   "spec": {
     "selector": {
-      "app": "echo"
+      "app": "armory-echo"
     },
     "ports": [
       {

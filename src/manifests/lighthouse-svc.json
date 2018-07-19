@@ -2,12 +2,12 @@
   "kind": "Service",
   "apiVersion": "v1",
   "metadata": {
-    "name": "lighthouse",
+    "name": "armory-lighthouse",
     "namespace": "${NAMESPACE}"
   },
   "spec": {
     "selector": {
-      "app": "lighthouse"
+      "app": "armory-lighthouse"
     },
     "ports": [
       {

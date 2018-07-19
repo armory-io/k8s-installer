@@ -9,10 +9,10 @@
       "moniker.spinnaker.io/application": "\"armory\"",
       "moniker.spinnaker.io/cluster": "\"clouddriver\""
     },
-    "name": "clouddriver",
+    "name": "armory-clouddriver",
     "namespace": "${NAMESPACE}",
     "labels": {
-      "app": "clouddriver"
+      "app": "armory-clouddriver"
     }
   },
   "spec": {
@@ -27,7 +27,7 @@
     "replicas": ${CLOUDDRIVER_REPLICAS},
     "selector": {
       "matchLabels": {
-        "app": "clouddriver"
+        "app": "armory-clouddriver"
       }
     },
     "template": {
@@ -40,13 +40,13 @@
           "moniker.spinnaker.io/cluster": "\"clouddriver\""
         },
         "labels": {
-          "app": "clouddriver"
+          "app": "armory-clouddriver"
         }
       },
       "spec": {
         "containers": [
           {
-            "name": "clouddriver",
+            "name": "armory-clouddriver",
             "image": "${DOCKER_REGISTRY}/spinnaker-clouddriver-slim:${clouddriver_version}",
             "command": [
               "bash",

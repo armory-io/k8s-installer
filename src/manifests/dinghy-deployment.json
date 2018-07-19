@@ -9,10 +9,10 @@
       "moniker.spinnaker.io/application": "\"armory\"",
       "moniker.spinnaker.io/cluster": "\"dinghy\""
     },
-    "name": "dinghy",
+    "name": "armory-dinghy",
     "namespace": "${NAMESPACE}",
     "labels": {
-      "app": "dinghy"
+      "app": "armory-dinghy"
     }
   },
   "spec": {
@@ -26,7 +26,7 @@
     "replicas": ${DINGHY_REPLICAS},
     "selector": {
       "matchLabels": {
-        "app": "dinghy"
+        "app": "armory-dinghy"
       }
     },
     "template": {
@@ -39,13 +39,13 @@
           "moniker.spinnaker.io/cluster": "\"dinghy\""
         },
         "labels": {
-          "app": "dinghy"
+          "app": "armory-dinghy"
         }
       },
       "spec": {
         "containers": [
           {
-            "name": "dinghy",
+            "name": "armory-dinghy",
             "image": "${DOCKER_REGISTRY}/dinghy:${dinghy_version}",
             "envFrom": [
               {

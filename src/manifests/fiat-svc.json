@@ -2,12 +2,12 @@
     "kind": "Service",
     "apiVersion": "v1",
     "metadata": {
-      "name": "fiat",
+      "name": "armory-fiat",
       "namespace": "${NAMESPACE}"
     },
     "spec": {
       "selector": {
-        "app": "fiat"
+        "app": "armory-fiat"
       },
       "ports": [
         {

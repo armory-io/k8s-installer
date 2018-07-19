@@ -484,11 +484,11 @@ function create_k8s_nginx_load_balancer() {
     #we use loopback because we create a tunnel later
     export NGINX_IP="127.0.0.1"
   else
-    local IP=$(kubectl ${KUBECTL_OPTIONS} get services nginx --no-headers -o wide | awk '{ print $4 }')
+    local IP=$(kubectl ${KUBECTL_OPTIONS} get services armory-nginx --no-headers -o wide | awk '{ print $4 }')
     echo -n "Waiting for load balancer to receive an IP..."
     while [ "$IP" == "<pending>" ] || [ -z "$IP" ]; do
       sleep 5
-      local IP=$(kubectl ${KUBECTL_OPTIONS} get services nginx --no-headers -o wide | awk '{ print $4 }')
+      local IP=$(kubectl ${KUBECTL_OPTIONS} get services armory-nginx --no-headers -o wide | awk '{ print $4 }')
       echo -n "."
     done
     echo "Found IP $IP"
@@ -605,7 +605,7 @@ function create_k8s_port_forward() {
     return
   fi
 
-  nginx_pod=$(kubectl $KUBECTL_OPTIONS get pods -o=custom-columns=NAME:.metadata.name | grep nginx | tail -1)
+  nginx_pod=$(kubectl $KUBECTL_OPTIONS get pods -o=custom-columns=NAME:.metadata.name | grep armory-nginx | tail -1)
   cat <<EOL
 
 ********************************************************************************

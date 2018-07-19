@@ -2,12 +2,12 @@
   "kind": "Service",
   "apiVersion": "v1",
   "metadata": {
-    "name": "clouddriver",
+    "name": "armory-clouddriver",
     "namespace": "${NAMESPACE}"
   },
   "spec": {
     "selector": {
-      "app": "clouddriver"
+      "app": "armory-clouddriver"
     },
     "ports": [
       {

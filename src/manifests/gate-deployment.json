@@ -9,10 +9,10 @@
       "moniker.spinnaker.io/application": "\"armory\"",
       "moniker.spinnaker.io/cluster": "\"gate\""
     },
-    "name": "gate",
+    "name": "armory-gate",
     "namespace": "${NAMESPACE}",
     "labels": {
-      "app": "gate"
+      "app": "armory-gate"
     }
   },
   "spec": {
@@ -26,7 +26,7 @@
     "replicas": ${GATE_REPLICAS},
     "selector": {
       "matchLabels": {
-        "app": "gate"
+        "app": "armory-gate"
       }
     },
     "template": {
@@ -39,7 +39,7 @@
           "moniker.spinnaker.io/cluster": "\"gate\""
         },
         "labels": {
-          "app": "gate"
+          "app": "armory-gate"
         }
       },
       "spec": {
@@ -48,7 +48,7 @@
         },
         "containers": [
           {
-            "name": "gate",
+            "name": "armory-gate",
             "image": "${DOCKER_REGISTRY}/gate-armory:${gate_armory_version}",
             "command": [
               "bash",
