@@ -52,6 +52,9 @@ services:
     entityTags:
       enabled: false
 
+  configurator:
+    baseUrl: http://${CONFIGURATOR_HOST:armory-configurator}:8069
+
   echo:
     host: ${DEFAULT_DNS_NAME:armory-echo}
 
