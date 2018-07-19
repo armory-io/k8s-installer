@@ -53,6 +53,7 @@ Press 'Enter' key to continue. Ctrl+C to quit.
 }
 
 function debug() {
+  detail_type=$(echo "$1" | awk '{print tolower($0)}')
   curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
     \"content\": {
       \"status\": \"success\",
@@ -60,7 +61,7 @@ function debug() {
     },
     \"details\": {
       \"source\": \"installer\",
-      \"type\": \"installation:$1\"
+      \"type\": \"installation:$detail_type\"
     }
   }" 1&2 2>>/dev/null || true
 }
