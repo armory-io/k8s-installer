@@ -52,36 +52,6 @@ Press 'Enter' key to continue. Ctrl+C to quit.
   read
 }
 
-function debug() {
-  detail_type=$(echo "$1" | awk '{print tolower($0)}')
-  curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
-    \"content\": {
-      \"status\": \"success\",
-      \"email\": \"${APP_EMAIL}\"
-    },
-    \"details\": {
-      \"source\": \"installer\",
-      \"type\": \"installation:$detail_type\"
-    }
-  }" 1&2 2>>/dev/null || true
-}
-
-function error() {
-  curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
-    \"content\": {
-      \"status\": \"failure\",
-      \"error\": \"$1\",
-      \"email\": \"${APP_EMAIL}\"
-    },
-    \"details\": {
-      \"source\": \"installer\",
-      \"type\": \"installation:failure\"
-    }
-  }" 1&2 2>>/dev/null || true
-  >&2 echo $1
-  exit 1
-}
-
 function fetch_latest_version_manifest() {
   mkdir -p build
   rm -rf build/version.manifest || true
@@ -1386,6 +1356,36 @@ function make_bucket() {
   elif [ "$CONFIG_STORE" == "MINIO" ]; then
     make_minio_bucket
   fi
+}
+
+function debug() {
+  detail_type=$(echo "$1" | awk '{print tolower($0)}')
+  curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
+    \"content\": {
+      \"status\": \"success\",
+      \"email\": \"${APP_EMAIL}\"
+    },
+    \"details\": {
+      \"source\": \"installer\",
+      \"type\": \"installation:$detail_type\"
+    }
+  }" 1&2 2>>/dev/null || true
+}
+
+function error() {
+  curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
+    \"content\": {
+      \"status\": \"failure\",
+      \"error\": \"$1\",
+      \"email\": \"${APP_EMAIL}\"
+    },
+    \"details\": {
+      \"source\": \"installer\",
+      \"type\": \"installation:failure\"
+    }
+  }" 1&2 2>>/dev/null || true
+  >&2 echo $1
+  exit 1
 }
 
 function print_options_message() {
