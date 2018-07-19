@@ -66,6 +66,20 @@ function debug_success() {
   }" 1&2 2>>/dev/null || true
 }
 
+function debug_started() {
+  curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
+    \"content\": {
+      \"status\": \"success\",
+      \"email\": \"${APP_EMAIL}\"
+    },
+    \"details\": {
+      \"source\": \"installer\",
+      \"type\": \"installation:started\",
+      \"armoryId\": \"${ARMORY_ID}\"
+    }
+  }" 1&2 2>>/dev/null || true
+}
+
 function error() {
   curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
     \"content\": {
@@ -238,6 +252,7 @@ EOF
   fi
 
   get_var "Please enter an email address to use as owner of the armory pipeline [changeme@armory.io]: " APP_EMAIL "" "" "changeme@armory.io"
+  debug_started
 
   prompt_user_for_config_store
 
