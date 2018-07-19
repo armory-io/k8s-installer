@@ -52,37 +52,6 @@ Press 'Enter' key to continue. Ctrl+C to quit.
   read
 }
 
-function debug_success() {
-  curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
-    \"content\": {
-      \"status\": \"success\",
-      \"email\": \"${APP_EMAIL}\"
-    },
-    \"details\": {
-      \"source\": \"installer\",
-      \"type\": \"installation:success\",
-      \"armoryId\": \"${ARMORY_ID}\"
-    }
-  }" 1&2 2>>/dev/null || true
-}
-
-function error() {
-  curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
-    \"content\": {
-      \"status\": \"failure\",
-      \"error\": \"$1\",
-      \"email\": \"${APP_EMAIL}\"
-    },
-    \"details\": {
-      \"source\": \"installer\",
-      \"type\": \"installation:failure\",
-      \"armoryId\": \"${ARMORY_ID}\"
-    }
-  }" 1&2 2>>/dev/null || true
-  >&2 echo $1
-  exit 1
-}
-
 function fetch_latest_version_manifest() {
   mkdir -p build
   rm -rf build/version.manifest || true
@@ -190,6 +159,7 @@ function get_var() {
   local val_func=${3}
   local val_list=${4}
   local default_val="${5}"
+  debug "prompt:${var_name}"
   if [ -z ${!var_name} ]; then
     [ ! -z "$val_list" ] && $val_list
     echo -n "${text}"
@@ -238,6 +208,7 @@ EOF
   fi
 
   get_var "Please enter an email address to use as owner of the armory pipeline [changeme@armory.io]: " APP_EMAIL "" "" "changeme@armory.io"
+  debug "prompt:email"
 
   prompt_user_for_config_store
 
@@ -578,6 +549,7 @@ function create_k8s_custom_config() {
 }
 
 function upload_custom_credentials() {
+  debug "progress:upload_credentials"
   if [[ "$UPGRADE_ONLY" != "y" ]]; then
     local credentials_manifest="${BUILD_DIR}/custom-credentials.json"
     local certificates_manifest="${BUILD_DIR}/nginx-certs.json"
@@ -623,6 +595,7 @@ EOL
 }
 
 function create_k8s_resources() {
+  debug "create_resources"
   create_k8s_namespace
   create_k8s_nginx_load_balancer
   #remove the configmaps so this script is more idempotent
@@ -746,7 +719,7 @@ function upload_upgrade_pipeline() {
 }
 
 function create_upgrade_pipeline() {
-
+  debug "progress:create_pipeline"
   cat <<EOF
 
   *****************************************************************************
@@ -1359,6 +1332,7 @@ function save_response() {
 }
 
 function continue_env() {
+    debug "prompt:continue_env"
     if [[ ! -z  $NOPROMPT ]]; then
       return
     fi
@@ -1382,6 +1356,36 @@ function make_bucket() {
   elif [ "$CONFIG_STORE" == "MINIO" ]; then
     make_minio_bucket
   fi
+}
+
+function debug() {
+  detail_type=$(echo "$1" | awk '{print tolower($0)}')
+  curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
+    \"content\": {
+      \"status\": \"success\",
+      \"email\": \"${APP_EMAIL}\"
+    },
+    \"details\": {
+      \"source\": \"installer\",
+      \"type\": \"installation:$detail_type\"
+    }
+  }" 1&2 2>>/dev/null || true
+}
+
+function error() {
+  curl -s -X POST https://debug.armory.io/ -H "Authorization: Armory ${ARMORY_ID}" -d"{
+    \"content\": {
+      \"status\": \"failure\",
+      \"error\": \"$1\",
+      \"email\": \"${APP_EMAIL}\"
+    },
+    \"details\": {
+      \"source\": \"installer\",
+      \"type\": \"installation:failure\"
+    }
+  }" 1&2 2>>/dev/null || true
+  >&2 echo $1
+  exit 1
 }
 
 function print_options_message() {
@@ -1444,6 +1448,7 @@ source build/version.manifest
 
 function main() {
   export ARMORY_ID=$(uuidgen 2>>/dev/null || date +%s 2>>/dev/null || echo $(( RANDOM % 1000000 )))
+  debug "started"
   continue_env
   describe_installer
   prompt_user
@@ -1462,7 +1467,7 @@ function main() {
   else
     output_upgrade_results
   fi
-  debug_success
+  debug "success"
 }
 
 main
