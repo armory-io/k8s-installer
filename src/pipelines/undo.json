@@ -1,7 +1,8 @@
 {
+  "application": "armory",
+  "name": "Undo Rollout",
   "id": "undo-armory-update",
   "keepWaitingPipelines": false,
-  "lastModifiedBy": "anonymous",
   "limitConcurrent": true,
   "stages": [
     {

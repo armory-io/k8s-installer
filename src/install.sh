@@ -728,25 +728,8 @@ EOF
   fi
 }
 
-function upload_upgrade_pipeline() {
-  local pipeline_json="${BUILD_DIR}/pipeline/pipeline.json"
-  local bucket_path="front50/pipelines/update-spinnaker"
-  if [[ "${CONFIG_STORE}" == "S3" ]]; then
-    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
-      "${pipeline_json}" \
-      "s3://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}/pipeline-metadata.json"
-  elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
-    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
-      --endpoint-url=${MINIO_ENDPOINT} "${pipeline_json}" "s3://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}/pipeline-metadata.json"
-  elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
-    gsutil cp "${pipeline_json}" "gs://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}/specification.json"
-  fi
-
-  touch_last_modified
-}
-
 function upload_undo_pipeline() {
-  local src_json="${BUILD_DIR}/pipeline/pipeline.json"
+  local src_json="pipelines/undo.json"
   local dest_json="${BUILD_DIR}/pipeline/undo_pipeline.json"
   envsubst < "$src_json" > "$dest_json"
   local bucket_path="front50/pipelines/undo-armory-update"
@@ -761,6 +744,24 @@ function upload_undo_pipeline() {
     gsutil cp "${pipeline_json}" "gs://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}/specification.json"
   fi
 
+}
+
+function upload_upgrade_pipeline() {
+  local pipeline_json="${BUILD_DIR}/pipeline/pipeline.json"
+  local bucket_path="front50/pipelines/update-spinnaker"
+  if [[ "${CONFIG_STORE}" == "S3" ]]; then
+    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+      "${pipeline_json}" \
+      "s3://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}/pipeline-metadata.json"
+  elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
+    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
+      --endpoint-url=${MINIO_ENDPOINT} "${pipeline_json}" "s3://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}/pipeline-metadata.json"
+  elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
+    gsutil cp "${pipeline_json}" "gs://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}/specification.json"
+  fi
+
+  upload_undo_pipeline
+  touch_last_modified
 }
 
 function create_upgrade_pipeline() {
@@ -1260,98 +1261,98 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "preconditions": [
         {
           "context": {
-            "expression": "${#stage('Deploy deck')['status'].toString() == 'SUCCEEDED'}"
+            "expression": "\${#stage('Deploy deck')['status'].toString() == 'SUCCEEDED'}"
           },
           "failPipeline": true,
           "type": "expression"
         },
         {
           "context": {
-            "expression": "${#stage('Deploy echo')['status'].toString() == 'SUCCEEDED'}"
+            "expression": "\${#stage('Deploy echo')['status'].toString() == 'SUCCEEDED'}"
           },
           "failPipeline": true,
           "type": "expression"
         },
         {
           "context": {
-            "expression": "${#stage('Deploy front50')['status'].toString() == 'SUCCEEDED'}"
+            "expression": "\${#stage('Deploy front50')['status'].toString() == 'SUCCEEDED'}"
           },
           "failPipeline": true,
           "type": "expression"
         },
         {
           "context": {
-            "expression": "${#stage('Deploy gate')['status'].toString() == 'SUCCEEDED'}"
+            "expression": "\${#stage('Deploy gate')['status'].toString() == 'SUCCEEDED'}"
           },
           "failPipeline": true,
           "type": "expression"
         },
         {
           "context": {
-            "expression": "${#stage('Deploy igor')['status'].toString() == 'SUCCEEDED'}"
+            "expression": "\${#stage('Deploy igor')['status'].toString() == 'SUCCEEDED'}"
           },
           "failPipeline": true,
           "type": "expression"
         },
         {
           "context": {
-            "expression": "${#stage('Deploy lighthouse')['status'].toString() == 'SUCCEEDED'}"
+            "expression": "\${#stage('Deploy lighthouse')['status'].toString() == 'SUCCEEDED'}"
           },
           "failPipeline": true,
           "type": "expression"
         },
         {
           "context": {
-            "expression": "${#stage('Deploy dinghy')['status'].toString() == 'SUCCEEDED'}"
+            "expression": "\${#stage('Deploy dinghy')['status'].toString() == 'SUCCEEDED'}"
           },
           "failPipeline": true,
           "type": "expression"
         },
         {
           "context": {
-            "expression": "${#stage('Deploy Rosco')['status'].toString() == 'SUCCEEDED'}"
+            "expression": "\${#stage('Deploy Rosco')['status'].toString() == 'SUCCEEDED'}"
           },
           "failPipeline": true,
           "type": "expression"
         },
         {
           "context": {
-            "expression": "${#stage('Deploy clouddriver')['status'].toString() == 'SUCCEEDED'}"
+            "expression": "\${#stage('Deploy clouddriver')['status'].toString() == 'SUCCEEDED'}"
           },
           "failPipeline": true,
           "type": "expression"
         },
         {
           "context": {
-            "expression": "${#stage('Deploy orca')['status'].toString() == 'SUCCEEDED'}"
+            "expression": "\${#stage('Deploy orca')['status'].toString() == 'SUCCEEDED'}"
           },
           "failPipeline": true,
           "type": "expression"
         },
         {
           "context": {
-            "expression": "${#stage('Deploy nginx')['status'].toString() == 'SUCCEEDED'}"
+            "expression": "\${#stage('Deploy nginx')['status'].toString() == 'SUCCEEDED'}"
           },
           "failPipeline": true,
           "type": "expression"
         },
         {
           "context": {
-            "expression": "${#stage('Deploy kayenta')['status'].toString() == 'SUCCEEDED'}"
+            "expression": "\${#stage('Deploy kayenta')['status'].toString() == 'SUCCEEDED'}"
           },
           "failPipeline": true,
           "type": "expression"
         },
         {
           "context": {
-            "expression": "${#stage('Deploy platform')['status'].toString() == 'SUCCEEDED'}"
+            "expression": "\${#stage('Deploy platform')['status'].toString() == 'SUCCEEDED'}"
           },
           "failPipeline": true,
           "type": "expression"
         },
         {
           "context": {
-            "expression": "${#stage('Deploy configurator')['status'].toString() == 'SUCCEEDED'}"
+            "expression": "\${#stage('Deploy configurator')['status'].toString() == 'SUCCEEDED'}"
           },
           "failPipeline": true,
           "type": "expression"
@@ -1387,7 +1388,7 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
         "19"
       ],
       "stageEnabled": {
-        "expression": "${#stage('Check Status')['status'].toString() != 'SUCCEEDED'}",
+        "expression": "\${#stage('Check Status')['status'].toString() != 'SUCCEEDED'}",
         "type": "expression"
       },
       "type": "pipeline",
@@ -1696,7 +1697,6 @@ function main() {
   else
     output_upgrade_results
   fi
-  upload_undo_pipeline
   debug_success
 }
 
