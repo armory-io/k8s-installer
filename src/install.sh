@@ -712,9 +712,9 @@ function upload_undo_pipeline() {
       "s3://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}/pipeline-metadata.json"
   elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
     AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
-      --endpoint-url=${MINIO_ENDPOINT} "${pipeline_json}" "s3://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}/pipeline-metadata.json"
+      --endpoint-url=${MINIO_ENDPOINT} "${dest_json}" "s3://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}/pipeline-metadata.json"
   elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
-    gsutil cp "${pipeline_json}" "gs://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}/specification.json"
+    gsutil cp "${dest_json}" "gs://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}/specification.json"
   fi
 
 }
