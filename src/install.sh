@@ -745,6 +745,24 @@ function upload_upgrade_pipeline() {
   touch_last_modified
 }
 
+function upload_undo_pipeline() {
+  local src_json="${BUILD_DIR}/pipeline/pipeline.json"
+  local dest_json="${BUILD_DIR}/pipeline/undo_pipeline.json"
+  envsubst < "$src_json" > "$dest_json"
+  local bucket_path="front50/pipelines/undo-armory-update"
+  if [[ "${CONFIG_STORE}" == "S3" ]]; then
+    aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+      "${dest_json}" \
+      "s3://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}/pipeline-metadata.json"
+  elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
+    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
+      --endpoint-url=${MINIO_ENDPOINT} "${pipeline_json}" "s3://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}/pipeline-metadata.json"
+  elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
+    gsutil cp "${pipeline_json}" "gs://${ARMORY_CONF_STORE_BUCKET}/${bucket_path}/specification.json"
+  fi
+
+}
+
 function create_upgrade_pipeline() {
 
   cat <<EOF
@@ -928,6 +946,11 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "name": "Deploy Rosco",
       "refId": "10",
       "requisiteStageRefIds": ["2", "1", "12"],
+      "overrideTimeout": true,
+      "stageTimeoutMs": 900000,
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
       "source": "text",
       "type": "deployManifest"
     },
@@ -944,6 +967,11 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "name": "Deploy clouddriver",
       "refId": "11",
       "requisiteStageRefIds": ["2", "1", "12"],
+      "overrideTimeout": true,
+      "stageTimeoutMs": 900000,
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
       "source": "text",
       "type": "deployManifest"
     },
@@ -960,6 +988,11 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "name": "Deploy deck",
       "refId": "3",
       "requisiteStageRefIds": ["2", "1", "12"],
+      "overrideTimeout": true,
+      "stageTimeoutMs": 900000,
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
       "source": "text",
       "type": "deployManifest"
     },
@@ -976,6 +1009,11 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "name": "Deploy echo",
       "refId": "4",
       "requisiteStageRefIds": ["2", "1", "12"],
+      "overrideTimeout": true,
+      "stageTimeoutMs": 900000,
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
       "source": "text",
       "type": "deployManifest"
     },
@@ -992,6 +1030,11 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "name": "Deploy front50",
       "refId": "5",
       "requisiteStageRefIds": ["2", "1", "12"],
+      "overrideTimeout": true,
+      "stageTimeoutMs": 900000,
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
       "source": "text",
       "type": "deployManifest"
     },
@@ -1008,6 +1051,11 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "name": "Deploy gate",
       "refId": "6",
       "requisiteStageRefIds": ["2", "1", "12"],
+      "overrideTimeout": true,
+      "stageTimeoutMs": 900000,
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
       "source": "text",
       "type": "deployManifest"
     },
@@ -1024,6 +1072,11 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "name": "Deploy igor",
       "refId": "7",
       "requisiteStageRefIds": ["2", "1", "12"],
+      "overrideTimeout": true,
+      "stageTimeoutMs": 900000,
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
       "source": "text",
       "type": "deployManifest"
     },
@@ -1040,6 +1093,11 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "name": "Deploy lighthouse",
       "refId": "8",
       "requisiteStageRefIds": ["2", "1", "12"],
+      "overrideTimeout": true,
+      "stageTimeoutMs": 900000,
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
       "source": "text",
       "type": "deployManifest"
     },
@@ -1056,6 +1114,11 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "name": "Deploy dinghy",
       "refId": "9",
       "requisiteStageRefIds": ["2", "1", "12"],
+      "overrideTimeout": true,
+      "stageTimeoutMs": 900000,
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
       "source": "text",
       "type": "deployManifest"
     },
@@ -1072,6 +1135,11 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "name": "Deploy configurator",
       "refId": "18",
       "requisiteStageRefIds": ["2", "1", "12"],
+      "overrideTimeout": true,
+      "stageTimeoutMs": 900000,
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
       "source": "text",
       "type": "deployManifest"
     },
@@ -1088,6 +1156,11 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "name": "Deploy orca",
       "refId": "13",
       "requisiteStageRefIds": ["2", "1", "12"],
+      "overrideTimeout": true,
+      "stageTimeoutMs": 900000,
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
       "source": "text",
       "type": "deployManifest"
     },
@@ -1104,6 +1177,11 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "name": "Deploy nginx",
       "refId": "14",
       "requisiteStageRefIds": ["2", "1", "12"],
+      "overrideTimeout": true,
+      "stageTimeoutMs": 900000,
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
       "source": "text",
       "type": "deployManifest"
     },
@@ -1120,6 +1198,11 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "name": "Deploy kayenta",
       "refId": "15",
       "requisiteStageRefIds": ["2", "1", "12"],
+      "overrideTimeout": true,
+      "stageTimeoutMs": 900000,
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
       "source": "text",
       "type": "deployManifest"
     },
@@ -1136,6 +1219,11 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "name": "Deploy fiat",
       "refId": "16",
       "requisiteStageRefIds": ["2", "1", "12"],
+      "overrideTimeout": true,
+      "stageTimeoutMs": 900000,
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
       "source": "text",
       "stageEnabled": {
         "expression": "false",
@@ -1156,8 +1244,154 @@ cat <<EOF > ${BUILD_DIR}/pipeline/pipeline.json
       "name": "Deploy platform",
       "refId": "17",
       "requisiteStageRefIds": ["2", "1", "12"],
+      "overrideTimeout": true,
+      "stageTimeoutMs": 900000,
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
       "source": "text",
       "type": "deployManifest"
+    },
+    {
+      "completeOtherBranchesThenFail": false,
+      "continuePipeline": true,
+      "failPipeline": false,
+      "name": "Check Status",
+      "preconditions": [
+        {
+          "context": {
+            "expression": "${#stage('Deploy deck')['status'].toString() == 'SUCCEEDED'}"
+          },
+          "failPipeline": true,
+          "type": "expression"
+        },
+        {
+          "context": {
+            "expression": "${#stage('Deploy echo')['status'].toString() == 'SUCCEEDED'}"
+          },
+          "failPipeline": true,
+          "type": "expression"
+        },
+        {
+          "context": {
+            "expression": "${#stage('Deploy front50')['status'].toString() == 'SUCCEEDED'}"
+          },
+          "failPipeline": true,
+          "type": "expression"
+        },
+        {
+          "context": {
+            "expression": "${#stage('Deploy gate')['status'].toString() == 'SUCCEEDED'}"
+          },
+          "failPipeline": true,
+          "type": "expression"
+        },
+        {
+          "context": {
+            "expression": "${#stage('Deploy igor')['status'].toString() == 'SUCCEEDED'}"
+          },
+          "failPipeline": true,
+          "type": "expression"
+        },
+        {
+          "context": {
+            "expression": "${#stage('Deploy lighthouse')['status'].toString() == 'SUCCEEDED'}"
+          },
+          "failPipeline": true,
+          "type": "expression"
+        },
+        {
+          "context": {
+            "expression": "${#stage('Deploy dinghy')['status'].toString() == 'SUCCEEDED'}"
+          },
+          "failPipeline": true,
+          "type": "expression"
+        },
+        {
+          "context": {
+            "expression": "${#stage('Deploy Rosco')['status'].toString() == 'SUCCEEDED'}"
+          },
+          "failPipeline": true,
+          "type": "expression"
+        },
+        {
+          "context": {
+            "expression": "${#stage('Deploy clouddriver')['status'].toString() == 'SUCCEEDED'}"
+          },
+          "failPipeline": true,
+          "type": "expression"
+        },
+        {
+          "context": {
+            "expression": "${#stage('Deploy orca')['status'].toString() == 'SUCCEEDED'}"
+          },
+          "failPipeline": true,
+          "type": "expression"
+        },
+        {
+          "context": {
+            "expression": "${#stage('Deploy nginx')['status'].toString() == 'SUCCEEDED'}"
+          },
+          "failPipeline": true,
+          "type": "expression"
+        },
+        {
+          "context": {
+            "expression": "${#stage('Deploy kayenta')['status'].toString() == 'SUCCEEDED'}"
+          },
+          "failPipeline": true,
+          "type": "expression"
+        },
+        {
+          "context": {
+            "expression": "${#stage('Deploy platform')['status'].toString() == 'SUCCEEDED'}"
+          },
+          "failPipeline": true,
+          "type": "expression"
+        },
+        {
+          "context": {
+            "expression": "${#stage('Deploy configurator')['status'].toString() == 'SUCCEEDED'}"
+          },
+          "failPipeline": true,
+          "type": "expression"
+        }
+      ],
+      "refId": "19",
+      "requisiteStageRefIds": [
+        "3",
+        "10",
+        "11",
+        "4",
+        "6",
+        "5",
+        "7",
+        "8",
+        "9",
+        "18",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17"
+      ],
+      "type": "checkPreconditions"
+    },
+    {
+      "application": "armory",
+      "failPipeline": true,
+      "name": "Undo",
+      "pipeline": "undo-armory-update",
+      "refId": "20",
+      "requisiteStageRefIds": [
+        "19"
+      ],
+      "stageEnabled": {
+        "expression": "${#stage('Check Status')['status'].toString() != 'SUCCEEDED'}",
+        "type": "expression"
+      },
+      "type": "pipeline",
+      "waitForCompletion": true
     }
   ]
 }
@@ -1462,6 +1696,7 @@ function main() {
   else
     output_upgrade_results
   fi
+  upload_undo_pipeline
   debug_success
 }
 
