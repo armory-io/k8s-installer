@@ -93,11 +93,11 @@
             "volumeMounts": [
               {
                 "name": "aws-s3-credentials",
-                "mountPath": "/home/spinnaker/.aws"
+                "mountPath": "/root/.aws"
               },
               {
                 "name": "gcp-credentials",
-                "mountPath": "/home/spinnaker/.gcp"
+                "mountPath": "/root/.gcp"
               },
               {
                 "name": "default-config",
