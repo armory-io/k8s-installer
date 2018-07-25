@@ -9,10 +9,10 @@
       "moniker.spinnaker.io/application": "\"armory\"",
       "moniker.spinnaker.io/cluster": "\"orca\""
     },
-    "name": "orca",
+    "name": "armory-orca",
     "namespace": "${NAMESPACE}",
     "labels": {
-      "app": "orca"
+      "app": "armory-orca"
     }
   },
   "spec": {
@@ -27,7 +27,7 @@
     "replicas": ${ORCA_REPLICAS},
     "selector": {
       "matchLabels": {
-        "app": "orca"
+        "app": "armory-orca"
       }
     },
     "template": {
@@ -40,13 +40,13 @@
           "moniker.spinnaker.io/cluster": "\"orca\""
         },
         "labels": {
-          "app": "orca"
+          "app": "armory-orca"
         }
       },
       "spec": {
         "containers": [
           {
-            "name": "orca",
+            "name": "armory-orca",
             "image": "${DOCKER_REGISTRY}/spinnaker-orca-slim:${orca_version}",
             "command": [
               "bash",

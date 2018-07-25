@@ -9,10 +9,10 @@
       "moniker.spinnaker.io/application": "\"armory\"",
       "moniker.spinnaker.io/cluster": "\"deck\""
     },
-    "name": "deck",
+    "name": "armory-deck",
     "namespace": "${NAMESPACE}",
     "labels": {
-      "app": "deck"
+      "app": "armory-deck"
     }
   },
   "spec": {
@@ -26,7 +26,7 @@
     "replicas": ${DECK_REPLICAS},
     "selector": {
       "matchLabels": {
-        "app": "deck"
+        "app": "armory-deck"
       }
     },
     "template": {
@@ -39,13 +39,13 @@
           "moniker.spinnaker.io/cluster": "\"deck\""
         },
         "labels": {
-          "app": "deck"
+          "app": "armory-deck"
         }
       },
       "spec": {
         "containers": [
           {
-            "name": "deck",
+            "name": "armory-deck",
             "image": "${DOCKER_REGISTRY}/deck-armory:${deck_armory_version}",
             "envFrom": [
               {

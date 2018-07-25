@@ -2,12 +2,12 @@
     "kind": "Service",
     "apiVersion": "v1",
     "metadata": {
-      "name": "platform",
+      "name": "armory-platform",
       "namespace": "${NAMESPACE}"
     },
     "spec": {
       "selector": {
-        "app": "platform"
+        "app": "armory-platform"
       },
       "ports": [
         {

@@ -2,12 +2,12 @@
   "kind": "Service",
   "apiVersion": "v1",
   "metadata": {
-    "name": "configurator",
+    "name": "armory-configurator",
     "namespace": "${NAMESPACE}"
   },
   "spec": {
     "selector": {
-      "app": "configurator"
+      "app": "armory-configurator"
     },
     "ports": [
       {

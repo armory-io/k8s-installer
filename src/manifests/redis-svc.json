@@ -2,10 +2,10 @@
   "apiVersion": "v1",
   "kind": "Service",
   "metadata": {
-    "name": "redis",
+    "name": "armory-redis",
     "namespace": "${NAMESPACE}",
     "labels": {
-      "app": "redis"
+      "app": "armory-redis"
     }
   },
   "spec": {
@@ -17,7 +17,7 @@
       }
     ],
     "selector": {
-      "app": "redis"
+      "app": "armory-redis"
     }
   }
 }

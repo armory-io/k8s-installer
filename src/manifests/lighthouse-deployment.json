@@ -9,10 +9,10 @@
       "moniker.spinnaker.io/application": "\"armory\"",
       "moniker.spinnaker.io/cluster": "\"lighthouse\""
     },
-    "name": "lighthouse",
+    "name": "armory-lighthouse",
     "namespace": "${NAMESPACE}",
     "labels": {
-      "app": "lighthouse"
+      "app": "armory-lighthouse"
     }
   },
   "spec": {
@@ -26,7 +26,7 @@
     "replicas": ${LIGHTHOUSE_REPLICAS},
     "selector": {
       "matchLabels": {
-        "app": "lighthouse"
+        "app": "armory-lighthouse"
       }
     },
     "template": {
@@ -40,13 +40,13 @@
           "artifact.armory.io/version": "${armoryspinnaker_version}"
         },
         "labels": {
-          "app": "lighthouse"
+          "app": "armory-lighthouse"
         }
       },
       "spec": {
         "containers": [
           {
-            "name": "lighthouse",
+            "name": "armory-lighthouse",
             "image": "${DOCKER_REGISTRY}/lighthouse:${lighthouse_version}",
             "command": [
               "bash",

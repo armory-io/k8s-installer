@@ -9,10 +9,10 @@
       "moniker.spinnaker.io/application": "\"armory\"",
       "moniker.spinnaker.io/cluster": "\"nginx\""
     },
-    "name": "nginx",
+    "name": "armory-nginx",
     "namespace": "${NAMESPACE}",
     "labels": {
-      "app": "nginx"
+      "app": "armory-nginx"
     }
   },
   "spec": {
@@ -26,7 +26,7 @@
     "replicas": ${NGINX_REPLICAS},
     "selector": {
       "matchLabels": {
-        "app": "nginx"
+        "app": "armory-nginx"
       }
     },
     "template": {
@@ -39,7 +39,7 @@
           "moniker.spinnaker.io/cluster": "\"nginx\""
         },
         "labels": {
-          "app": "nginx"
+          "app": "armory-nginx"
         }
       },
       "spec": {
@@ -51,7 +51,7 @@
                 "memory": "${NGINX_MEMORY}"
               }
             },
-            "name": "nginx",
+            "name": "armory-nginx",
             "image": "nginx",
             "command": [
               "bash",

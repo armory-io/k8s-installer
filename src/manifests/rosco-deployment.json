@@ -9,10 +9,10 @@
       "moniker.spinnaker.io/application": "\"armory\"",
       "moniker.spinnaker.io/cluster": "\"rosco\""
     },
-    "name": "rosco",
+    "name": "armory-rosco",
     "namespace": "${NAMESPACE}",
     "labels": {
-      "app": "rosco"
+      "app": "armory-rosco"
     }
   },
   "spec": {
@@ -27,7 +27,7 @@
     "replicas": ${ROSCO_REPLICAS},
     "selector": {
       "matchLabels": {
-        "app": "rosco"
+        "app": "armory-rosco"
       }
     },
     "template": {
@@ -40,13 +40,13 @@
           "moniker.spinnaker.io/cluster": "\"rosco\""
         },
         "labels": {
-          "app": "rosco"
+          "app": "armory-rosco"
         }
       },
       "spec": {
         "containers": [
           {
-            "name": "rosco",
+            "name": "armory-rosco",
             "image": "${DOCKER_REGISTRY}/spinnaker-rosco-slim:${rosco_version}",
             "command": [
               "bash",

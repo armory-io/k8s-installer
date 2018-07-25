@@ -2,10 +2,10 @@
     "apiVersion": "v1",
     "kind": "Service",
     "metadata": {
-        "name": "nginx",
+        "name": "armory-nginx",
         "namespace": "${NAMESPACE}",
         "labels": {
-            "app": "nginx"
+            "app": "armory-nginx"
         },
         "annotations": {
             "cloud.google.com/load-balancer-type": "${LB_TYPE}",
@@ -34,7 +34,7 @@
             }
         ],
         "selector": {
-            "app": "nginx"
+            "app": "armory-nginx"
         },
         "type": "${SERVICE_TYPE}"
     }

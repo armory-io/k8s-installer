@@ -2,7 +2,7 @@
   "kind": "Service",
   "apiVersion": "v1",
   "metadata": {
-    "name": "deck",
+    "name": "armory-deck",
     "namespace": "${NAMESPACE}",
     "annotations": {
       "cloud.google.com/load-balancer-type": "${LB_TYPE}"
@@ -10,7 +10,7 @@
   },
   "spec": {
     "selector": {
-      "app": "deck"
+      "app": "armory-deck"
     },
     "ports": [
       {

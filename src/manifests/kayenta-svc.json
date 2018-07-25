@@ -2,12 +2,12 @@
     "kind": "Service",
     "apiVersion": "v1",
     "metadata": {
-      "name": "kayenta",
+      "name": "armory-kayenta",
       "namespace": "${NAMESPACE}"
     },
     "spec": {
       "selector": {
-        "app": "kayenta"
+        "app": "armory-kayenta"
       },
       "ports": [
         {
