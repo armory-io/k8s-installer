@@ -68,7 +68,7 @@
               },
               {
                 "name": "GOOGLE_APPLICATION_CREDENTIALS",
-                "value": "/home/spinnaker/.gcp/gcp.json"
+                "value": "/root/.gcp/gcp.json"
               },
               {
                 "name": "CONFIGURATOR_CONFIG",
