@@ -136,6 +136,21 @@ function validate_kubeconfig() {
   return 0
 }
 
+function validate_kubeconfig_deploy() {
+  local file=${1}
+  if [ -z "$file" ]; then
+    echo "Using default kubeconfig"
+  else
+    if [ -f "$file" ]; then
+      echo "Found kubeconfig."
+    else
+      echo "Could not find file ${file}"
+      return 1
+    fi
+  fi
+  return 0
+}
+
 function validate_gcp_creds() {
   # might need more robust validation of creds
   if [ ! -f "$1" ]; then
@@ -145,9 +160,9 @@ function validate_gcp_creds() {
   return 0
 }
 
-function validate_create_service_account() {
-  if [[ "$1" != "y" ]] && [[ "$1" != "n" ]]; then
-    echo "must input either 'y' or 'n'"
+function validate_deploy_method() {
+  if [[ "$1" != "1" ]] && [[ "$1" != "2" ]]; then
+    echo "must input either '1' or '2'"
     return 1
   fi
   return 0
@@ -162,7 +177,7 @@ function get_var() {
   debug "prompt:${var_name}"
   if [ -z ${!var_name} ]; then
     [ ! -z "$val_list" ] && $val_list
-    echo -n "${text}"
+    echo -ne "${text}"
     read value
     if [ -z "${value}" ]; then
       if [ -z ${default_val+x} ]; then
@@ -197,11 +212,18 @@ EOF
   get_var "What Kubernetes namespace would you like to use? [default: armory]: " NAMESPACE "" "" "armory"
   export KUBECTL_OPTIONS="--namespace=${NAMESPACE}"
 
-  get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
-  get_var "Would you like us to use a service account? If not the kubeconfig file will be added to the cluster as a secret. [y/n]: " CREATE_SERVICE_ACCOUNT validate_create_service_account "" "y"
-  if [[ "$CREATE_SERVICE_ACCOUNT" == "y" ]]; then
+  echo "Armory Platform needs access to the namespace ${NAMESPACE} to setup the environment. This is only needed when (re)installing."
+  get_var "Path to kubeconfig \033[1mused for setup\033[0m [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
+
+  echo -e "\nArmory Platform needs access to the Kubernetes namespace ${NAMESPACE} \033[1mfor deployments\033[0m. Select your preferred method:"
+
+  get_var "1) Use a kubeconfig file which will be mounted as a secret\n2) Create a service account\n[1/2]: " DEPLOY_AUTH_METHOD validate_deploy_method "" "1"
+
+  if [[ "$DEPLOY_AUTH_METHOD" == "2" ]]; then
     export USE_SERVICE_ACCOUNT=true
+
   else
+    get_var "Path to kubeconfig used for deployments [if blank default will be used]: " KUBECONFIG_DEPLOY validate_kubeconfig_deploy "" "${HOME}/.kube/config"
     export USE_SERVICE_ACCOUNT=false
     export KUBECONFIG_CONFIG_ENTRY="kubeconfigFile: /opt/spinnaker/credentials/custom/default-kubeconfig"
     encode_kubeconfig
@@ -646,7 +668,7 @@ aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
 }
 
 function encode_kubeconfig() {
-  B64KUBECONFIG=$(base64 -w 0 "${KUBECONFIG}" 2>/dev/null || base64 "${KUBECONFIG}")
+  B64KUBECONFIG=$(base64 -w 0 "${KUBECONFIG_DEPLOY}" 2>/dev/null || base64 "${KUBECONFIG_DEPLOY}")
   export KUBECONFIG_ENTRY_IN_SECRETS_FILE="\"default-kubeconfig\": \"${B64KUBECONFIG}\""
 }
 
