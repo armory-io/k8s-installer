@@ -32,7 +32,7 @@ function describe_installer() {
   This installer will launch v${armoryspinnaker_version} Armory Platform into your Kubernetes cluster.
   The following are required:
     - An existing Kubernetes cluster.
-    - S3, GCS, or Minio
+    - S3, GCS, or S3 Compatible Store (ceph,minio,etc)
     If using AWS:
       - AWS Credentials File
       - AWS CLI
@@ -246,7 +246,7 @@ EOF
   prompt_user_for_config_store
 
   local bucket_name=$(awk '{ print tolower($0) }' <<< ${NAMESPACE}-platform-$(uuidgen) | cut -c 1-51)
-  get_var "${CONFIG_STORE} bucket to use [if blank, a bucket will be generated for you]: " ARMORY_CONF_STORE_BUCKET "" "" $bucket_name
+  get_var "Bucket to use [if blank, a bucket will be generated for you]: " ARMORY_CONF_STORE_BUCKET "" "" $bucket_name
 
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     export S3_ENABLED=true
@@ -277,22 +277,22 @@ EOF
     export GCS_ENABLED=false
   cat <<EOF
 
-  *****************************************************************************
-  * Minio access key ID and secret access key are used to access the bucket   *
-  * during the installation. The keys will be combined into a profile and     *
-  * added to a secret in the k8s cluster called 'aws-s3-credentials'.         *
-  *                                                                           *
-  * Notes:                                                                    *
-  * 1. If you would like to create a Minio user specifically for this         *
-  *    task, you can replace the k8s secret after the installation is         *
-  *    complete.                                                              *
-  * 2. The secret is formatted as a normal AWS credentials file.              *
-  *****************************************************************************
+  ********************************************************************************
+  * S3 compatible store access key ID and secret access key are used to          * 
+  * access the bucket during the installation. The keys will be placed in a      *
+  * profile and added to a secret in the k8s cluster called 'aws-s3-credentials' *
+  *                                                                              *
+  * Notes:                                                                       *
+  * 1. If you would like to create a user specifically for this                  *
+  *    task, you can replace the k8s secret after the installation is            *
+  *    complete.                                                                 *
+  * 2. The secret is formatted as a normal AWS credentials file.                 *
+  ********************************************************************************
 
 EOF
-    get_var "Enter your minio access key: " AWS_ACCESS_KEY_ID
-    get_var "Enter your minio secret key: " AWS_SECRET_ACCESS_KEY
-    get_var "Enter your minio endpoint (ex: http://172.0.10.1:9000): " MINIO_ENDPOINT
+    get_var "Enter your access key: " AWS_ACCESS_KEY_ID
+    get_var "Enter your secret key: " AWS_SECRET_ACCESS_KEY
+    get_var "Enter your endpoint (ex: http://172.0.10.1:9000): " MINIO_ENDPOINT
     #this is a bit of hack until this gets https://github.com/spinnaker/front50/pull/308, check description of PR
     export ENDPOINT_PROPERTY="endpoint: ${MINIO_ENDPOINT}"
     export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY MINIO_ENDPOINT
@@ -312,21 +312,25 @@ function prompt_user_for_config_store() {
 
   *****************************************************************************
   * Configuration for the Armory Platform needs to be persisted to either S3, *
-  * GCS, or Minio. This includes your pipeline configurations, deployment     *
-  * target accounts, etc. We can create a storage bucket for you or you can   *
-  * provide an already existing one.                                          *
+  * GCS, or S3 Compliant Store. This includes your pipeline configurations,   * 
+  * deployment target accounts, etc. We can create a storage bucket for you   * 
+  * or you can provide an already existing one.                               *
   *****************************************************************************
 
 EOF
-  options=("S3" "GCS" "MINIO")
+  options=("S3" "GCS" "S3 Compatible Store")
   echo "Which backing object store would you like to use for storing Spinnaker configs: "
   PS3='Enter choice: '
   select opt in "${options[@]}"
   do
     case $opt in
-        "S3"|"GCS"|"MINIO")
+        "S3"|"GCS")
             echo "Using $opt"
             save_response CONFIG_STORE "$opt"
+            break
+            ;;
+        "S3 Compatible Store")
+            save_response CONFIG_STORE "MINIO"
             break
             ;;
         *) echo "Invalid option";;
@@ -341,7 +345,7 @@ function select_kubectl_context() {
       return
   fi
 
-  options=($(kubectl config get-contexts | awk '{print $2}' | grep -v NAME | sort))
+  options=($(kubectl config get-contexts -o name))
   if [ ${#options[@]} -eq 0 ]; then
       echo "It appears you do not have any K8s contexts in your KUBECONFIG file. Please refer to the docs to setup access to clusters:" 1>&2
       echo "https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/"  1>&2
@@ -432,7 +436,7 @@ function make_minio_bucket() {
     echo "Bucket already exists"
     return
   else
-    echo "Creating Minio bucket to store configuration and persist data."
+    echo "Creating bucket in S3 compatible store to store configuration and persist data."
     AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} aws s3 mb --endpoint-url ${MINIO_ENDPOINT} "s3://${ARMORY_CONF_STORE_BUCKET}"
   fi
 }
