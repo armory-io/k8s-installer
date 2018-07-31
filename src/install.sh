@@ -474,6 +474,10 @@ function create_k8s_nginx_load_balancer() {
   # Wait for IP
   kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/nginx-svc.json
   if [[ "${LB_TYPE}" == "ClusterIP" ]]; then
+    if [[ ! -z "$NGINX_PREDEFINED_URL" ]]; then
+      export NGINX_IP=$NGINX_PREDEFINED_URL
+      return
+    fi
     #we use loopback because we create a tunnel later
     export NGINX_IP="127.0.0.1"
   else
@@ -595,7 +599,7 @@ function upload_custom_credentials() {
 }
 
 function create_k8s_port_forward() {
-  if [ "$SERVICE_TYPE" != "ClusterIP" ]; then
+  if [ "$SERVICE_TYPE" != "ClusterIP" ] || [ ! -z "$NGINX_PREDEFINED_URL" ]; then
     return
   fi
 
@@ -1580,6 +1584,10 @@ EOF
     # `false` is evaluated by an empty string not the word false
     # https://github.com/kubernetes/kubernetes/blob/7bbe309d8d64adf72b13ced258f1e97567dd945d/pkg/cloudprovider/providers/aws/aws.go#L3316
     save_response LB_INTERNAL ""
+  fi
+
+  if [[ "${LB_TYPE}" == "ClusterIP" ]]; then
+    get_var "Enter a pre-defined URL for the environment if applicable. If none, we'll ask you to bind your service before continuing: " NGINX_PREDEFINED_URL
   fi
 }
 
