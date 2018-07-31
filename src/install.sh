@@ -75,7 +75,7 @@ function fetch_latest_version_manifest() {
       echo "Fetching latest stable to src/build/version.manifest..."
       source build/armoryspinnaker-latest-version.manifest
 
-      curl -sS "${armoryspinnaker_version_manifest_url}" > build/version.manifest || true
+      curl -sS "${armoryspinnaker_version_manifest_url}" > build/version.manifest
     fi
   fi
 
