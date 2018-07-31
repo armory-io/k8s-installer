@@ -9,6 +9,8 @@ export BUILD_DIR=build/
 export CONTINUE_FILE=/tmp/armory.env
 export ARMORY_CONF_STORE_PREFIX=front50
 export DOCKER_REGISTRY=${DOCKER_REGISTRY:-docker.io/armory}
+export LATEST_VERSION_MANIFEST_URL="https://s3-us-west-2.amazonaws.com/armory-web/install/release/armoryspinnaker-latest-version.manifest"
+
 # Start from a fresh build dir
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
@@ -53,30 +55,39 @@ Press 'Enter' key to continue. Ctrl+C to quit.
 }
 
 function fetch_latest_version_manifest() {
-  mkdir -p build
-  rm -rf build/version.manifest || true
+  ONLINE="true"
 
   echo
-  if [[ ${FETCH_LATEST_EDGE_VERSION} == true || ${ARMORYSPINNAKER_JENKINS_JOB_ID} != "" ]]; then
-    echo "Fetching edge version to src/build/version.manifest..."
-    ../bin/fetch-latest-armory-version.sh
-    cp build/armoryspinnaker-jenkins-version.manifest build/version.manifest
-  else # we're going to fetch stable by default  ${FETCH_LATEST_STABLE_VERSION} == true
-    echo "Fetching latest stable to src/build/version.manifest..."
-    curl -sS "https://s3-us-west-2.amazonaws.com/armory-web/install/release/armoryspinnaker-latest-version.manifest" > build/armoryspinnaker-latest-version.manifest
-    source build/armoryspinnaker-latest-version.manifest
 
-    curl -sS "${armoryspinnaker_version_manifest_url}" > build/version.manifest
+  # let's check to see if we have internet
+  if ! curl -sS "${LATEST_VERSION_MANIFEST_URL}" > build/armoryspinnaker-latest-version.manifest ; then
+    echo "Warning: Seems like you're offline, however, this is OK!   We'll just use src/version.manifest"
+    ONLINE="false"
+    rm "${BUILD_DIR}/armoryspinnaker-latest-version.manifest"  # there's nothing in this file, lets just clean it up
   fi
 
-  # if there's actual exports commited, then we should combine everything together
-  if grep -q "^\s*export" version.manifest ; then
+  if [[ ${ONLINE} == "true" ]]; then
+    if [[ ${FETCH_LATEST_EDGE_VERSION} == true || ${ARMORYSPINNAKER_JENKINS_JOB_ID} != "" ]]; then
+      echo "Fetching edge version to src/build/version.manifest..."
+      ../bin/fetch-latest-armory-version.sh
+      cp build/armoryspinnaker-jenkins-version.manifest build/version.manifest
+    else # we're going to fetch stable by default  ${FETCH_LATEST_STABLE_VERSION} == true
+      echo "Fetching latest stable to src/build/version.manifest..."
+      source build/armoryspinnaker-latest-version.manifest
+
+      curl -sS "${armoryspinnaker_version_manifest_url}" > build/version.manifest || true
+    fi
+  fi
+
+  # src/version.manifest has pins, let's override the one we found
+  if [[ ${ONLINE} == "false" ]] || grep -q "^\s*export" version.manifest; then
+    echo "Adding versions found in src/version.manifest"
     cat <<EOF >> build/version.manifest
 
 ## Overrides for version.manifest below ##
 ###############################################
 EOF
-    grep -v '^$\|^## ' version.manifest >> build/version.manifest # remove the empty lines and ## comments
+    grep -v '^$\|^## ' version.manifest >> build/version.manifest || true # remove the empty lines and ## comments
   fi
 }
 
