@@ -436,7 +436,7 @@ function make_minio_bucket() {
     echo "Bucket already exists"
     return
   else
-    echo "Creating bucket in S3 compatible store to store configuration and persist data."
+    echo "Creating bucket to store configuration and persist data."
     AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} aws s3 mb --endpoint-url ${MINIO_ENDPOINT} "s3://${ARMORY_CONF_STORE_BUCKET}"
   fi
 }
