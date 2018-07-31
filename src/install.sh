@@ -177,7 +177,7 @@ function get_var() {
   debug "prompt:${var_name}"
   if [ -z ${!var_name} ]; then
     [ ! -z "$val_list" ] && $val_list
-    echo -e "${text}"
+    echo -ne "${text}"
     read value
     if [ -z "${value}" ]; then
       if [ -z ${default_val+x} ]; then
