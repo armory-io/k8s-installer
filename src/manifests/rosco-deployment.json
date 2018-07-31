@@ -72,6 +72,10 @@
               "requests": {
                 "cpu": "${ROSCO_CPU}",
                 "memory": "${ROSCO_MEMORY}"
+              },
+              "limits": {
+                "cpu": "${ROSCO_CPU}",
+                "memory": "${ROSCO_MEMORY}"
               }
             },
             "ports": [

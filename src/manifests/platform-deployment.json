@@ -95,6 +95,10 @@
                 "requests": {
                   "cpu": "${PLATFORM_CPU}",
                   "memory": "${PLATFORM_MEMORY}"
+                },
+                "limits": {
+                  "cpu": "${PLATFORM_CPU}",
+                  "memory": "${PLATFORM_MEMORY}"
                 }
               },
               "ports": [

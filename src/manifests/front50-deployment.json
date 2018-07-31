@@ -72,6 +72,10 @@
               "requests": {
                 "cpu": "${FRONT50_CPU}",
                 "memory": "${FRONT50_MEMORY}"
+              },
+              "limits": {
+                "cpu": "${FRONT50_CPU}",
+                "memory": "${FRONT50_MEMORY}"
               }
             },
             "ports": [

@@ -66,6 +66,10 @@
               "requests": {
                 "cpu": "${ORCA_CPU}",
                 "memory": "${ORCA_MEMORY}"
+              },
+              "limits": {
+                "cpu": "${ORCA_CPU}",
+                "memory": "${ORCA_MEMORY}"
               }
             },
             "ports": [

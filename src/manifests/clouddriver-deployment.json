@@ -66,6 +66,10 @@
               "requests": {
                 "cpu": "${CLOUDDRIVER_CPU}",
                 "memory": "${CLOUDDRIVER_MEMORY}"
+              },
+              "limits": {
+                "cpu": "${CLOUDDRIVER_CPU}",
+                "memory": "${CLOUDDRIVER_MEMORY}"
               }
             },
             "ports": [

@@ -71,6 +71,10 @@
               "requests": {
                 "cpu": "${ECHO_CPU}",
                 "memory": "${ECHO_MEMORY}"
+              },
+              "limits": {
+                "cpu": "${ECHO_CPU}",
+                "memory": "${ECHO_MEMORY}"
               }
             },
             "ports": [

@@ -91,6 +91,10 @@
                 "requests": {
                   "cpu": "${KAYENTA_CPU}",
                   "memory": "${KAYENTA_MEMORY}"
+                },
+                "limits": {
+                  "cpu": "${KAYENTA_CPU}",
+                  "memory": "${KAYENTA_MEMORY}"
                 }
               },
               "ports": [

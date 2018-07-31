@@ -87,6 +87,10 @@
                 "requests": {
                   "cpu": "${FIAT_CPU}",
                   "memory": "${FIAT_MEMORY}"
+                },
+                "limits": {
+                  "cpu": "${FIAT_CPU}",
+                  "memory": "${FIAT_MEMORY}"
                 }
               },
               "ports": [

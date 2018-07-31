@@ -74,6 +74,10 @@
               "requests": {
                 "cpu": "${IGOR_CPU}",
                 "memory": "${IGOR_MEMORY}"
+              },
+              "limits": {
+                "cpu": "${IGOR_CPU}",
+                "memory": "${IGOR_MEMORY}"
               }
             },
             "ports": [

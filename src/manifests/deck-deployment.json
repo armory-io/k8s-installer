@@ -65,6 +65,10 @@
               "requests": {
                 "cpu": "${DECK_CPU}",
                 "memory": "${DECK_MEMORY}"
+              },
+              "limits": {
+                "cpu": "${DECK_CPU}",
+                "memory": "${DECK_MEMORY}"
               }
             },
             "ports": [

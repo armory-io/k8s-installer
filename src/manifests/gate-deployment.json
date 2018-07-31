@@ -78,6 +78,10 @@
               "requests": {
                 "cpu": "${GATE_CPU}",
                 "memory": "${GATE_MEMORY}"
+              },
+              "limits": {
+                "cpu": "${GATE_CPU}",
+                "memory": "${GATE_MEMORY}"
               }
             },
             "ports": [

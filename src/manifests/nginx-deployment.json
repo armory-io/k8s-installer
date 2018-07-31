@@ -49,6 +49,10 @@
               "requests": {
                 "cpu": "${NGINX_CPU}",
                 "memory": "${NGINX_MEMORY}"
+              },
+              "limits": {
+                "cpu": "${NGINX_CPU}",
+                "memory": "${NGINX_MEMORY}"
               }
             },
             "name": "armory-nginx",
