@@ -571,19 +571,64 @@ function create_k8s_custom_config() {
       --from-file=${BUILD_DIR}/config/custom | jq '. + {kind:"ConfigMap",apiVersion:"v1" }' \
       > ${BUILD_DIR}/config/custom/custom-config.json
 
-    kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/config/custom/custom-config.json
 
     local config_file="${BUILD_DIR}/config/custom/custom-config.json"
+    local config_s3_path="s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
+    local config_gs_path="gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
     if [[ "${CONFIG_STORE}" == "S3" ]]; then
-      aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
-        "${config_file}" \
-        "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
+      aws --profile "${AWS_PROFILE}" --region us-east-1 s3 ls "${config_s3_path}" > /dev/null 2>&1
+      result=$?
+      if [[ $result -eq 0 ]]; then
+        get_var "config.json already exists, would you like to overwrite it? [y/n]: " OVERWRITE_CONFIG
+      fi
+      if [[ "${OVERWRITE_CONFIG}" == "y" ]] ; then
+        echo "Overwriting config.json..."
+        aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+          "${config_file}" \
+          "${config_s3_path}"
+      else
+        echo "Using existing custom-credentials.json..."
+        aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+          "${config_s3_path}" \
+          "${config_file}"
+      fi
     elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
-      AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
-        --endpoint-url=${MINIO_ENDPOINT} "${config_file}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
+      AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 ls \
+        --endpoint-url=${MINIO_ENDPOINT} "${config_s3_path}" > /dev/null 2>&1
+      result=$?
+      if [[ $result -eq 0 ]]; then
+        get_var "config.json already exists, would you like to overwrite it? [y/n]: " OVERWRITE_CONFIG
+      fi
+      if [[ "${OVERWRITE_CONFIG}" == "y" ]] ; then
+        echo "Overwriting config.json..."
+        AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
+          --endpoint-url=${MINIO_ENDPOINT} "${config_file}" "${config_s3_path}"
+      else
+        echo "Using existing custom-credentials.json..."
+          AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
+          --endpoint-url=${MINIO_ENDPOINT} "${config_s3_path}" "${config_file}"
+      fi
     elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
+      gsutil ls "${config_gs_path}" > /dev/null 2>&1
+      result=$?
+      if [[ $result -eq 0 ]]; then
+        get_var "config.json already exists, would you like to overwrite it? [y/n]: " OVERWRITE_CONFIG
+      fi
+      if [[ "${OVERWRITE_CONFIG}" == "y" ]] ; then
+        echo "Overwriting config.json..."
+        gsutil cp "${config_file}" "${config_gs_path}"
+      else
+        echo "Using existing custom-credentials.json..."
+        gsutil cp "${config_gs_path}" "${config_file}"
+
+      fi
+
+
+
       gsutil cp "${config_file}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/config_v2/config.json"
     fi
+    # TODO: This should be applied on condition of preservering or overwriting configs
+    kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/config/custom/custom-config.json
   else
     echo "Re-using existing custom-config configmap"
   fi
@@ -594,21 +639,88 @@ function upload_custom_credentials() {
   if [[ "$UPGRADE_ONLY" != "y" ]]; then
     local credentials_manifest="${BUILD_DIR}/custom-credentials.json"
     local certificates_manifest="${BUILD_DIR}/nginx-certs.json"
+    local credentials_s3_path="s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
+    local certificates_s3_path="s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
     if [[ "${CONFIG_STORE}" == "S3" ]]; then
-      aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
-        "${credentials_manifest}" \
-        "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
-      aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
-        "${certificates_manifest}" \
-        "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
+      aws --profile "${AWS_PROFILE}" --region us-east-1 s3 ls "${credentials_s3_path}" > /dev/null 2>&1
+      result=$?
+      if [[ $result -eq 0 ]]; then
+        get_var "custom-credentials.json already exists, would you like to overwrite it? [y/n]: " OVERWRITE_CREDENTIALS
+      fi
+      if [[ "${OVERWRITE_CREDENTIALS}" == "y" ]] ; then
+        echo "Overwriting custom-credentials.json..."
+        aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+          "${credentials_manifest}" \
+          "${credentials_s3_path}"
+      else
+        echo "Using existing custom-credentials.json..."
+      fi
+
+      aws --profile "${AWS_PROFILE}" --region us-east-1 s3 ls "${certificates_s3_path}" > /dev/null 2>&1
+      result=$?
+      if [[ $result -eq 0 ]]; then
+        get_var "nginx-certs.json already exists, would you like to overwrite it? [y/n]: " OVERWRITE_CERTIFICATES
+      fi
+      if [[ "${OVERWRITE_CERTIFICATES}" == "y" ]] ; then
+        echo "Overwriting nginx-certs.json..."
+        aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
+          "${certificates_manifest}" \
+          "${certificates_s3_path}"
+      else
+        echo "Using existing nginx-certs.json..."
+      fi
     elif [[ "${CONFIG_STORE}" == "MINIO" ]]; then
-      AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
-        --endpoint-url=${MINIO_ENDPOINT} "${credentials_manifest}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
-      AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
-        --endpoint-url=${MINIO_ENDPOINT} "${certificates_manifest}" "s3://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
+      AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 ls \
+        --endpoint-url=${MINIO_ENDPOINT} "${credentials_s3_path}" > /dev/null 2>&1
+      result=$?
+      if [[ $result -eq 0 ]]; then
+        get_var "custom-credentials.json already exists, would you like to overwrite it? [y/n]: " OVERWRITE_CREDENTIALS
+      fi
+      if [[ "${OVERWRITE_CREDENTIALS}" == "y" ]] ; then
+        echo "Overwriting custom-credentials.json..."
+        AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
+          --endpoint-url=${MINIO_ENDPOINT} "${credentials_manifest}" "${credentials_s3_path}"
+      else
+        echo "Using existing custom-credentials.json..."
+      fi
+
+      AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 ls \
+        --endpoint-url=${MINIO_ENDPOINT} "${certificates_s3_path}" > /dev/null 2>&1
+      result=$?
+      if [[ $result -eq 0 ]]; then
+        get_var "nginx-certs.json already exists, would you like to overwrite it? [y/n]: " OVERWRITE_CERTIFICATES
+      fi
+      if [[ "${OVERWRITE_CERTIFICATES}" == "y" ]] ; then
+        echo "Overwriting nginx-certs.json..."
+        AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
+          --endpoint-url=${MINIO_ENDPOINT} "${certificates_manifest}" "${certificates_s3_path}"
+      else
+        echo "Using existing nginx-certs.json..."
+      fi
     elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
-      gsutil cp "${credentials_manifest}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
-      gsutil cp "${certificates_manifest}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
+      gsutil ls "gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json" > /dev/null 2>&1
+      result=$?
+      if [[ $result -eq 0 ]]; then
+        get_var "custom-credentials.json already exists, would you like to overwrite it? [y/n]: " OVERWRITE_CREDENTIALS
+      fi
+      if [[ "${OVERWRITE_CREDENTIALS}" == "y" ]] ; then
+        echo "Overwriting custom-credentials.json..."
+        gsutil cp "${credentials_manifest}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/custom-credentials.json"
+      else
+        echo "Using existing custom-credentials.json..."
+      fi
+
+      gsutil ls "gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json" > /dev/null 2>&1
+      result=$?
+      if [[ $result -eq 0 ]]; then
+        get_var "nginx-certs.json already exists, would you like to overwrite it? [y/n]: " OVERWRITE_CERTIFICATES
+      fi
+      if [[ "${OVERWRITE_CERTIFICATES}" == "y" ]] ; then
+        echo "Overwriting nginx-certs.json..."
+        gsutil cp "${certificates_manifest}" "gs://${ARMORY_CONF_STORE_BUCKET}/front50/secrets/nginx-certs.json"
+      else
+        echo "Using existing nginx-certs.json..."
+      fi
     fi
   fi
 }
