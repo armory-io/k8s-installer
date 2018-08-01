@@ -79,6 +79,10 @@
               "requests": {
                 "cpu": "${DINGHY_CPU}",
                 "memory": "${DINGHY_MEMORY}"
+              },
+              "limits": {
+                "cpu": "${DINGHY_CPU}",
+                "memory": "${DINGHY_MEMORY}"
               }
             },
             "ports": [

@@ -49,6 +49,10 @@
               "requests": {
                 "cpu": "${NGINX_CPU}",
                 "memory": "${NGINX_MEMORY}"
+              },
+              "limits": {
+                "cpu": "${NGINX_CPU}",
+                "memory": "${NGINX_MEMORY}"
               }
             },
             "name": "armory-nginx",
@@ -79,7 +83,7 @@
                 "path": "/",
                 "port": 80
               },
-              "initialDelaySeconds": 60,
+              "initialDelaySeconds": 30,
               "periodSeconds": 3,
               "successThreshold": 5
             },
@@ -88,7 +92,7 @@
                 "path": "/",
                 "port": 80
               },
-              "initialDelaySeconds": 60,
+              "initialDelaySeconds": 180,
               "periodSeconds": 3
             },
             "volumeMounts": [
