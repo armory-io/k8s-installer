@@ -430,9 +430,7 @@ EOF
 }
 
 function make_minio_bucket() {
-  AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} aws s3 ls --endpoint-url ${MINIO_ENDPOINT} "s3://${ARMORY_CONF_STORE_BUCKET}" > /dev/null 2>&1
-  result=$?
-  if [[ $result -eq 0 ]]; then
+  if AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} aws s3 ls --endpoint-url ${MINIO_ENDPOINT} "s3://${ARMORY_CONF_STORE_BUCKET}" > /dev/null 2>&1; then
     echo "Bucket already exists"
     return
   else
