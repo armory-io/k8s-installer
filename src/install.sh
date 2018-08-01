@@ -10,7 +10,7 @@ export CONTINUE_FILE=/tmp/armory.env
 export ARMORY_CONF_STORE_PREFIX=front50
 export DOCKER_REGISTRY=${DOCKER_REGISTRY:-docker.io/armory}
 export LATEST_VERSION_MANIFEST_URL="https://s3-us-west-2.amazonaws.com/armory-web/install/release/armoryspinnaker-latest-version.manifest"
-
+export LIBRARY_DOCKER_REGISTRY=${LIBRARY_DOCKER_REGISTRY:-docker.io/library}
 # Start from a fresh build dir
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"

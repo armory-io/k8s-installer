@@ -56,7 +56,7 @@
               }
             },
             "name": "armory-nginx",
-            "image": "nginx",
+            "image": "${LIBRARY_DOCKER_REGISTRY}/nginx",
             "command": [
               "bash",
               "-c"
