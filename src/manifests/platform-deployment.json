@@ -114,7 +114,7 @@
                   "path": "/health",
                   "port": 5001
                 },
-                "initialDelaySeconds": 60,
+                "initialDelaySeconds": 180,
                 "periodSeconds": 3
               },
               "volumeMounts": [

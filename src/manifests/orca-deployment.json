@@ -62,6 +62,12 @@
                 }
               }
             ],
+            "env": [
+              {
+                "name": "JAVA_OPTS",
+                "value": "-Xmx${ORCA_JAVA_MEMORY}"
+              }
+            ],
             "resources": {
               "requests": {
                 "cpu": "${ORCA_CPU}",
@@ -82,7 +88,7 @@
                 "path": "/health",
                 "port": 8083
               },
-              "initialDelaySeconds": 60,
+              "initialDelaySeconds": 30,
               "periodSeconds": 3,
               "successThreshold": 5
             },
@@ -91,7 +97,7 @@
                 "path": "/health",
                 "port": 8083
               },
-              "initialDelaySeconds": 90,
+              "initialDelaySeconds": 180,
               "periodSeconds": 5,
               "failureThreshold": 5
             },

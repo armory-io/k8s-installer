@@ -66,6 +66,10 @@
               {
                 "name": "ROSCO_PORT_MAPPING",
                 "value": "-8087:8087"
+              },
+              {
+                "name": "JAVA_OPTS",
+                "value": "-Xmx${ROSCO_JAVA_MEMORY}"
               }
             ],
             "resources": {
@@ -88,7 +92,7 @@
                 "path": "/health",
                 "port": 8087
               },
-              "initialDelaySeconds": 60,
+              "initialDelaySeconds": 30,
               "periodSeconds": 3,
               "successThreshold": 5
             },
@@ -97,7 +101,7 @@
                 "path": "/health",
                 "port": 8087
               },
-              "initialDelaySeconds": 60,
+              "initialDelaySeconds": 180,
               "periodSeconds": 3
             },
             "volumeMounts": [

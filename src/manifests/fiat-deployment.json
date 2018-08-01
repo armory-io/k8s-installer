@@ -56,8 +56,12 @@
               ],
               "env": [
                 {
-                    "name": "SPINNAKER_HOME",
-                    "value": "/home/spinnaker"
+                  "name": "JAVA_OPTS",
+                  "value": "-Xmx${FIAT_JAVA_MEMORY}"
+                },
+                {
+                  "name": "SPINNAKER_HOME",
+                  "value": "/home/spinnaker"
                 },
                 {
                   "name": "FIAT_PORT_MAPPING",
@@ -98,12 +102,22 @@
                   "containerPort": 7003
                 }
               ],
+              "readinessProbe": {
+                "httpGet": {
+                  "path": "/health",
+                  "port": 7003
+                },
+                "initialDelaySeconds": 30,
+                "periodSeconds": 3,
+                "successThreshold": 5,
+                "failureThreshold": 5
+              },
               "livenessProbe": {
                 "httpGet": {
                   "path": "/health",
                   "port": 7003
                 },
-                "initialDelaySeconds": 60,
+                "initialDelaySeconds": 180,
                 "periodSeconds": 3
               },
               "volumeMounts": [

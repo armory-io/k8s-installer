@@ -72,6 +72,10 @@
               {
                 "name": "GATE_API_PORT_MAPPING",
                 "value": "-8085:8085"
+              },
+              {
+                "name": "JAVA_OPTS",
+                "value": "-Xmx${GATE_JAVA_MEMORY}"
               }
             ],
             "resources": {
@@ -102,7 +106,7 @@
                   "wget -O - http://localhost:8084/health?checkDownstreamServices=true&downstreamServices=true || wget -O - https://localhost:8084/health?checkDownstreamServices=true&downstreamServices=true"
                 ]
               },
-              "initialDelaySeconds": 90,
+              "initialDelaySeconds": 30,
               "periodSeconds": 5,
               "successThreshold": 10
             },
@@ -114,7 +118,7 @@
                   "wget -O - http://localhost:8084/health || wget -O - https://localhost:8084/health"
                 ]
               },
-              "initialDelaySeconds": 90,
+              "initialDelaySeconds": 240,
               "periodSeconds": 5,
               "failureThreshold": 5
             },

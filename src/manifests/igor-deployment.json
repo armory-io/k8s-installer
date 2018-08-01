@@ -68,6 +68,10 @@
               {
                 "name": "IGOR_PORT_MAPPING",
                 "value": "-8088:8088"
+              },
+              {
+                "name": "JAVA_OPTS",
+                "value": "-Xmx${IGOR_JAVA_MEMORY}"
               }
             ],
             "resources": {
@@ -90,7 +94,7 @@
                 "path": "/health",
                 "port": 8088
               },
-              "initialDelaySeconds": 60,
+              "initialDelaySeconds": 30,
               "periodSeconds": 5,
               "successThreshold": 5
             },
@@ -99,7 +103,7 @@
                 "path": "/health",
                 "port": 8088
               },
-              "initialDelaySeconds": 60,
+              "initialDelaySeconds": 180,
               "periodSeconds": 3
             },
             "volumeMounts": [
