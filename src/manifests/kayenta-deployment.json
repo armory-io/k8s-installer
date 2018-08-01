@@ -56,8 +56,12 @@
               ],
               "env": [
                 {
-                    "name": "SPINNAKER_HOME",
-                    "value": "/home/spinnaker"
+                  "name": "JAVA_OPTS",
+                  "value": "-Xmx${KAYENTA_JAVA_MEMORY}"
+                },
+                {
+                  "name": "SPINNAKER_HOME",
+                  "value": "/home/spinnaker"
                 },
                 {
                   "name": "KAYENTA_PORT_MAPPING",
@@ -91,6 +95,10 @@
                 "requests": {
                   "cpu": "${KAYENTA_CPU}",
                   "memory": "${KAYENTA_MEMORY}"
+                },
+                "limits": {
+                  "cpu": "${KAYENTA_CPU}",
+                  "memory": "${KAYENTA_MEMORY}"
                 }
               },
               "ports": [
@@ -103,7 +111,7 @@
                   "path": "/health",
                   "port": 8090
                 },
-                "initialDelaySeconds": 60,
+                "initialDelaySeconds": 30,
                 "periodSeconds": 5,
                 "successThreshold": 5
               },
@@ -112,7 +120,7 @@
                   "path": "/health",
                   "port": 8090
                 },
-                "initialDelaySeconds": 90,
+                "initialDelaySeconds": 180,
                 "periodSeconds": 3
               },
               "volumeMounts": [

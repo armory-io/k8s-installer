@@ -9,6 +9,8 @@ export BUILD_DIR=build/
 export CONTINUE_FILE=/tmp/armory.env
 export ARMORY_CONF_STORE_PREFIX=front50
 export DOCKER_REGISTRY=${DOCKER_REGISTRY:-docker.io/armory}
+export LATEST_VERSION_MANIFEST_URL="https://s3-us-west-2.amazonaws.com/armory-web/install/release/armoryspinnaker-latest-version.manifest"
+
 # Start from a fresh build dir
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
@@ -30,7 +32,7 @@ function describe_installer() {
   This installer will launch v${armoryspinnaker_version} Armory Platform into your Kubernetes cluster.
   The following are required:
     - An existing Kubernetes cluster.
-    - S3, GCS, or Minio
+    - S3, GCS, or S3 Compatible Store (ceph,minio,etc)
     If using AWS:
       - AWS Credentials File
       - AWS CLI
@@ -53,30 +55,39 @@ Press 'Enter' key to continue. Ctrl+C to quit.
 }
 
 function fetch_latest_version_manifest() {
-  mkdir -p build
-  rm -rf build/version.manifest || true
+  ONLINE="true"
 
   echo
-  if [[ ${FETCH_LATEST_EDGE_VERSION} == true || ${ARMORYSPINNAKER_JENKINS_JOB_ID} != "" ]]; then
-    echo "Fetching edge version to src/build/version.manifest..."
-    ../bin/fetch-latest-armory-version.sh
-    cp build/armoryspinnaker-jenkins-version.manifest build/version.manifest
-  else # we're going to fetch stable by default  ${FETCH_LATEST_STABLE_VERSION} == true
-    echo "Fetching latest stable to src/build/version.manifest..."
-    curl -sS "https://s3-us-west-2.amazonaws.com/armory-web/install/release/armoryspinnaker-latest-version.manifest" > build/armoryspinnaker-latest-version.manifest
-    source build/armoryspinnaker-latest-version.manifest
 
-    curl -sS "${armoryspinnaker_version_manifest_url}" > build/version.manifest
+  # let's check to see if we have internet
+  if ! curl -sS "${LATEST_VERSION_MANIFEST_URL}" > build/armoryspinnaker-latest-version.manifest ; then
+    echo "Warning: Seems like you're offline, however, this is OK!   We'll just use src/version.manifest"
+    ONLINE="false"
+    rm "${BUILD_DIR}/armoryspinnaker-latest-version.manifest"  # there's nothing in this file, lets just clean it up
   fi
 
-  # if there's actual exports commited, then we should combine everything together
-  if grep -q "^\s*export" version.manifest ; then
+  if [[ ${ONLINE} == "true" ]]; then
+    if [[ ${FETCH_LATEST_EDGE_VERSION} == true || ${ARMORYSPINNAKER_JENKINS_JOB_ID} != "" ]]; then
+      echo "Fetching edge version to src/build/version.manifest..."
+      ../bin/fetch-latest-armory-version.sh
+      cp build/armoryspinnaker-jenkins-version.manifest build/version.manifest
+    else # we're going to fetch stable by default  ${FETCH_LATEST_STABLE_VERSION} == true
+      echo "Fetching latest stable to src/build/version.manifest..."
+      source build/armoryspinnaker-latest-version.manifest
+
+      curl -sS "${armoryspinnaker_version_manifest_url}" > build/version.manifest
+    fi
+  fi
+
+  # src/version.manifest has pins, let's override the one we found
+  if [[ ${ONLINE} == "false" ]] || grep -q "^\s*export" version.manifest; then
+    echo "Adding versions found in src/version.manifest"
     cat <<EOF >> build/version.manifest
 
 ## Overrides for version.manifest below ##
 ###############################################
 EOF
-    grep -v '^$\|^## ' version.manifest >> build/version.manifest # remove the empty lines and ## comments
+    grep -v '^$\|^## ' version.manifest >> build/version.manifest || true # remove the empty lines and ## comments
   fi
 }
 
@@ -136,6 +147,21 @@ function validate_kubeconfig() {
   return 0
 }
 
+function validate_kubeconfig_deploy() {
+  local file=${1}
+  if [ -z "$file" ]; then
+    echo "Using default kubeconfig"
+  else
+    if [ -f "$file" ]; then
+      echo "Found kubeconfig."
+    else
+      echo "Could not find file ${file}"
+      return 1
+    fi
+  fi
+  return 0
+}
+
 function validate_gcp_creds() {
   # might need more robust validation of creds
   if [ ! -f "$1" ]; then
@@ -145,9 +171,9 @@ function validate_gcp_creds() {
   return 0
 }
 
-function validate_create_service_account() {
-  if [[ "$1" != "y" ]] && [[ "$1" != "n" ]]; then
-    echo "must input either 'y' or 'n'"
+function validate_deploy_method() {
+  if [[ "$1" != "1" ]] && [[ "$1" != "2" ]]; then
+    echo "must input either '1' or '2'"
     return 1
   fi
   return 0
@@ -162,7 +188,7 @@ function get_var() {
   debug "prompt:${var_name}"
   if [ -z ${!var_name} ]; then
     [ ! -z "$val_list" ] && $val_list
-    echo -n "${text}"
+    echo -ne "${text}"
     read value
     if [ -z "${value}" ]; then
       if [ -z ${default_val+x} ]; then
@@ -197,11 +223,18 @@ EOF
   get_var "What Kubernetes namespace would you like to use? [default: armory]: " NAMESPACE "" "" "armory"
   export KUBECTL_OPTIONS="--namespace=${NAMESPACE}"
 
-  get_var "Path to kubeconfig [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
-  get_var "Would you like us to use a service account? If not the kubeconfig file will be added to the cluster as a secret. [y/n]: " CREATE_SERVICE_ACCOUNT validate_create_service_account "" "y"
-  if [[ "$CREATE_SERVICE_ACCOUNT" == "y" ]]; then
+  echo "Armory Platform needs access to the namespace ${NAMESPACE} to setup the environment. This is only needed when (re)installing."
+  get_var "Path to kubeconfig \033[1mused for setup\033[0m [if blank default will be used]: " KUBECONFIG validate_kubeconfig "" "${HOME}/.kube/config"
+
+  echo -e "\nArmory Platform needs access to the Kubernetes namespace ${NAMESPACE} \033[1mfor deployments\033[0m. Select your preferred method:"
+
+  get_var "1) Use a kubeconfig file which will be mounted as a secret\n2) Create a service account\n[1/2]: " DEPLOY_AUTH_METHOD validate_deploy_method "" "1"
+
+  if [[ "$DEPLOY_AUTH_METHOD" == "2" ]]; then
     export USE_SERVICE_ACCOUNT=true
+
   else
+    get_var "Path to kubeconfig used for deployments [if blank default will be used]: " KUBECONFIG_DEPLOY validate_kubeconfig_deploy "" "${HOME}/.kube/config"
     export USE_SERVICE_ACCOUNT=false
     export KUBECONFIG_CONFIG_ENTRY="kubeconfigFile: /opt/spinnaker/credentials/custom/default-kubeconfig"
     encode_kubeconfig
@@ -213,7 +246,7 @@ EOF
   prompt_user_for_config_store
 
   local bucket_name=$(awk '{ print tolower($0) }' <<< ${NAMESPACE}-platform-$(uuidgen) | cut -c 1-51)
-  get_var "${CONFIG_STORE} bucket to use [if blank, a bucket will be generated for you]: " ARMORY_CONF_STORE_BUCKET "" "" $bucket_name
+  get_var "Bucket to use [if blank, a bucket will be generated for you]: " ARMORY_CONF_STORE_BUCKET "" "" $bucket_name
 
   if [[ "$CONFIG_STORE" == "S3" ]]; then
     export S3_ENABLED=true
@@ -244,22 +277,22 @@ EOF
     export GCS_ENABLED=false
   cat <<EOF
 
-  *****************************************************************************
-  * Minio access key ID and secret access key are used to access the bucket   *
-  * during the installation. The keys will be combined into a profile and     *
-  * added to a secret in the k8s cluster called 'aws-s3-credentials'.         *
-  *                                                                           *
-  * Notes:                                                                    *
-  * 1. If you would like to create a Minio user specifically for this         *
-  *    task, you can replace the k8s secret after the installation is         *
-  *    complete.                                                              *
-  * 2. The secret is formatted as a normal AWS credentials file.              *
-  *****************************************************************************
+  ********************************************************************************
+  * S3 compatible store access key ID and secret access key are used to          * 
+  * access the bucket during the installation. The keys will be placed in a      *
+  * profile and added to a secret in the k8s cluster called 'aws-s3-credentials' *
+  *                                                                              *
+  * Notes:                                                                       *
+  * 1. If you would like to create a user specifically for this                  *
+  *    task, you can replace the k8s secret after the installation is            *
+  *    complete.                                                                 *
+  * 2. The secret is formatted as a normal AWS credentials file.                 *
+  ********************************************************************************
 
 EOF
-    get_var "Enter your minio access key: " AWS_ACCESS_KEY_ID
-    get_var "Enter your minio secret key: " AWS_SECRET_ACCESS_KEY
-    get_var "Enter your minio endpoint (ex: http://172.0.10.1:9000): " MINIO_ENDPOINT
+    get_var "Enter your access key: " AWS_ACCESS_KEY_ID
+    get_var "Enter your secret key: " AWS_SECRET_ACCESS_KEY
+    get_var "Enter your endpoint (ex: http://172.0.10.1:9000): " MINIO_ENDPOINT
     #this is a bit of hack until this gets https://github.com/spinnaker/front50/pull/308, check description of PR
     export ENDPOINT_PROPERTY="endpoint: ${MINIO_ENDPOINT}"
     export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY MINIO_ENDPOINT
@@ -279,21 +312,25 @@ function prompt_user_for_config_store() {
 
   *****************************************************************************
   * Configuration for the Armory Platform needs to be persisted to either S3, *
-  * GCS, or Minio. This includes your pipeline configurations, deployment     *
-  * target accounts, etc. We can create a storage bucket for you or you can   *
-  * provide an already existing one.                                          *
+  * GCS, or S3 Compliant Store. This includes your pipeline configurations,   * 
+  * deployment target accounts, etc. We can create a storage bucket for you   * 
+  * or you can provide an already existing one.                               *
   *****************************************************************************
 
 EOF
-  options=("S3" "GCS" "MINIO")
+  options=("S3" "GCS" "S3 Compatible Store")
   echo "Which backing object store would you like to use for storing Spinnaker configs: "
   PS3='Enter choice: '
   select opt in "${options[@]}"
   do
     case $opt in
-        "S3"|"GCS"|"MINIO")
+        "S3"|"GCS")
             echo "Using $opt"
             save_response CONFIG_STORE "$opt"
+            break
+            ;;
+        "S3 Compatible Store")
+            save_response CONFIG_STORE "MINIO"
             break
             ;;
         *) echo "Invalid option";;
@@ -308,7 +345,7 @@ function select_kubectl_context() {
       return
   fi
 
-  options=($(kubectl config get-contexts | awk '{print $2}' | grep -v NAME | sort))
+  options=($(kubectl config get-contexts -o name))
   if [ ${#options[@]} -eq 0 ]; then
       echo "It appears you do not have any K8s contexts in your KUBECONFIG file. Please refer to the docs to setup access to clusters:" 1>&2
       echo "https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/"  1>&2
@@ -399,7 +436,7 @@ function make_minio_bucket() {
     echo "Bucket already exists"
     return
   else
-    echo "Creating Minio bucket to store configuration and persist data."
+    echo "Creating bucket to store configuration and persist data."
     AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} aws s3 mb --endpoint-url ${MINIO_ENDPOINT} "s3://${ARMORY_CONF_STORE_BUCKET}"
   fi
 }
@@ -452,6 +489,10 @@ function create_k8s_nginx_load_balancer() {
   # Wait for IP
   kubectl ${KUBECTL_OPTIONS} apply -f ${BUILD_DIR}/nginx-svc.json
   if [[ "${LB_TYPE}" == "ClusterIP" ]]; then
+    if [[ ! -z "$NGINX_PREDEFINED_URL" ]]; then
+      export NGINX_IP=$NGINX_PREDEFINED_URL
+      return
+    fi
     #we use loopback because we create a tunnel later
     export NGINX_IP="127.0.0.1"
   else
@@ -685,7 +726,7 @@ function upload_custom_credentials() {
 }
 
 function create_k8s_port_forward() {
-  if [ "$SERVICE_TYPE" != "ClusterIP" ]; then
+  if [ "$SERVICE_TYPE" != "ClusterIP" ] || [ ! -z "$NGINX_PREDEFINED_URL" ]; then
     return
   fi
 
@@ -754,7 +795,7 @@ aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
 }
 
 function encode_kubeconfig() {
-  B64KUBECONFIG=$(base64 -w 0 "${KUBECONFIG}" 2>/dev/null || base64 "${KUBECONFIG}")
+  B64KUBECONFIG=$(base64 -w 0 "${KUBECONFIG_DEPLOY}" 2>/dev/null || base64 "${KUBECONFIG_DEPLOY}")
   export KUBECONFIG_ENTRY_IN_SECRETS_FILE="\"default-kubeconfig\": \"${B64KUBECONFIG}\""
 }
 
@@ -1670,6 +1711,10 @@ EOF
     # `false` is evaluated by an empty string not the word false
     # https://github.com/kubernetes/kubernetes/blob/7bbe309d8d64adf72b13ced258f1e97567dd945d/pkg/cloudprovider/providers/aws/aws.go#L3316
     save_response LB_INTERNAL ""
+  fi
+
+  if [[ "${LB_TYPE}" == "ClusterIP" ]]; then
+    get_var "Enter a pre-defined URL for the environment if applicable. If none, we'll ask you to bind your service before continuing: " NGINX_PREDEFINED_URL
   fi
 }
 
