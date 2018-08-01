@@ -92,6 +92,10 @@
               "requests": {
                 "cpu": "${LIGHTHOUSE_CPU}",
                 "memory": "${LIGHTHOUSE_MEMORY}"
+              },
+              "limits": {
+                "cpu": "${LIGHTHOUSE_CPU}",
+                "memory": "${LIGHTHOUSE_MEMORY}"
               }
             },
             "ports": [

@@ -46,7 +46,7 @@
         "containers": [
           {
             "name": "armory-redis",
-            "image": "redis",
+            "image": "${LIBRARY_DOCKER_REGISTRY}/redis",
             "resources": {
               "requests": {
                 "cpu": "${REDIS_CPU}",

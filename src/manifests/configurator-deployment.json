@@ -83,6 +83,10 @@
               "requests": {
                 "cpu": "${CONFIGURATOR_CPU}",
                 "memory": "${CONFIGURATOR_MEMORY}"
+              },
+              "limits": {
+                "cpu": "${CONFIGURATOR_CPU}",
+                "memory": "${CONFIGURATOR_MEMORY}"
               }
             },
             "ports": [

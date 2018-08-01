@@ -65,11 +65,15 @@
             "env": [
               {
                 "name": "JAVA_OPTS",
-                "value": "-javaagent:/opt/front50/lib/jamm-0.2.5.jar"
+                "value": "-javaagent:/opt/front50/lib/jamm-0.2.5.jar -Xmx${FRONT50_JAVA_MEMORY}"
               }
             ],
             "resources": {
               "requests": {
+                "cpu": "${FRONT50_CPU}",
+                "memory": "${FRONT50_MEMORY}"
+              },
+              "limits": {
                 "cpu": "${FRONT50_CPU}",
                 "memory": "${FRONT50_MEMORY}"
               }
@@ -84,7 +88,7 @@
                 "path": "/health",
                 "port": 8080
               },
-              "initialDelaySeconds": 90,
+              "initialDelaySeconds": 30,
               "periodSeconds": 5,
               "successThreshold": 8
             },
@@ -93,7 +97,7 @@
                 "path": "/health",
                 "port": 8080
               },
-              "initialDelaySeconds": 90,
+              "initialDelaySeconds": 180,
               "periodSeconds": 3
             },
             "volumeMounts": [

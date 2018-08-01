@@ -64,11 +64,15 @@
             "env": [
               {
                 "name": "JAVA_OPTS",
-                "value": "-javaagent:/opt/echo/lib/jamm-0.2.5.jar"
+                "value": "-javaagent:/opt/echo/lib/jamm-0.2.5.jar -Xmx${ECHO_JAVA_MEMORY}"
               }
             ],
             "resources": {
               "requests": {
+                "cpu": "${ECHO_CPU}",
+                "memory": "${ECHO_MEMORY}"
+              },
+              "limits": {
                 "cpu": "${ECHO_CPU}",
                 "memory": "${ECHO_MEMORY}"
               }
@@ -83,7 +87,7 @@
                 "path": "/health",
                 "port": 8089
               },
-              "initialDelaySeconds": 60,
+              "initialDelaySeconds": 30,
               "periodSeconds": 3,
               "successThreshold": 5
             },
@@ -92,7 +96,7 @@
                 "path": "/health",
                 "port": 8089
               },
-              "initialDelaySeconds": 60,
+              "initialDelaySeconds": 180,
               "periodSeconds": 3
             },
             "volumeMounts": [

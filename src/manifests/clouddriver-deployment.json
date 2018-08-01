@@ -62,8 +62,18 @@
                 }
               }
             ],
+            "env": [
+              {
+                "name": "JAVA_OPTS",
+                "value": "-Xmx${CLOUDDRIVER_JAVA_MEMORY}"
+              }
+            ],
             "resources": {
               "requests": {
+                "cpu": "${CLOUDDRIVER_CPU}",
+                "memory": "${CLOUDDRIVER_MEMORY}"
+              },
+              "limits": {
                 "cpu": "${CLOUDDRIVER_CPU}",
                 "memory": "${CLOUDDRIVER_MEMORY}"
               }
@@ -78,7 +88,7 @@
                 "path": "/health",
                 "port": 7002
               },
-              "initialDelaySeconds": 90,
+              "initialDelaySeconds": 30,
               "periodSeconds": 3,
               "successThreshold": 5,
               "failureThreshold": 5
@@ -88,7 +98,7 @@
                 "path": "/health",
                 "port": 7002
               },
-              "initialDelaySeconds": 90,
+              "initialDelaySeconds": 180,
               "failureThreshold": 5,
               "periodSeconds": 3
             },
