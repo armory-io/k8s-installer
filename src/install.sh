@@ -871,7 +871,7 @@ EOF
   echo "Creating..."
 
   export custom_credentials_secret_name=$(echo -ne \${\#stage\(\'Deploy Credentials\'\)[\'context\'][\'artifacts\'][0][\'reference\']})
-  export nginx_certs_secret_name=$(echo -ne \${\#stage\(\'Deploy Certificates\'\)[\'context\'][\'artifacts\'][0][\'reference\']})
+  export nginx_certs_secret_name=$(echo -ne \${\#stage\(\'Deploy Credentials\'\)[\'context\'][\'artifacts\'][0][\'reference\']})
 
   mkdir -p ${BUILD_DIR}/pipeline
   for filename in manifests/*-deployment.json; do
