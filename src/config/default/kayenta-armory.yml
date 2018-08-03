@@ -1,0 +1,29 @@
+kayenta:
+  aws:
+    enabled: ${ARMORYSPINNAKER_S3_ENABLED:false}
+    accounts:
+      - name: aws-s3-storage
+        bucket: ${ARMORYSPINNAKER_CONF_STORE_BUCKET}
+        rootFolder: kayenta
+        supportedTypes:
+          - OBJECT_STORE
+          - CONFIGURATION_STORE
+
+  s3:
+    enabled: ${ARMORYSPINNAKER_S3_ENABLED:false}
+
+  google:
+    enabled: ${ARMORYSPINNAKER_GCS_ENABLED:false}
+    accounts:
+      - name: cloud-armory
+        # project: myproject
+        # jsonPath: /opt/spinnaker/credentials/gcp.json
+        bucket: ${ARMORYSPINNAKER_CONF_STORE_BUCKET}
+        rootFolder: kayenta-prod
+        supportedTypes:
+          - METRICS_STORE
+          - OBJECT_STORE
+          - CONFIGURATION_STORE
+
+  gcs:
+    enabled: ${ARMORYSPINNAKER_GCS_ENABLED:false}
