@@ -1,3 +1,9 @@
 diagnostics:
   enabled: true
   id: ${ARMORY_ID:unknown}
+
+armorywebhooks:
+  enabled: false
+  forwarding:
+    baseUrl: http://armory-dinghy:8081
+    endpoint: v1/webhooks
