@@ -576,7 +576,7 @@ function create_k8s_custom_config() {
     if [[ "${CONFIG_STORE}" == "S3" ]]; then
 
       if aws --profile "${AWS_PROFILE}" --region us-east-1 s3 ls "${config_s3_path}" > /dev/null 2>&1; then
-        get_var "config.json already exists, would you like to overwrite it? [y/n]: " OVERWRITE_CONFIG
+        get_var "A previous configuration for the Armory Platform exists in cloud storage. Would you like to overwrite it? [y/n]: " OVERWRITE_CONFIG
       fi
       if [[ "${OVERWRITE_CONFIG}" != "n" ]] ; then
         aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
@@ -592,7 +592,7 @@ function create_k8s_custom_config() {
 
       if AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 ls \
         --endpoint-url=${MINIO_ENDPOINT} "${config_s3_path}" > /dev/null 2>&1; then
-          get_var "config.json already exists, would you like to overwrite it? [y/n]: " OVERWRITE_CONFIG
+          get_var "A previous configuration for the Armory Platform exists in cloud storage. Would you like to overwrite it? [y/n]: " OVERWRITE_CONFIG
       fi
       if [[ "${OVERWRITE_CONFIG}" != "n" ]] ; then
         AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
@@ -605,7 +605,7 @@ function create_k8s_custom_config() {
     elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
 
       if gsutil ls "${config_gs_path}" > /dev/null 2>&1; then
-        get_var "config.json already exists, would you like to overwrite it? [y/n]: " OVERWRITE_CONFIG
+        get_var "A previous configuration for the Armory Platform exists in cloud storage. Would you like to overwrite it? [y/n]: " OVERWRITE_CONFIG
       fi
       if [[ "${OVERWRITE_CONFIG}" != "n" ]] ; then
         gsutil cp "${config_file}" "${config_gs_path}"
@@ -633,7 +633,7 @@ function upload_custom_credentials() {
     if [[ "${CONFIG_STORE}" == "S3" ]]; then
 
       if aws --profile "${AWS_PROFILE}" --region us-east-1 s3 ls "${credentials_s3_path}" > /dev/null 2>&1; then
-        get_var "custom-credentials.json already exists, would you like to overwrite it? [y/n]: " OVERWRITE_CREDENTIALS
+        get_var "Previous user credentials used by the Armory Platform to access third party integrations were found. Would you like to remove them? [y/n]: " OVERWRITE_CREDENTIALS
       fi
       if [[ "${OVERWRITE_CREDENTIALS}" != "n" ]] ; then
         aws --profile "${AWS_PROFILE}" --region us-east-1 s3 cp \
@@ -654,7 +654,7 @@ function upload_custom_credentials() {
 
       if AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 ls \
         --endpoint-url=${MINIO_ENDPOINT} "${credentials_s3_path}" > /dev/null 2>&1; then
-          get_var "custom-credentials.json already exists, would you like to overwrite it? [y/n]: " OVERWRITE_CREDENTIALS
+          get_var "Previous user credentials used by the Armory Platform to access third party integrations were found. Would you like to remove them? [y/n]: " OVERWRITE_CREDENTIALS
       fi
       if [[ "${OVERWRITE_CREDENTIALS}" != "n" ]] ; then
         AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} aws s3 cp \
@@ -673,7 +673,7 @@ function upload_custom_credentials() {
     elif [[ "${CONFIG_STORE}" == "GCS" ]]; then
 
       if gsutil ls "${credentials_gs_path}" > /dev/null 2>&1; then
-        get_var "custom-credentials.json already exists, would you like to overwrite it? [y/n]: " OVERWRITE_CREDENTIALS
+        get_var "Previous user credentials used by the Armory Platform to access third party integrations were found. Would you like to remove them? [y/n]: " OVERWRITE_CREDENTIALS
       fi
       if [[ "${OVERWRITE_CREDENTIALS}" != "n" ]] ; then
         gsutil cp "${credentials_manifest}" "${credentials_gs_path}"
@@ -871,7 +871,7 @@ EOF
   echo "Creating..."
 
   export custom_credentials_secret_name=$(echo -ne \${\#stage\(\'Deploy Credentials\'\)[\'context\'][\'artifacts\'][0][\'reference\']})
-  export nginx_certs_secret_name=$(echo -ne \${\#stage\(\'Deploy Certificates\'\)[\'context\'][\'artifacts\'][0][\'reference\']})
+  export nginx_certs_secret_name=$(echo -ne \${\#stage\(\'Deploy Credentials\'\)[\'context\'][\'artifacts\'][0][\'reference\']})
 
   mkdir -p ${BUILD_DIR}/pipeline
   for filename in manifests/*-deployment.json; do
