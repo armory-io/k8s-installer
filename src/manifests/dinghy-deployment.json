@@ -103,6 +103,10 @@
               {
                 "name": "custom-config",
                 "mountPath": "/opt/spinnaker/config/custom"
+              },
+              {
+                "name": "custom-credentials",
+                "mountPath": "/opt/spinnaker/credentials/custom"
               }
             ]
           }
@@ -118,6 +122,12 @@
             "name": "default-config",
             "configMap": {
               "name": "default-config"
+            }
+          },
+          {
+            "name": "custom-credentials",
+            "secret": {
+              "secretName": "${custom_credentials_secret_name}"
             }
           },
           {
