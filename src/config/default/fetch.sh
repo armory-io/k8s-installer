@@ -60,7 +60,7 @@ x509_client_cert_path="/opt/spinnaker/config/custom/x509client.crt"
 x509_jks_path="${CONFIG_LOCATION}/x509.jks"
 x509_nginx_cert_path="/opt/nginx/certs/ssl.crt"
 
-if [ "${CONTAINER}" == "gate" ]; then
+if [ "${CONTAINER}" == "armory-gate" ]; then
     if [ -f ${saml_pem_path} ]; then
         echo "Loading ${saml_pem_path} into ${saml_jks_path}"
         # Convert PEM to PKCS12 with a password.
@@ -111,7 +111,7 @@ if [ "${CONTAINER}" == "gate" ]; then
     fi
 fi
 
-if [ "${CONTAINER}" == "nginx" ]; then
+if [ "${CONTAINER}" == "armory-nginx" ]; then
     nginx_conf_path="/opt/spinnaker/config/default/nginx.conf"
     if [ -f ${nginx_conf_path} ]; then
         cp ${nginx_conf_path} /etc/nginx/nginx.conf
