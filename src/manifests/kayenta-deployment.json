@@ -46,7 +46,7 @@
           "containers": [
             {
               "name": "armory-kayenta",
-              "image": "${DOCKER_REGISTRY}/spinnaker-kayenta-slim:${kayenta_version}",
+              "image": "${DOCKER_REGISTRY}/kayenta-armory:${kayenta_armory_version}",
               "envFrom": [
                 {
                   "configMapRef": {
